@@ -1,343 +1,248 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { StudentStats } from '../models';
+import { StudentStats, Student } from '../models';
 import { getAllStudents, getLessonsByStudentId } from '../database';
+import StatCard from '../components/StatCard';
+import EmptyState from '../components/EmptyState';
+import StudentBillingDetailScreen from './StudentBillingDetailScreen';
+import {
+  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
+  getSubjectColor,
+} from '../styles/theme';
 
 const StatsScreen: React.FC = () => {
   const [stats, setStats] = useState<StudentStats[]>([]);
   const [totalStats, setTotalStats] = useState({
-    totalStudents: 0,
-    totalLessons: 0,
-    totalHours: 0,
-    totalAmount: 0,
-    paidAmount: 0,
-    pendingAmount: 0,
+    totalStudents: 0, totalLessons: 0, totalHours: 0,
+    totalAmount: 0, paidAmount: 0, pendingAmount: 0,
   });
+  const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 });
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadStats();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadStats(); }, []));
 
   const loadStats = async () => {
     const students = await getAllStudents();
     const studentStats: StudentStats[] = [];
-
-    let totalLessons = 0;
-    let totalHours = 0;
-    let totalAmount = 0;
-    let paidAmount = 0;
+    let totalLessons = 0, totalHours = 0, totalAmount = 0, paidAmount = 0;
+    let monthPaid = 0, monthPending = 0;
+    const thisMonth = new Date().toISOString().substring(0, 7);
 
     for (const student of students) {
       const lessons = await getLessonsByStudentId(student.id);
-      const studentTotalHours = lessons.reduce((sum, lesson) => sum + lesson.duration, 0);
-      const studentTotalAmount = lessons.reduce((sum, lesson) => sum + lesson.amount, 0);
-      const studentPaidAmount = lessons.filter((l) => l.paid).reduce((sum, lesson) => sum + lesson.amount, 0);
+      const sHours = lessons.reduce((sum, l) => sum + l.duration, 0);
+      const sAmount = lessons.reduce((sum, l) => sum + l.amount, 0);
+      const sPaid = lessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
 
       studentStats.push({
-        student,
-        totalLessons: lessons.length,
-        totalHours: studentTotalHours,
-        totalAmount: studentTotalAmount,
-        paidAmount: studentPaidAmount,
-        pendingAmount: studentTotalAmount - studentPaidAmount,
+        student, totalLessons: lessons.length, totalHours: sHours,
+        totalAmount: sAmount, paidAmount: sPaid,
+        pendingAmount: sAmount - sPaid,
       });
 
       totalLessons += lessons.length;
-      totalHours += studentTotalHours;
-      totalAmount += studentTotalAmount;
-      paidAmount += studentPaidAmount;
+      totalHours += sHours;
+      totalAmount += sAmount;
+      paidAmount += sPaid;
+
+      // Monthly calculation
+      lessons.filter((l) => l.date.startsWith(thisMonth)).forEach((l) => {
+        if (l.paid) monthPaid += l.amount;
+        else monthPending += l.amount;
+      });
     }
 
     setStats(studentStats);
     setTotalStats({
-      totalStudents: students.length,
-      totalLessons,
-      totalHours,
-      totalAmount,
-      paidAmount,
-      pendingAmount: totalAmount - paidAmount,
+      totalStudents: students.length, totalLessons, totalHours,
+      totalAmount, paidAmount, pendingAmount: totalAmount - paidAmount,
     });
+    setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
   };
 
-  const renderStatCard = (icon: string, label: string, value: string | number, color: string) => (
-    <View style={styles.statCard}>
-      <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={24} color={color} />
-      </View>
-      <View>
-        <Text style={styles.statLabel}>{label}</Text>
-        <Text style={styles.statValue}>{value}</Text>
-      </View>
-    </View>
-  );
+  const paidRatio = totalStats.totalAmount > 0
+    ? (totalStats.paidAmount / totalStats.totalAmount) * 100
+    : 0;
+  const monthRatio = monthStats.total > 0
+    ? (monthStats.paid / monthStats.total) * 100
+    : 0;
 
-  const renderStudentRow = ({ item }: { item: StudentStats }) => (
-    <View style={styles.tableRow}>
-      <View style={styles.tableCellName}>
-        <Text style={styles.cellName}>{item.student.name}</Text>
-        <Text style={styles.cellSubject}>{item.student.subject}</Text>
+  if (stats.length === 0) {
+    return (
+      <View style={styles.container}>
+        <EmptyState
+          icon="stats-chart-outline"
+          title="暂无统计数据"
+          subtitle="添加学生和课程后将会显示统计信息"
+        />
       </View>
-      <View style={styles.tableCell}>
-        <Text style={styles.cellValue}>{item.totalLessons}节</Text>
-      </View>
-      <View style={styles.tableCell}>
-        <Text style={styles.cellValue}>{item.totalHours.toFixed(1)}h</Text>
-      </View>
-      <View style={styles.tableCell}>
-        <Text style={styles.cellValue}>¥{item.totalAmount.toFixed(0)}</Text>
-      </View>
-      <View style={styles.tableCell}>
-        <Text style={styles.cellValuePaid}>¥{item.paidAmount.toFixed(0)}</Text>
-      </View>
-      <View style={styles.tableCell}>
-        <Text style={item.pendingAmount > 0 ? styles.cellValuePending : styles.cellValuePaid}>
-          ¥{item.pendingAmount.toFixed(0)}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Stats grid 2x2 */}
         <View style={styles.statsGrid}>
-          {renderStatCard('users', '学生数', totalStats.totalStudents, '#4CAF50')}
-          {renderStatCard('book-open', '总课时', totalStats.totalLessons + '节', '#2196F3')}
-          {renderStatCard('clock', '总时长', totalStats.totalHours.toFixed(1) + 'h', '#FF9800')}
-          {renderStatCard('wallet', '总收入', '¥' + totalStats.totalAmount.toFixed(0), '#9C27B0')}
+          <View style={styles.gridItem}>
+            <StatCard icon="people" label="学生数" value={totalStats.totalStudents} color={Colors.primary} />
+          </View>
+          <View style={styles.gridItem}>
+            <StatCard icon="book" label="总课时" value={`${totalStats.totalLessons}节`} color={Colors.subjectEnglish} />
+          </View>
+          <View style={styles.gridItem}>
+            <StatCard icon="time" label="总时长" value={`${totalStats.totalHours.toFixed(1)}h`} color={Colors.pending} />
+          </View>
+          <View style={styles.gridItem}>
+            <StatCard icon="wallet" label="总收入" value={`${totalStats.totalAmount.toFixed(0)}元`} color={Colors.paid} />
+          </View>
         </View>
 
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>已收款</Text>
-              <Text style={styles.summaryValuePaid}>¥{totalStats.paidAmount.toFixed(0)}</Text>
+        {/* Monthly payment overview */}
+        <View style={[styles.overviewCard, Shadows.standard]}>
+          <Text style={styles.overviewTitle}>收款概览 · 本月</Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.max(monthRatio, 4)}%` }]} />
+          </View>
+          <View style={styles.overviewRow}>
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>本月已收</Text>
+              <Text style={[styles.overviewValue, { color: Colors.paid }]}>
+                {monthStats.paid.toFixed(0)}元
+              </Text>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>待收款</Text>
-              <Text style={styles.summaryValuePending}>¥{totalStats.pendingAmount.toFixed(0)}</Text>
+            <View style={styles.overviewDivider} />
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>本月待收</Text>
+              <Text style={[styles.overviewValue, { color: Colors.pending }]}>
+                {monthStats.pending.toFixed(0)}元
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.tableContainer}>
+        {/* Student table */}
+        <View style={[styles.tableCard, Shadows.standard]}>
           <Text style={styles.tableTitle}>学生账单汇总</Text>
           <View style={styles.tableHeader}>
-            <View style={styles.tableHeaderCellName}>
-              <Text style={styles.headerText}>学生</Text>
-            </View>
-            <View style={styles.tableHeaderCell}>
-              <Text style={styles.headerText}>课时</Text>
-            </View>
-            <View style={styles.tableHeaderCell}>
-              <Text style={styles.headerText}>时长</Text>
-            </View>
-            <View style={styles.tableHeaderCell}>
-              <Text style={styles.headerText}>合计</Text>
-            </View>
-            <View style={styles.tableHeaderCell}>
-              <Text style={styles.headerText}>已交</Text>
-            </View>
-            <View style={styles.tableHeaderCell}>
-              <Text style={styles.headerText}>待交</Text>
-            </View>
+            <Text style={[styles.th, styles.cellName]}>学生</Text>
+            <Text style={styles.th}>课时</Text>
+            <Text style={styles.th}>时长</Text>
+            <Text style={styles.th}>合计</Text>
+            <Text style={styles.th}>已交</Text>
+            <Text style={styles.th}>待交</Text>
           </View>
-          <FlatList
-            data={stats}
-            renderItem={renderStudentRow}
-            keyExtractor={(item) => item.student.id.toString()}
-            scrollEnabled={false}
-          />
-          {stats.length === 0 && (
-            <View style={styles.emptyState}>
-              <Ionicons name="file-text" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>暂无数据</Text>
-            </View>
-          )}
+          {stats.map((item, index) => {
+            const subColor = getSubjectColor(item.student.subject);
+            const isPending = item.pendingAmount > 0;
+            return (
+              <TouchableOpacity
+                key={item.student.id}
+                activeOpacity={0.6}
+                onPress={() => setSelectedStudent(item.student)}
+                style={[
+                  styles.tableRow,
+                  index % 2 === 0 && styles.tableRowZebra,
+                  isPending && styles.tableRowPending,
+                ]}
+              >
+                <View style={[styles.td, styles.cellName]}>
+                  <View style={styles.cellNameRow}>
+                    <View style={[styles.miniDot, { backgroundColor: subColor }]} />
+                    <View>
+                      <Text style={styles.cellNameText}>{item.student.name}</Text>
+                      <Text style={styles.cellSubText}>{item.student.subject}</Text>
+                    </View>
+                  </View>
+                </View>
+                <Text style={[styles.td, styles.cellVal]}>{item.totalLessons}节</Text>
+                <Text style={[styles.td, styles.cellVal]}>{item.totalHours.toFixed(1)}h</Text>
+                <Text style={[styles.td, styles.cellVal]}>{item.totalAmount.toFixed(0)}元</Text>
+                <Text style={[styles.td, styles.cellGreen]}>{item.paidAmount.toFixed(0)}元</Text>
+                <Text style={[styles.td, isPending ? styles.cellRed : styles.cellZero]}>
+                  {item.pendingAmount.toFixed(0)}元
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
+
+      <StudentBillingDetailScreen
+        student={selectedStudent}
+        visible={!!selectedStudent}
+        onClose={() => setSelectedStudent(null)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollContent: { padding: Spacing.xl, paddingBottom: 100 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xl },
+  gridItem: { width: '47%', flexGrow: 1 },
+  overviewCard: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+    padding: Spacing.xl, marginBottom: Spacing.xl,
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
+  overviewTitle: {
+    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
+    marginBottom: Spacing.lg,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
+  progressTrack: {
+    height: 8, backgroundColor: Colors.pendingBg, borderRadius: 4,
+    marginBottom: Spacing.xl, overflow: 'hidden',
   },
-  statCard: {
-    width: '47%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  progressFill: {
+    height: '100%', backgroundColor: Colors.paid, borderRadius: 4,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+  overviewRow: {
+    flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  summaryCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 8,
-  },
-  summaryValuePaid: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  summaryValuePending: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#f44336',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#eee',
-  },
-  tableContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  overviewItem: { alignItems: 'center' },
+  overviewLabel: { fontSize: FontSize.caption, color: Colors.caption, marginBottom: Spacing.sm },
+  overviewValue: { fontSize: FontSize.h1, fontWeight: FontWeight.bold },
+  overviewDivider: { width: 1, height: 40, backgroundColor: Colors.divider },
+  tableCard: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.card, overflow: 'hidden',
   },
   tableTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
+    padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.divider,
   },
   tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
+    flexDirection: 'row', backgroundColor: Colors.background,
+    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider,
   },
-  tableHeaderCellName: {
-    width: '25%',
-    paddingHorizontal: 8,
-  },
-  tableHeaderCell: {
-    width: '15%',
-    paddingHorizontal: 4,
-    alignItems: 'center',
-  },
-  headerText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666',
-    textAlign: 'center',
-  },
-  tableBody: {
-    maxHeight: 400,
+  th: {
+    flex: 1, fontSize: FontSize.small, fontWeight: FontWeight.bold,
+    color: Colors.caption, textAlign: 'center',
   },
   tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
+    borderBottomWidth: 1, borderBottomColor: Colors.divider,
   },
-  tableCellName: {
-    width: '25%',
-    paddingHorizontal: 8,
+  tableRowZebra: { backgroundColor: Colors.background },
+  tableRowPending: { backgroundColor: Colors.dangerLight },
+  td: { flex: 1, textAlign: 'center' },
+  cellName: { flex: 1.8, paddingLeft: Spacing.md, alignItems: 'flex-start' as const },
+  cellNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  miniDot: { width: 8, height: 8, borderRadius: 4 },
+  cellNameText: {
+    fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.title,
   },
-  tableCell: {
-    width: '15%',
-    alignItems: 'center',
+  cellSubText: { fontSize: FontSize.small, color: Colors.caption, marginTop: 1 },
+  cellVal: { fontSize: FontSize.small, color: Colors.body },
+  cellGreen: {
+    fontSize: FontSize.small, color: Colors.paid, fontWeight: FontWeight.semiBold,
   },
-  cellName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+  cellRed: {
+    fontSize: FontSize.small, color: Colors.danger, fontWeight: FontWeight.semiBold,
   },
-  cellSubject: {
-    fontSize: 11,
-    color: '#999',
-    marginTop: 2,
-  },
-  cellValue: {
-    fontSize: 13,
-    color: '#333',
-    textAlign: 'center',
-  },
-  cellValuePaid: {
-    fontSize: 13,
-    color: '#4CAF50',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  cellValuePending: {
-    fontSize: 13,
-    color: '#f44336',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
-  },
+  cellZero: { fontSize: FontSize.small, color: Colors.caption },
 });
 
 export default StatsScreen;

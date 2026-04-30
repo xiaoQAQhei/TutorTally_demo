@@ -16,7 +16,26 @@ const mockPayments: Payment[] = [];
 let mockIdCounter = 1;
 
 export const initDatabase = (): Promise<void> => {
-  if (useMock) return Promise.resolve();
+  if (useMock) {
+    if (mockStudents.length === 0) {
+      const s1: Student = { id: mockIdCounter++, name: '张三', subject: '数学', hourlyRate: 150, phone: '13800138001', createdAt: '2026-04-01T08:00:00.000Z' };
+      const s2: Student = { id: mockIdCounter++, name: '李四', subject: '英语', hourlyRate: 200, phone: '13800138002', createdAt: '2026-04-02T08:00:00.000Z' };
+      const s3: Student = { id: mockIdCounter++, name: '王五', subject: '物理', hourlyRate: 180, phone: '13800138003', createdAt: '2026-04-03T08:00:00.000Z' };
+      mockStudents.push(s1, s2, s3);
+
+      const l1: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-28', duration: 2, amount: 300, paid: true, notes: '导数章节', createdAt: '2026-04-28T10:00:00.000Z' };
+      const l2: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-29', duration: 1.5, amount: 225, paid: false, notes: '', createdAt: '2026-04-29T10:00:00.000Z' };
+      const l3: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-28', duration: 2, amount: 400, paid: true, notes: '阅读理解', createdAt: '2026-04-28T14:00:00.000Z' };
+      const l4: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-30', duration: 1.5, amount: 300, paid: false, notes: '', createdAt: '2026-04-30T14:00:00.000Z' };
+      const l5: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-01', duration: 2, amount: 300, paid: false, notes: '三角函数', createdAt: '2026-04-30T08:00:00.000Z' };
+      const l6: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-02', duration: 1.5, amount: 300, paid: false, notes: '完形填空', createdAt: '2026-04-30T09:00:00.000Z' };
+      const l7: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-03', duration: 2, amount: 360, paid: false, notes: '力学综合', createdAt: '2026-04-30T10:00:00.000Z' };
+      const l8: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-05', duration: 1.5, amount: 225, paid: false, notes: '立体几何', createdAt: '2026-04-30T11:00:00.000Z' };
+      const l9: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-07', duration: 2, amount: 400, paid: false, notes: '', createdAt: '2026-04-30T12:00:00.000Z' };
+      mockLessons.push(l1, l2, l3, l4, l5, l6, l7, l8, l9);
+    }
+    return Promise.resolve();
+  }
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx: any) => {
@@ -27,6 +46,7 @@ export const initDatabase = (): Promise<void> => {
             subject TEXT NOT NULL,
             hourlyRate REAL NOT NULL,
             phone TEXT,
+            address TEXT,
             createdAt TEXT NOT NULL
           )`
         );
@@ -75,8 +95,8 @@ export const addStudent = (student: Omit<Student, 'id'>): Promise<number> => {
     db.transaction(
       (tx: any) => {
         tx.executeSql(
-          'INSERT INTO students (name, subject, hourlyRate, phone, createdAt) VALUES (?, ?, ?, ?, ?)',
-          [student.name, student.subject, student.hourlyRate, student.phone, student.createdAt],
+          'INSERT INTO students (name, subject, hourlyRate, phone, address, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+          [student.name, student.subject, student.hourlyRate, student.phone, student.address || null, student.createdAt],
           (_: any, result: any) => {
             resolve(result.insertId);
           }
@@ -150,8 +170,8 @@ export const updateStudent = (student: Student): Promise<void> => {
     db.transaction(
       (tx: any) => {
         tx.executeSql(
-          'UPDATE students SET name = ?, subject = ?, hourlyRate = ?, phone = ? WHERE id = ?',
-          [student.name, student.subject, student.hourlyRate, student.phone, student.id],
+          'UPDATE students SET name = ?, subject = ?, hourlyRate = ?, phone = ?, address = ? WHERE id = ?',
+          [student.name, student.subject, student.hourlyRate, student.phone, student.address || null, student.id],
           () => {
             resolve();
           }

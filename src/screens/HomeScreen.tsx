@@ -1,348 +1,237 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student } from '../models';
 import { getAllLessons, getAllStudents } from '../database';
+import StatCard from '../components/StatCard';
+import EmptyState from '../components/EmptyState';
+import { useFadeIn, useBounce } from '../styles/animations';
+import {
+  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
+} from '../styles/theme';
 
 interface Props {
-  navigation: {
-    navigate: (screen: string) => void;
-  };
+  navigation: { navigate: (screen: string) => void };
 }
+
+const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: string }[] = [
+  { icon: 'person-add', label: '添加学生', screen: 'Students', color: Colors.paid },
+  { icon: 'book', label: '记录课程', screen: 'Lessons', color: Colors.primary },
+  { icon: 'stats-chart', label: '查看统计', screen: 'Stats', color: Colors.pending },
+];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [recentLessons, setRecentLessons] = useState<Lesson[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, []));
 
   const loadData = async () => {
     const lessons = await getAllLessons();
     const studentsData = await getAllStudents();
-    
     setStudents(studentsData);
-    setRecentLessons(lessons.slice(0, 5));
-    
-    const pending = lessons.filter((l) => !l.paid).length;
-    setPendingCount(pending);
-    
     const today = new Date().toISOString().split('T')[0];
-    const todayLessons = lessons.filter((l) => l.date === today && l.paid);
-    const earnings = todayLessons.reduce((sum, l) => sum + l.amount, 0);
-    setTodayEarnings(earnings);
+    setRecentLessons(lessons.filter((l) => l.date > today).slice(0, 10));
+
+    const pending = lessons.filter((l) => !l.paid).reduce((sum, l) => sum + l.amount, 0);
+    setPendingAmount(pending);
+
+    const todayLessons = lessons.filter((l) => l.date === today);
+    setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
-  const getStudentName = (studentId: number) => {
-    const student = students.find((s) => s.id === studentId);
-    return student?.name || '未知学生';
+  const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
+  const { opacity, translateY } = useFadeIn();
+
+  const renderLessonItem = ({ item, index }: { item: Lesson; index: number }) => {
+    const student = getStudent(item.studentId);
+    const isLast = index === recentLessons.length - 1;
+    return (
+      <TouchableOpacity
+        style={[styles.recentItem, !isLast && styles.recentItemBorder]}
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate('Lessons')}
+      >
+        <View style={[styles.colorBar, { backgroundColor: Colors.primary }]} />
+        <View style={styles.recentLeft}>
+          <Text style={styles.recentName}>{student?.name || '未知学生'}</Text>
+          <Text style={styles.recentDate}>{item.date}</Text>
+        </View>
+        <View style={styles.recentRight}>
+          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+          <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
+            <Text style={[styles.miniBadgeText, { color: Colors.primary }]}>待上</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
-  const renderQuickAction = (icon: string, label: string, screen: string, color: string) => (
-    <TouchableOpacity
-      style={[styles.quickAction, { backgroundColor: color + '15' }]}
-      onPress={() => navigation.navigate(screen)}
-    >
-      <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={24} color="white" />
-      </View>
-      <Text style={styles.quickActionLabel}>{label}</Text>
-    </TouchableOpacity>
+  const renderListHeader = () => (
+    <View style={styles.sectionHeaderRow}>
+      <Text style={styles.sectionTitle}>待上课程</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Lessons')}>
+        <Text style={styles.viewAll}>查看全部</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
+        {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>你好，老师</Text>
-            <Text style={styles.date}>{new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</Text>
+            <Text style={styles.greeting}>🙂你好，老师</Text>
+            <Text style={styles.date}>
+              {new Date().toLocaleDateString('zh-CN', {
+                year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+              })}
+            </Text>
           </View>
-          <View style={styles.avatar}>
-            <Ionicons name="user" size={32} color="white" />
-          </View>
+          <TouchableOpacity style={styles.refreshButton} onPress={loadData} activeOpacity={0.7}>
+            <Ionicons name="refresh" size={22} color={Colors.title} />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.overviewCards}>
-          <View style={styles.overviewCard}>
-            <View style={[styles.overviewIcon, { backgroundColor: '#FFEBEE' }]}>
-              <Ionicons name="alert-circle" size={24} color="#f44336" />
-            </View>
-            <View>
-              <Text style={styles.overviewLabel}>待收款</Text>
-              <Text style={[styles.overviewValue, { color: '#f44336' }]}>{pendingCount} 笔</Text>
-            </View>
-          </View>
-          <View style={styles.overviewCard}>
-            <View style={[styles.overviewIcon, { backgroundColor: '#E8F5E9' }]}>
-              <Ionicons name="trending-up" size={24} color="#4CAF50" />
-            </View>
-            <View>
-              <Text style={styles.overviewLabel}>今日收入</Text>
-              <Text style={styles.overviewValue}>¥{todayEarnings.toFixed(0)}</Text>
-            </View>
-          </View>
+        {/* Quick Actions */}
+        <View style={styles.quickActionsRow}>
+          {QUICK_ACTIONS.map((item, index) => (
+            <QuickActionButton
+              key={item.screen + index}
+              item={item}
+              onPress={() => navigation.navigate(item.screen)}
+            />
+          ))}
         </View>
 
-        <View style={styles.quickActions}>
-          <Text style={styles.sectionTitle}>快捷操作</Text>
-          <View style={styles.quickActionsGrid}>
-            {renderQuickAction('user-plus', '添加学生', 'Students', '#4CAF50')}
-            {renderQuickAction('book-open', '记录课程', 'Lessons', '#2196F3')}
-            {renderQuickAction('pie-chart', '查看统计', 'Stats', '#FF9800')}
-            {renderQuickAction('file-text', '课程列表', 'Lessons', '#9C27B0')}
-          </View>
-        </View>
+        {/* Upcoming Lessons - independently scrollable */}
+        <FlatList
+          data={recentLessons}
+          renderItem={renderLessonItem}
+          keyExtractor={(item) => item.id.toString()}
+          style={styles.lessonList}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={renderListHeader}
+          ListEmptyComponent={
+            <EmptyState
+              icon="book-outline"
+              title="没有待上课程"
+              subtitle="去课程记录添加未来的课程安排"
+              buttonLabel="添加课程"
+              onButtonPress={() => navigation.navigate('Lessons')}
+            />
+          }
+        />
 
-        <View style={styles.recentSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>最近课程</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Lessons')}>
-              <Text style={styles.viewAll}>查看全部</Text>
-            </TouchableOpacity>
+        {/* Overview Cards */}
+        <View style={styles.overviewRow}>
+          <View style={styles.overviewLarge}>
+            <StatCard
+              icon="alert-circle"
+              label="待收款总额"
+              value={`${pendingAmount.toFixed(0)}元`}
+              color={Colors.pending}
+            />
           </View>
-          {recentLessons.length > 0 ? (
-            <View style={styles.recentList}>
-              {recentLessons.map((lesson) => (
-                <View key={lesson.id} style={styles.recentItem}>
-                  <View style={styles.recentInfo}>
-                    <Text style={styles.recentStudent}>{getStudentName(lesson.studentId)}</Text>
-                    <Text style={styles.recentDate}>{lesson.date}</Text>
-                  </View>
-                  <View style={styles.recentRight}>
-                    <Text style={styles.recentAmount}>¥{lesson.amount.toFixed(0)}</Text>
-                    <View style={lesson.paid ? styles.recentPaid : styles.recentUnpaid}>
-                      <Text style={lesson.paid ? styles.recentPaidText : styles.recentUnpaidText}>
-                        {lesson.paid ? '已收' : '待收'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>暂无课程记录</Text>
-              <TouchableOpacity style={styles.emptyButton} onPress={() => navigation.navigate('Lessons')}>
-                <Text style={styles.emptyButtonText}>添加课程</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <View style={styles.overviewSmall}>
+            <StatCard
+              icon="flash"
+              label="今日课程收益"
+              value={`${todayEarnings.toFixed(0)}元`}
+              color={Colors.primary}
+            />
+          </View>
         </View>
-      </ScrollView>
+      </Animated.View>
     </View>
   );
 };
 
+const QuickActionButton: React.FC<{
+  item: typeof QUICK_ACTIONS[0];
+  onPress: () => void;
+}> = ({ item, onPress }) => {
+  const { scale, bounce } = useBounce(onPress);
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={bounce}
+      style={[styles.quickAction, { backgroundColor: item.color + '12' }]}
+    >
+      <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22' }]}>
+          <Ionicons name={item.icon as any} size={20} color={item.color} />
+        </View>
+        <Text style={styles.quickActionLabel}>{item.label}</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.lg,
   },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+  greeting: { fontSize: FontSize.h1, fontWeight: FontWeight.bold, color: Colors.title },
+  date: { fontSize: FontSize.caption, color: Colors.caption, marginTop: Spacing.xs },
+  refreshButton: {
+    width: 44, height: 44, borderRadius: BorderRadius.iconContainer,
+    backgroundColor: Colors.card, justifyContent: 'center', alignItems: 'center',
+    ...Shadows.subtle,
   },
-  date: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#4CAF50',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overviewCards: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  overviewCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  overviewIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overviewLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  overviewValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  quickActions: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
+  quickActionsRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg },
   quickAction: {
-    width: '47%',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 8,
+    flex: 1, paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.card, alignItems: 'center',
   },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 40, height: 40, borderRadius: BorderRadius.iconContainer,
+    justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.xs,
   },
   quickActionLabel: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: FontSize.small, color: Colors.body, fontWeight: FontWeight.medium,
   },
-  recentSection: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  lessonList: { flex: 1 },
+  sectionHeaderRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.md,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  sectionTitle: {
+    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
   },
-  viewAll: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: '500',
-  },
-  recentList: {
-    gap: 12,
-  },
+  viewAll: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.semiBold },
   recentItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.lg,
+    backgroundColor: Colors.card,
   },
-  recentItemLast: {
-    borderBottomWidth: 0,
+  recentItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
+  colorBar: { width: 4, height: 40, borderRadius: 2, marginRight: Spacing.md },
+  recentLeft: { flex: 1 },
+  recentName: {
+    fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title,
+    marginBottom: 2,
   },
-  recentInfo: {
-    flex: 1,
-  },
-  recentStudent: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  recentDate: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-  recentRight: {
-    alignItems: 'flex-end',
-  },
+  recentDate: { fontSize: FontSize.small, color: Colors.caption },
+  recentRight: { alignItems: 'flex-end' },
   recentAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
+    marginBottom: 4,
   },
-  recentPaid: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
+  miniBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.pill },
+  miniBadgeText: { fontSize: 10, fontWeight: FontWeight.semiBold },
+  overviewRow: {
+    flexDirection: 'row', gap: Spacing.md,
+    marginTop: Spacing.md, marginBottom: Spacing.md,
   },
-  recentUnpaid: {
-    backgroundColor: '#FFEBEE',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
-  },
-  recentPaidText: {
-    fontSize: 10,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  recentUnpaidText: {
-    fontSize: 10,
-    color: '#f44336',
-    fontWeight: 'bold',
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
-  },
-  emptyButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  emptyButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+  overviewLarge: { flex: 0.55 },
+  overviewSmall: { flex: 0.45 },
 });
 
 export default HomeScreen;

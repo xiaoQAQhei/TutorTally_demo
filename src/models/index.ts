@@ -4,6 +4,7 @@ export interface Student {
   subject: string;
   hourlyRate: number;
   phone: string;
+  address?: string;
   createdAt: string;
 }
 
