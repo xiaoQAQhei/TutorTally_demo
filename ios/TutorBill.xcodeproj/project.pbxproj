@@ -1,0 +1,183 @@
+// !$*UTF8*$!
+{
+  "archiveVersion": 1,
+  "classes": {},
+  "objectVersion": 56,
+  "objects": {
+    "08620E4A2047B01300B43E87 /* AppDelegate.m in Sources */": {
+      "isa": "PBXBuildFile",
+      "fileRef": "08620E492047B01300B43E87 /* AppDelegate.m */"
+    },
+    "08620E4C2047B01300B43E87 /* main.m in Sources */": {
+      "isa": "PBXBuildFile",
+      "fileRef": "08620E4B2047B01300B43E87 /* main.m */"
+    },
+    "08620E492047B01300B43E87 /* AppDelegate.m */": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.c.objc",
+      "path": "AppDelegate.m",
+      "sourceTree": "<group>"
+    },
+    "08620E4A2047B01300B43E87 /* AppDelegate.h */": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.c.h",
+      "path": "AppDelegate.h",
+      "sourceTree": "<group>"
+    },
+    "08620E4B2047B01300B43E87 /* main.m */": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.c.objc",
+      "path": "main.m",
+      "sourceTree": "<group>"
+    },
+    "08620E4D2047B01300B43E87 /* Info.plist */": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "text.plist.xml",
+      "path": "Info.plist",
+      "sourceTree": "<group>"
+    },
+    "13B07FBF1A680F5B00A75B9A /* TutorBill */": {
+      "isa": "PBXGroup",
+      "children": [
+        "08620E4A2047B01300B43E87 /* AppDelegate.h */",
+        "08620E492047B01300B43E87 /* AppDelegate.m */",
+        "08620E4B2047B01300B43E87 /* main.m */",
+        "08620E4D2047B01300B43E87 /* Info.plist */"
+      ],
+      "path": "TutorBill",
+      "sourceTree": "<group>"
+    },
+    "13B07FC01A680F5B00A75B9A /* Products */": {
+      "isa": "PBXGroup",
+      "children": [
+        "13B07FC11A680F5B00A75B9A /* TutorBill.app */"
+      ],
+      "path": "Products",
+      "sourceTree": "<group>"
+    },
+    "13B07FC11A680F5B00A75B9A /* TutorBill.app */": {
+      "isa": "PBXFileReference",
+      "explicitFileType": "wrapper.application",
+      "includeInIndex": 0,
+      "path": "TutorBill.app",
+      "sourceTree": "<group>"
+    },
+    "13B07FC21A680F5B00A75B9A /* Sources */": {
+      "isa": "PBXSourcesBuildPhase",
+      "buildActionMask": 2147483647,
+      "files": [
+        "08620E4A2047B01300B43E87 /* AppDelegate.m in Sources */",
+        "08620E4C2047B01300B43E87 /* main.m in Sources */"
+      ],
+      "runOnlyForDeploymentPostprocessing": 0
+    },
+    "13B07FC31A680F5B00A75B9A /* Frameworks */": {
+      "isa": "PBXFrameworksBuildPhase",
+      "buildActionMask": 2147483647,
+      "files": [],
+      "runOnlyForDeploymentPostprocessing": 0
+    },
+    "13B07FC41A680F5B00A75B9A /* Resources */": {
+      "isa": "PBXResourcesBuildPhase",
+      "buildActionMask": 2147483647,
+      "files": [
+        "08620E4D2047B01300B43E87 /* Info.plist in Resources */"
+      ],
+      "runOnlyForDeploymentPostprocessing": 0
+    },
+    "13B07FC51A680F5B00A75B9A /* TutorBill */": {
+      "isa": "PBXNativeTarget",
+      "buildConfigurationList": "13B07FC61A680F5B00A75B9A /* Build configuration list for PBXNativeTarget \"TutorBill\" */",
+      "buildPhases": [
+        "13B07FC21A680F5B00A75B9A /* Sources */",
+        "13B07FC31A680F5B00A75B9A /* Frameworks */",
+        "13B07FC41A680F5B00A75B9A /* Resources */"
+      ],
+      "buildRules": [],
+      "dependencies": [],
+      "name": "TutorBill",
+      "productName": "TutorBill",
+      "productReference": "13B07FC11A680F5B00A75B9A /* TutorBill.app */",
+      "productType": "com.apple.product-type.application"
+    },
+    "13B07FC61A680F5B00A75B9A /* Build configuration list for PBXNativeTarget \"TutorBill\" */": {
+      "isa": "XCBuildConfigurationList",
+      "buildConfigurations": [
+        "13B07FC71A680F5B00A75B9A /* Debug */",
+        "13B07FC81A680F5B00A75B9A /* Release */"
+      ],
+      "defaultConfigurationIsVisible": 0,
+      "defaultConfigurationName": "Release"
+    },
+    "13B07FC71A680F5B00A75B9A /* Debug */": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        "INFOPLIST_FILE": "TutorBill/Info.plist",
+        "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.tutorbill",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SWIFT_VERSION": "5.0"
+      },
+      "name": "Debug"
+    },
+    "13B07FC81A680F5B00A75B9A /* Release */": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        "INFOPLIST_FILE": "TutorBill/Info.plist",
+        "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.tutorbill",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SWIFT_VERSION": "5.0"
+      },
+      "name": "Release"
+    },
+    "13B07FC91A680F5B00A75B9A /* Project object */": {
+      "isa": "PBXProject",
+      "attributes": {
+        "BuildIndependentTargetsInParallel": 1,
+        "LastSwiftMigration": 1120
+      },
+      "buildConfigurationList": "13B07FCA1A680F5B00A75B9A /* Build configuration list for PBXProject \"TutorBill\" */",
+      "compatibilityVersion": "Xcode 14.0",
+      "developmentRegion": "en",
+      "hasScannedForEncodings": 0,
+      "knownRegions": [
+        "en",
+        "Base"
+      ],
+      "mainGroup": "13B07FBF1A680F5B00A75B9A /* TutorBill */",
+      "productRefGroup": "13B07FC01A680F5B00A75B9A /* Products */",
+      "projectDirPath": "",
+      "projectRoot": "",
+      "targets": [
+        "13B07FC51A680F5B00A75B9A /* TutorBill */"
+      ]
+    },
+    "13B07FCA1A680F5B00A75B9A /* Build configuration list for PBXProject \"TutorBill\" */": {
+      "isa": "XCBuildConfigurationList",
+      "buildConfigurations": [
+        "13B07FCB1A680F5B00A75B9A /* Debug */",
+        "13B07FCC1A680F5B00A75B9A /* Release */"
+      ],
+      "defaultConfigurationIsVisible": 0,
+      "defaultConfigurationName": "Release"
+    },
+    "13B07FCB1A680F5B00A75B9A /* Debug */": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {},
+      "name": "Debug"
+    },
+    "13B07FCC1A680F5B00A75B9A /* Release */": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {},
+      "name": "Release"
+    },
+    "08620E4D2047B01300B43E87 /* Info.plist in Resources */": {
+      "isa": "PBXBuildFile",
+      "fileRef": "08620E4D2047B01300B43E87 /* Info.plist */"
+    }
+  },
+  "rootObject": "13B07FC91A680F5B00A75B9A /* Project object */"
+}
