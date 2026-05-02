@@ -1,14 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student } from '../models';
-import { addLesson, getAllLessons, updateLesson, deleteLesson, toggleLessonPaid, getAllStudents } from '../database';
+import { addLesson, getAllLessons, updateLesson, deleteLesson, toggleLessonPaid, confirmLesson, getAllStudents } from '../database';
+import { useAction } from '../contexts/ActionContext';
 import GradientFAB from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
 import CalendarPicker from '../components/CalendarPicker';
+import TimeRangePicker from '../components/TimeRangePicker';
 import Toast from '../components/Toast';
 import StatusBadge from '../components/StatusBadge';
 import StudentAvatar from '../components/StudentAvatar';
@@ -20,6 +22,12 @@ import {
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
 const todayStr = new Date().toISOString().split('T')[0];
+
+const getEndPassed = (lesson: Lesson): boolean => {
+  const endTime = lesson.timeSlot?.split('-')[1]?.trim();
+  if (!endTime) return true;
+  return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
+};
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'upcoming', label: '待上课', color: '#6366F1' },
@@ -37,11 +45,17 @@ const LessonScreen: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [showStudentPicker, setShowStudentPicker] = useState(false);
   const [date, setDate] = useState('');
+  const [timeSlot, setTimeSlot] = useState('');
   const [duration, setDuration] = useState('');
   const [lessonRate, setLessonRate] = useState('');
   const [notes, setNotes] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight } = useAction();
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const highlightAnim = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -57,19 +71,66 @@ const LessonScreen: React.FC = () => {
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
 
-  const filteredLessons = lessons.filter((l) => {
-    if (filterStatus === 'upcoming') return l.date > todayStr;
-    if (filterStatus === 'paid') return l.date <= todayStr && l.paid;
-    if (filterStatus === 'unpaid') return l.date <= todayStr && !l.paid;
-    return true;
-  });
+  const filteredLessons = (() => {
+    let filtered: Lesson[];
+    if (filterStatus === 'upcoming') {
+      filtered = lessons.filter((l) => {
+        if (l.confirmedAt) return false;
+        if (l.paid) return false;
+        return true;
+      });
+      filtered.sort((a, b) => {
+        const aCanConfirm = !a.paid && !a.confirmedAt && getEndPassed(a) && a.date <= todayStr;
+        const bCanConfirm = !b.paid && !b.confirmedAt && getEndPassed(b) && b.date <= todayStr;
+        if (aCanConfirm && !bCanConfirm) return -1;
+        if (!aCanConfirm && bCanConfirm) return 1;
+        const dc = a.date.localeCompare(b.date);
+        if (dc !== 0) return dc;
+        return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+      });
+    } else if (filterStatus === 'unpaid') {
+      filtered = lessons.filter((l) => {
+        if (l.paid) return false;
+        if (!l.confirmedAt) return false;
+        return true;
+      });
+      filtered.sort((a, b) => a.date.localeCompare(b.date));
+    } else if (filterStatus === 'paid') {
+      filtered = lessons.filter((l) => {
+        if (!l.paid) return false;
+        if (l.confirmedAt) return true;
+        if (l.date < todayStr) return true;
+        if (l.date === todayStr) return getEndPassed(l);
+        return false;
+      });
+      filtered.sort((a, b) => b.date.localeCompare(a.date));
+    } else {
+      filtered = [...lessons];
+      filtered.sort((a, b) => b.date.localeCompare(a.date));
+    }
+    return filtered;
+  })();
 
-  const counts = {
-    upcoming: lessons.filter((l) => l.date > todayStr).length,
-    paid: lessons.filter((l) => l.date <= todayStr && l.paid).length,
-    unpaid: lessons.filter((l) => l.date <= todayStr && !l.paid).length,
-    all: lessons.length,
-  };
+  const counts = (() => {
+    const upcoming = lessons.filter((l) => {
+      if (l.confirmedAt) return false;
+      if (l.paid) return false;
+      return true;
+    }).length;
+    const paid = lessons.filter((l) => {
+      if (!l.paid) return false;
+      if (l.confirmedAt) return true;
+      if (l.date < todayStr) return true;
+      if (l.date === todayStr) return getEndPassed(l);
+      return false;
+    }).length;
+    const unpaid = lessons.filter((l) => {
+      if (l.paid) return false;
+      if (!l.confirmedAt) return false;
+      return true;
+    }).length;
+    return { upcoming, paid, unpaid, all: lessons.length };
+  })();
 
   const calculateAmount = () => {
     if (!duration) return 0;
@@ -77,26 +138,41 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedStudentId || !date || !duration || !lessonRate) {
-      setToast({ visible: true, message: '请选择学生、日期并填写课时和课时费', type: 'error' });
+    if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
+      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时和课时费', type: 'error' });
       return;
     }
     const amount = calculateAmount();
+
+    // 校验时段与课时是否一致
+    const parts = timeSlot.split('-');
+    if (parts.length === 2) {
+      const [sh, sm] = parts[0].trim().split(':').map(Number);
+      const [eh, em] = parts[1].trim().split(':').map(Number);
+      const slotDuration = (eh + (em || 0) / 60) - (sh + (sm || 0) / 60);
+      if (slotDuration > 0 && Math.abs(slotDuration - parseFloat(duration)) > 0.01) {
+        setDuration(slotDuration.toString());
+        setToast({ visible: true, message: `课时已根据时段自动调整为 ${slotDuration} 小时`, type: 'success' });
+        return;
+      }
+    }
+
     if (editingLesson) {
       await updateLesson({
-        ...editingLesson, studentId: selectedStudentId, date,
+        ...editingLesson, studentId: selectedStudentId, date, timeSlot,
         duration: parseFloat(duration), amount, notes,
       });
     } else {
       await addLesson({
-        studentId: selectedStudentId, date, duration: parseFloat(duration),
-        amount, paid: false, notes, createdAt: new Date().toISOString(),
+        studentId: selectedStudentId, date, timeSlot, duration: parseFloat(duration),
+        amount, paid: false, confirmedAt: null, notes, createdAt: new Date().toISOString(),
       });
     }
     setModalVisible(false);
     setEditingLesson(null);
     setDate('');
-    setDuration('');
+    setTimeSlot('');
+    setDuration('2');
     setLessonRate('');
     setNotes('');
     loadLessons();
@@ -108,12 +184,17 @@ const LessonScreen: React.FC = () => {
     loadLessons();
   };
 
+  const handleConfirmLesson = (lesson: Lesson) => {
+    confirmLesson(lesson.id).then(() => loadLessons());
+  };
+
   const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
 
   const handleEdit = (lesson: Lesson) => {
     setEditingLesson(lesson);
     setSelectedStudentId(lesson.studentId);
     setDate(lesson.date);
+    setTimeSlot(lesson.timeSlot || '');
     setDuration(lesson.duration.toString());
     const student = getStudent(lesson.studentId);
     setLessonRate(student?.hourlyRate?.toString() || '75');
@@ -127,20 +208,76 @@ const LessonScreen: React.FC = () => {
     setSelectedStudentId(firstStudent?.id || null);
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     setDate(tomorrow);
-    setDuration('');
+    setTimeSlot('');
+    setDuration('2');
     setLessonRate(firstStudent?.hourlyRate?.toString() || '75');
     setNotes('');
     setModalVisible(true);
   };
 
+  // Handle pending action from home screen
+  useEffect(() => {
+    if (pendingAction === 'addLesson') {
+      openAddModal();
+      clearAction();
+    }
+  }, [pendingAction]);
+
+  // Handle pending filter from home screen
+  useEffect(() => {
+    if (pendingFilter) {
+      setFilterStatus(pendingFilter);
+      clearFilter();
+    }
+  }, [pendingFilter, clearFilter]);
+
+  // Handle highlight
+  useEffect(() => {
+    if (highlightLessonId === null || lessons.length === 0) return;
+
+    const idx = filteredLessons.findIndex((l) => l.id === highlightLessonId);
+    if (idx !== -1) {
+      highlightAnim.stopAnimation();
+      highlightAnim.setValue(0);
+      setHighlightedId(highlightLessonId);
+      
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
+      });
+      
+      Animated.sequence([
+        Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+        Animated.delay(2000),
+        Animated.timing(highlightAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
+      ]).start(() => {
+        setHighlightedId(null);
+        clearHighlight();
+      });
+    }
+  }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
+
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isUpcoming = !item.paid && item.date > todayStr;
-    const borderColor = item.paid ? Colors.paid : isUpcoming ? Colors.primary : Colors.pending;
+    const today = new Date().toISOString().split('T')[0];
+    const endPassed = getEndPassed(item);
+    const isUpcoming = !item.paid && !item.confirmedAt
+      && (item.date > today || (item.date === today && !endPassed));
+    const canConfirm = !item.paid && !item.confirmedAt && endPassed && item.date <= today;
+
+    const borderColor = item.paid ? Colors.paid : canConfirm || isUpcoming ? Colors.primary : Colors.pending;
+    const isHighlighted = item.id === highlightedId;
+
+    const cardBg = isHighlighted
+      ? highlightAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [Colors.card, Colors.primary + '18'],
+        })
+      : Colors.card;
 
     return (
-      <View style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor }]}>
+      <Animated.View
+        style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg }]}
+      >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             {student && <StudentAvatar name={student.name} subject={student.subject} size={40} />}
@@ -149,7 +286,13 @@ const LessonScreen: React.FC = () => {
               <Text style={styles.subject}>{student?.subject || ''}</Text>
             </View>
           </View>
-          <StatusBadge isPaid={item.paid} isUpcoming={isUpcoming} onToggle={() => handleTogglePaid(item)} />
+          {isUpcoming && !canConfirm ? (
+            <StatusBadge isPaid={false} isUpcoming={true} onToggle={() => {}} />
+          ) : canConfirm ? (
+            <StatusBadge isPaid={false} confirmMode={true} onToggle={() => handleConfirmLesson(item)} />
+          ) : (
+            <StatusBadge isPaid={item.paid} isUpcoming={false} onToggle={() => handleTogglePaid(item)} />
+          )}
         </View>
 
         <View style={styles.cardBody}>
@@ -158,8 +301,14 @@ const LessonScreen: React.FC = () => {
               <Ionicons name="calendar-outline" size={15} color={Colors.caption} />
               <Text style={styles.infoText}>{item.date}</Text>
             </View>
+            {item.timeSlot ? (
+              <View style={styles.infoItem}>
+                <Ionicons name="time-outline" size={15} color={Colors.caption} />
+                <Text style={styles.infoText}>{item.timeSlot}</Text>
+              </View>
+            ) : null}
             <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={15} color={Colors.caption} />
+              <Ionicons name="hourglass-outline" size={15} color={Colors.caption} />
               <Text style={styles.infoText}>{item.duration}h</Text>
             </View>
           </View>
@@ -183,7 +332,7 @@ const LessonScreen: React.FC = () => {
             <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -194,6 +343,7 @@ const LessonScreen: React.FC = () => {
         renderItem={renderLesson}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
+        ref={flatListRef}
         ListHeaderComponent={
           <View style={styles.filterRow}>
             {/* Standalone: 待上课 */}
@@ -313,6 +463,15 @@ const LessonScreen: React.FC = () => {
           <Ionicons name="chevron-down" size={16} color={Colors.caption} />
         </TouchableOpacity>
 
+        <Text style={styles.formLabel}>上课时段</Text>
+        <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)} activeOpacity={0.7}>
+          <Ionicons name="time-outline" size={18} color={Colors.primary} />
+          <Text style={[styles.datePickerText, !timeSlot && styles.datePickerPlaceholder]}>
+            {timeSlot || '选择时段'}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color={Colors.caption} />
+        </TouchableOpacity>
+
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
             <Text style={styles.formLabel}>课时（小时）</Text>
@@ -349,6 +508,15 @@ const LessonScreen: React.FC = () => {
         value={date}
         onConfirm={setDate}
         onClose={() => setShowCalendar(false)}
+      />
+
+      <TimeRangePicker
+        visible={showTimePicker}
+        onConfirm={(sh, sm, eh, em) => {
+          const slot = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}-${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+          setTimeSlot(slot);
+        }}
+        onClose={() => setShowTimePicker(false)}
       />
 
       {showStudentPicker && (

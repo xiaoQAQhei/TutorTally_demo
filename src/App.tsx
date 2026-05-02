@@ -7,6 +7,7 @@ import HomeScreen from './screens/HomeScreen';
 import StudentScreen from './screens/StudentScreen';
 import LessonScreen from './screens/LessonScreen';
 import StatsScreen from './screens/StatsScreen';
+import { ActionProvider } from './contexts/ActionContext';
 import { initDatabase } from './database';
 import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
 
@@ -42,7 +43,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <NavigationContainer>
+    <ActionProvider>
+      <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -82,7 +84,8 @@ const App: React.FC = () => {
         <Tab.Screen name="Lessons" component={LessonScreen} options={{ title: '课程记录' }} />
         <Tab.Screen name="Stats" component={StatsScreen} options={{ title: '账单统计' }} />
       </Tab.Navigator>
-    </NavigationContainer>
+      </NavigationContainer>
+    </ActionProvider>
   );
 };
 

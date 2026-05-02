@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(npx expo *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git *)",
+      "Bash(winget install *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then changed=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); git add -A && git commit -m \"auto: $(date '+%m-%d %H:%M') | $changed\"; fi"
+      }
     ]
   }
 }

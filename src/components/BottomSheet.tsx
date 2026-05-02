@@ -13,10 +13,12 @@ interface BottomSheetProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  heightFactor?: number;
+  scrollable?: boolean;
 }
 
-const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, children }) => {
-  const sheetHeight = SCREEN_HEIGHT * 0.82;
+const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, children, heightFactor = 0.82, scrollable = true }) => {
+  const sheetHeight = SCREEN_HEIGHT * heightFactor;
   const translateY = useRef(new Animated.Value(sheetHeight)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
@@ -60,9 +62,13 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, chil
               <Ionicons name="close" size={24} color={Colors.title} />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
-            {children}
-          </ScrollView>
+          {scrollable ? (
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
+              {children}
+            </ScrollView>
+          ) : (
+            <View style={styles.content}>{children}</View>
+          )}
         </Animated.View>
       </View>
     </Modal>

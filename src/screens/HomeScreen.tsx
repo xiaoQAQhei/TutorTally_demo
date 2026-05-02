@@ -7,6 +7,7 @@ import { getAllLessons, getAllStudents } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
+import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
 } from '../styles/theme';
@@ -15,13 +16,14 @@ interface Props {
   navigation: { navigate: (screen: string) => void };
 }
 
-const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: string }[] = [
-  { icon: 'person-add', label: '添加学生', screen: 'Students', color: Colors.paid },
-  { icon: 'book', label: '记录课程', screen: 'Lessons', color: Colors.primary },
-  { icon: 'stats-chart', label: '查看统计', screen: 'Stats', color: Colors.pending },
+const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: string; action: 'addStudent' | 'addLesson' | null }[] = [
+  { icon: 'person-add', label: '添加学生', screen: 'Students', color: Colors.paid, action: 'addStudent' },
+  { icon: 'book', label: '记录课程', screen: 'Lessons', color: Colors.primary, action: 'addLesson' },
+  { icon: 'stats-chart', label: '查看统计', screen: 'Stats', color: Colors.pending, action: null },
 ];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { setPendingAction, setPendingFilter, setHighlightLessonId } = useAction();
   const [recentLessons, setRecentLessons] = useState<Lesson[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
@@ -34,9 +36,26 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const studentsData = await getAllStudents();
     setStudents(studentsData);
     const today = new Date().toISOString().split('T')[0];
-    setRecentLessons(lessons.filter((l) => l.date > today).slice(0, 10));
+    const getEndPassed = (l: Lesson): boolean => {
+      const endTime = l.timeSlot?.split('-')[1]?.trim();
+      if (!endTime) return true;
+      return new Date() >= new Date(`${l.date}T${endTime}:00`);
+    };
 
-    const pending = lessons.filter((l) => !l.paid).reduce((sum, l) => sum + l.amount, 0);
+    setRecentLessons(lessons.filter((l) => {
+      if (l.confirmedAt) return false;
+      if (l.date > today) return true;
+      if (l.date === today) return !getEndPassed(l);
+      return false;
+    }).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10));
+
+    const pending = lessons.filter((l) => {
+      if (l.paid) return false;
+      if (l.confirmedAt) return true;
+      if (l.date < today) return true;
+      if (l.date === today) return getEndPassed(l);
+      return false;
+    }).reduce((sum, l) => sum + l.amount, 0);
     setPendingAmount(pending);
 
     const todayLessons = lessons.filter((l) => l.date === today);
@@ -53,12 +72,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         style={[styles.recentItem, !isLast && styles.recentItemBorder]}
         activeOpacity={0.6}
-        onPress={() => navigation.navigate('Lessons')}
+        onPress={() => {
+          setPendingFilter('upcoming');
+          setHighlightLessonId(item.id);
+          navigation.navigate('Lessons');
+        }}
       >
         <View style={[styles.colorBar, { backgroundColor: Colors.primary }]} />
         <View style={styles.recentLeft}>
-          <Text style={styles.recentName}>{student?.name || '未知学生'}</Text>
+          <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
           <Text style={styles.recentDate}>{item.date}</Text>
+        </View>
+        <View style={styles.recentCenter}>
+          {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
         </View>
         <View style={styles.recentRight}>
           <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
@@ -73,7 +99,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
       <Text style={styles.sectionTitle}>待上课程</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('Lessons')}>
+      <TouchableOpacity onPress={() => {
+        setPendingFilter('upcoming');
+        navigation.navigate('Lessons');
+      }}>
         <Text style={styles.viewAll}>查看全部</Text>
       </TouchableOpacity>
     </View>
@@ -103,7 +132,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <QuickActionButton
               key={item.screen + index}
               item={item}
-              onPress={() => navigation.navigate(item.screen)}
+              onPress={() => {
+                if (item.action) setPendingAction(item.action);
+                navigation.navigate(item.screen);
+              }}
             />
           ))}
         </View>
@@ -135,6 +167,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               label="待收款总额"
               value={`${pendingAmount.toFixed(0)}元`}
               color={Colors.pending}
+              onPress={() => {
+                setPendingFilter('unpaid');
+                navigation.navigate('Lessons');
+              }}
             />
           </View>
           <View style={styles.overviewSmall}>
@@ -213,12 +249,23 @@ const styles = StyleSheet.create({
   },
   recentItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
   colorBar: { width: 4, height: 40, borderRadius: 2, marginRight: Spacing.md },
-  recentLeft: { flex: 1 },
+  recentLeft: { maxWidth: 80 },
   recentName: {
     fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title,
     marginBottom: 2,
   },
   recentDate: { fontSize: FontSize.small, color: Colors.caption },
+  recentCenter: { flex: 1, alignItems: 'center', paddingHorizontal: Spacing.sm },
+  recentTimeSlot: {
+    fontSize: FontSize.h2,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+    backgroundColor: Colors.primaryLight || '#EEF0FF',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   recentRight: { alignItems: 'flex-end' },
   recentAmount: {
     fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,

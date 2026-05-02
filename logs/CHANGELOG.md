@@ -13,6 +13,18 @@
 
 ---
 
+## 2026-05-02
+
+### Claude Code 自动化配置
+- **类型**: feat
+- **描述**:
+  1. 配置 Stop hook，每轮对话结束后自动 `git add -A && git commit`
+  2. 创建 CLAUDE.md，约束 Claude Code 行为（每轮开始汇报改动、每轮结束写日志）
+  3. 日志子 agent：每轮对话结束后自动在 `logs/CHANGELOG.md` 写入人话改动记录
+- **文件**:
+  - `CLAUDE.md` (新增)
+  - `.claude/settings.local.json` (修改，新增 Stop hook + git 权限)
+
 ## 2026-04-30
 
 ### 项目初始化

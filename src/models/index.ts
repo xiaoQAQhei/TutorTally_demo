@@ -12,9 +12,11 @@ export interface Lesson {
   id: number;
   studentId: number;
   date: string;
+  timeSlot: string;
   duration: number;
   amount: number;
   paid: boolean;
+  confirmedAt: string | null;
   notes: string;
   createdAt: string;
 }

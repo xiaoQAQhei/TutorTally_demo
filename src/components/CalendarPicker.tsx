@@ -1,15 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - Spacing.xl * 2;
 const CELL_GAP = Spacing.xs;
-const CELL_SIZE = Math.floor((CARD_WIDTH - Spacing.lg * 2 - CELL_GAP * 6) / 7);
+const MAX_CARD_WIDTH = 400;
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -24,6 +22,10 @@ const formatDate = (y: number, m: number, d: number) =>
   `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
 const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfirm, onClose }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = Math.min(screenWidth - Spacing.xl * 2, MAX_CARD_WIDTH);
+  const cellSize = Math.floor((cardWidth - Spacing.lg * 2 - CELL_GAP * 7) / 7);
+
   const today = new Date();
   const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -69,7 +71,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.card, Shadows.floating]}>
+        <View style={[styles.card, Shadows.floating, { width: cardWidth }]}>
           {/* Month Navigator */}
           <View style={styles.nav}>
             <TouchableOpacity style={styles.navButton} onPress={goToPrevMonth} activeOpacity={0.6}>
@@ -86,7 +88,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
           {/* Weekday Headers */}
           <View style={styles.weekdayRow}>
             {WEEKDAYS.map((d) => (
-              <View key={d} style={styles.weekdayCell}>
+              <View key={d} style={[styles.weekdayCell, { width: cellSize }]}>
                 <Text style={styles.weekdayText}>{d}</Text>
               </View>
             ))}
@@ -96,14 +98,15 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
           {rows.map((row, ri) => (
             <View key={ri} style={styles.gridRow}>
               {row.map((day, ci) => {
-                if (day === null) return <View key={`e-${ci}`} style={styles.dayCell} />;
+                const cellStyle = { width: cellSize, height: cellSize, borderRadius: cellSize / 2 };
+                if (day === null) return <View key={`e-${ci}`} style={[styles.dayCell, cellStyle]} />;
                 const dateStr = formatDate(viewYear, viewMonth, day);
                 const isToday = dateStr === todayStr;
                 const isSelected = day === selectedDay;
                 return (
                   <TouchableOpacity
                     key={day}
-                    style={[styles.dayCell, isSelected && styles.dayCellSelected]}
+                    style={[styles.dayCell, cellStyle, isSelected && styles.dayCellSelected]}
                     onPress={() => setSelectedDay(day)}
                     activeOpacity={0.6}
                   >
@@ -139,7 +142,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   card: {
-    width: CARD_WIDTH,
     backgroundColor: Colors.card,
     borderRadius: BorderRadius.card + 4,
     padding: Spacing.lg,
@@ -156,18 +158,16 @@ const styles = StyleSheet.create({
   navTitle: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
   weekdayRow: { flexDirection: 'row', marginBottom: Spacing.xs },
   weekdayCell: {
-    width: CELL_SIZE, height: 24,
+    height: 24,
     justifyContent: 'center', alignItems: 'center',
     marginHorizontal: CELL_GAP / 2,
   },
   weekdayText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
   gridRow: { flexDirection: 'row' },
   dayCell: {
-    width: CELL_SIZE, height: CELL_SIZE,
     justifyContent: 'center', alignItems: 'center',
     marginHorizontal: CELL_GAP / 2,
     marginVertical: 1,
-    borderRadius: CELL_SIZE / 2,
   },
   dayCellSelected: { backgroundColor: Colors.primary },
   dayText: { fontSize: FontSize.caption, color: Colors.title },

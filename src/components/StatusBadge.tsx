@@ -6,10 +6,11 @@ import { Colors, FontSize, FontWeight, BorderRadius, Spacing } from '../styles/t
 interface StatusBadgeProps {
   isPaid: boolean;
   isUpcoming?: boolean;
+  confirmMode?: boolean;
   onToggle: () => void;
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ isPaid, isUpcoming, onToggle }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ isPaid, isUpcoming, confirmMode, onToggle }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handleToggle = () => {
@@ -20,10 +21,32 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ isPaid, isUpcoming, onToggle 
     onToggle();
   };
 
-  const bgColor = isPaid ? Colors.paidBg : isUpcoming ? Colors.primaryLight : Colors.pendingBg;
-  const textColor = isPaid ? Colors.paid : isUpcoming ? Colors.primary : Colors.pending;
-  const icon = isPaid ? 'checkmark-circle' : isUpcoming ? 'book' : 'time';
-  const label = isPaid ? '已收款' : isUpcoming ? '待上课' : '待收款';
+  let bgColor: string;
+  let textColor: string;
+  let icon: 'checkmark-circle' | 'book' | 'time';
+  let label: string;
+
+  if (confirmMode) {
+    bgColor = '#FEE2E2';
+    textColor = Colors.danger;
+    icon = 'checkmark-circle';
+    label = '确认下课';
+  } else if (isPaid) {
+    bgColor = Colors.paidBg;
+    textColor = Colors.paid;
+    icon = 'checkmark-circle';
+    label = '已收款';
+  } else if (isUpcoming) {
+    bgColor = Colors.primaryLight;
+    textColor = Colors.primary;
+    icon = 'book';
+    label = '待上课';
+  } else {
+    bgColor = Colors.pendingBg;
+    textColor = Colors.pending;
+    icon = 'time';
+    label = '待收款';
+  }
 
   return (
     <TouchableOpacity activeOpacity={0.75} onPress={handleToggle}>

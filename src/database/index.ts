@@ -23,16 +23,37 @@ export const initDatabase = (): Promise<void> => {
       const s3: Student = { id: mockIdCounter++, name: '王五', subject: '物理', hourlyRate: 180, phone: '13800138003', createdAt: '2026-04-03T08:00:00.000Z' };
       mockStudents.push(s1, s2, s3);
 
-      const l1: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-28', duration: 2, amount: 300, paid: true, notes: '导数章节', createdAt: '2026-04-28T10:00:00.000Z' };
-      const l2: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-29', duration: 1.5, amount: 225, paid: false, notes: '', createdAt: '2026-04-29T10:00:00.000Z' };
-      const l3: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-28', duration: 2, amount: 400, paid: true, notes: '阅读理解', createdAt: '2026-04-28T14:00:00.000Z' };
-      const l4: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-30', duration: 1.5, amount: 300, paid: false, notes: '', createdAt: '2026-04-30T14:00:00.000Z' };
-      const l5: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-01', duration: 2, amount: 300, paid: false, notes: '三角函数', createdAt: '2026-04-30T08:00:00.000Z' };
-      const l6: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-02', duration: 1.5, amount: 300, paid: false, notes: '完形填空', createdAt: '2026-04-30T09:00:00.000Z' };
-      const l7: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-03', duration: 2, amount: 360, paid: false, notes: '力学综合', createdAt: '2026-04-30T10:00:00.000Z' };
-      const l8: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-05', duration: 1.5, amount: 225, paid: false, notes: '立体几何', createdAt: '2026-04-30T11:00:00.000Z' };
-      const l9: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-07', duration: 2, amount: 400, paid: false, notes: '', createdAt: '2026-04-30T12:00:00.000Z' };
-      mockLessons.push(l1, l2, l3, l4, l5, l6, l7, l8, l9);
+      const l1: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-28', timeSlot: '14:00-16:00', duration: 2, amount: 300, paid: true, confirmedAt: null, notes: '导数章节', createdAt: '2026-04-28T10:00:00.000Z' };
+      const l2: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-29', timeSlot: '09:00-10:30', duration: 1.5, amount: 225, paid: false, confirmedAt: null, notes: '未收款（日期已过）', createdAt: '2026-04-29T10:00:00.000Z' };
+      const l3: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-28', timeSlot: '10:00-12:00', duration: 2, amount: 400, paid: true, confirmedAt: null, notes: '阅读理解', createdAt: '2026-04-28T14:00:00.000Z' };
+      const l4: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-30', timeSlot: '15:30-17:00', duration: 1.5, amount: 300, paid: false, confirmedAt: null, notes: '未收款（日期已过）', createdAt: '2026-04-30T14:00:00.000Z' };
+      const l5: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-01', timeSlot: '08:00-10:00', duration: 2, amount: 300, paid: false, confirmedAt: '2026-05-01T10:30:00.000Z', notes: '三角函数（已确认下课）', createdAt: '2026-04-30T08:00:00.000Z' };
+      const l6: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-02', timeSlot: '08:00-10:00', duration: 2, amount: 400, paid: false, confirmedAt: null, notes: '今早课程（已下课可确认）', createdAt: '2026-04-30T09:00:00.000Z' };
+      const l7: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-03', timeSlot: '16:00-18:00', duration: 2, amount: 360, paid: false, confirmedAt: null, notes: '力学综合', createdAt: '2026-04-30T10:00:00.000Z' };
+      const l8: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-05', timeSlot: '09:30-11:00', duration: 1.5, amount: 225, paid: false, confirmedAt: null, notes: '立体几何', createdAt: '2026-04-30T11:00:00.000Z' };
+      const l9: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-07', timeSlot: '14:00-16:00', duration: 2, amount: 400, paid: false, confirmedAt: null, notes: '', createdAt: '2026-04-30T12:00:00.000Z' };
+      const l10: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-02', timeSlot: '20:00-22:00', duration: 2, amount: 300, paid: false, confirmedAt: null, notes: '今晚课程（未下课）', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l11: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-15', timeSlot: '14:00-16:00', duration: 2, amount: 300, paid: true, confirmedAt: null, notes: '函数专题', createdAt: '2026-04-15T08:00:00.000Z' };
+      const l12: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-16', timeSlot: '10:00-11:30', duration: 1.5, amount: 300, paid: true, confirmedAt: null, notes: '语法专项', createdAt: '2026-04-16T08:00:00.000Z' };
+      const l13: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-04-18', timeSlot: '09:00-11:00', duration: 2, amount: 360, paid: true, confirmedAt: null, notes: '电学', createdAt: '2026-04-18T08:00:00.000Z' };
+      const l14: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-20', timeSlot: '15:00-17:00', duration: 2, amount: 300, paid: true, confirmedAt: null, notes: '概率统计', createdAt: '2026-04-20T08:00:00.000Z' };
+      const l15: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-22', timeSlot: '08:30-10:00', duration: 1.5, amount: 300, paid: true, confirmedAt: null, notes: '写作练习', createdAt: '2026-04-22T08:00:00.000Z' };
+      const l16: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-04-25', timeSlot: '14:00-16:00', duration: 2, amount: 360, paid: false, confirmedAt: null, notes: '光学', createdAt: '2026-04-25T08:00:00.000Z' };
+      const l17: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-04-27', timeSlot: '10:00-12:00', duration: 2, amount: 300, paid: false, confirmedAt: null, notes: '数列求和', createdAt: '2026-04-27T08:00:00.000Z' };
+      const l18: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-04-28', timeSlot: '14:00-15:30', duration: 1.5, amount: 300, paid: false, confirmedAt: null, notes: '完形填空', createdAt: '2026-04-28T08:00:00.000Z' };
+      const l19: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-04-30', timeSlot: '09:00-11:00', duration: 2, amount: 360, paid: false, confirmedAt: '2026-04-30T11:30:00.000Z', notes: '热学', createdAt: '2026-04-30T08:00:00.000Z' };
+      const l20: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-01', timeSlot: '08:00-10:00', duration: 2, amount: 300, paid: false, confirmedAt: '2026-05-01T10:30:00.000Z', notes: '解析几何', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l21: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-01', timeSlot: '15:00-17:00', duration: 2, amount: 400, paid: false, confirmedAt: '2026-05-01T17:30:00.000Z', notes: '听力训练', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l22: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-03', timeSlot: '09:00-11:00', duration: 2, amount: 300, paid: false, confirmedAt: null, notes: '向量运算', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l23: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-04', timeSlot: '14:00-16:00', duration: 2, amount: 400, paid: false, confirmedAt: null, notes: '口语练习', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l24: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-06', timeSlot: '16:00-18:00', duration: 2, amount: 360, paid: false, confirmedAt: null, notes: '电磁感应', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l25: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-08', timeSlot: '10:00-12:00', duration: 2, amount: 300, paid: false, confirmedAt: null, notes: '导数应用', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l26: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-10', timeSlot: '08:00-10:00', duration: 2, amount: 400, paid: false, confirmedAt: null, notes: '阅读理解', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l27: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-12', timeSlot: '15:00-17:00', duration: 2, amount: 360, paid: false, confirmedAt: null, notes: '原子物理', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l28: Lesson = { id: mockIdCounter++, studentId: s1.id, date: '2026-05-15', timeSlot: '09:30-11:00', duration: 1.5, amount: 225, paid: false, confirmedAt: null, notes: '综合复习', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l29: Lesson = { id: mockIdCounter++, studentId: s2.id, date: '2026-05-18', timeSlot: '14:00-16:00', duration: 2, amount: 400, paid: false, confirmedAt: null, notes: '模拟测试', createdAt: '2026-05-01T08:00:00.000Z' };
+      const l30: Lesson = { id: mockIdCounter++, studentId: s3.id, date: '2026-05-20', timeSlot: '10:00-12:00', duration: 2, amount: 360, paid: false, confirmedAt: null, notes: '实验专题', createdAt: '2026-05-01T08:00:00.000Z' };
+      mockLessons.push(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30);
     }
     return Promise.resolve();
   }
@@ -55,9 +76,11 @@ export const initDatabase = (): Promise<void> => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             studentId INTEGER NOT NULL,
             date TEXT NOT NULL,
+            timeSlot TEXT NOT NULL DEFAULT '',
             duration REAL NOT NULL,
             amount REAL NOT NULL,
             paid INTEGER NOT NULL DEFAULT 0,
+            confirmedAt TEXT,
             notes TEXT,
             createdAt TEXT NOT NULL,
             FOREIGN KEY (studentId) REFERENCES students(id)
@@ -74,6 +97,9 @@ export const initDatabase = (): Promise<void> => {
             FOREIGN KEY (lessonId) REFERENCES lessons(id)
           )`
         );
+        // Migration: add confirmedAt and timeSlot columns for existing databases
+        tx.executeSql('ALTER TABLE lessons ADD COLUMN confirmedAt TEXT');
+        tx.executeSql('ALTER TABLE lessons ADD COLUMN timeSlot TEXT NOT NULL DEFAULT \'\'');
       },
       (error: any) => {
         reject(error);
@@ -223,8 +249,8 @@ export const addLesson = (lesson: Omit<Lesson, 'id'>): Promise<number> => {
     db.transaction(
       (tx: any) => {
         tx.executeSql(
-          'INSERT INTO lessons (studentId, date, duration, amount, paid, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [lesson.studentId, lesson.date, lesson.duration, lesson.amount, lesson.paid ? 1 : 0, lesson.notes, lesson.createdAt],
+          'INSERT INTO lessons (studentId, date, timeSlot, duration, amount, paid, confirmedAt, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [lesson.studentId, lesson.date, lesson.timeSlot, lesson.duration, lesson.amount, lesson.paid ? 1 : 0, lesson.confirmedAt ?? null, lesson.notes, lesson.createdAt],
           (_: any, result: any) => {
             resolve(result.insertId);
           }
@@ -300,8 +326,8 @@ export const updateLesson = (lesson: Lesson): Promise<void> => {
     db.transaction(
       (tx: any) => {
         tx.executeSql(
-          'UPDATE lessons SET date = ?, duration = ?, amount = ?, paid = ?, notes = ? WHERE id = ?',
-          [lesson.date, lesson.duration, lesson.amount, lesson.paid ? 1 : 0, lesson.notes, lesson.id],
+          'UPDATE lessons SET date = ?, timeSlot = ?, duration = ?, amount = ?, paid = ?, confirmedAt = ?, notes = ? WHERE id = ?',
+          [lesson.date, lesson.timeSlot, lesson.duration, lesson.amount, lesson.paid ? 1 : 0, lesson.confirmedAt ?? null, lesson.notes, lesson.id],
           () => {
             resolve();
           }
@@ -358,6 +384,27 @@ export const toggleLessonPaid = (id: number, paid: boolean): Promise<void> => {
       (error: any) => {
         reject(error);
       }
+    );
+  });
+};
+
+export const confirmLesson = (id: number): Promise<void> => {
+  const now = new Date().toISOString();
+  if (useMock) {
+    const lesson = mockLessons.find((l) => l.id === id);
+    if (lesson) lesson.confirmedAt = now;
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx: any) => {
+        tx.executeSql(
+          'UPDATE lessons SET confirmedAt = ? WHERE id = ?',
+          [now, id],
+          () => { resolve(); }
+        );
+      },
+      (error: any) => { reject(error); }
     );
   });
 };
