@@ -1,19 +1,16 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-gifted-charts';
 import { StudentStats, Student, Lesson } from '../models';
 import { getAllStudents, getLessonsByStudentId, getAllLessons } from '../database';
-import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import StudentBillingDetailScreen from './StudentBillingDetailScreen';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
   getSubjectColor,
 } from '../styles/theme';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -188,48 +185,58 @@ const StatsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Stats grid 2x2 */}
-        <View style={styles.statsGrid}>
-          <View style={styles.gridItem}>
-            <StatCard icon="people" label="学生数" value={monthTotalStats.students} color={Colors.primary} />
+        {/* Compact stats bar */}
+        <View style={[styles.statsBar, Shadows.subtle]}>
+          <View style={styles.statsBarItem}>
+            <Text style={styles.statsBarValue}>{monthTotalStats.students}</Text>
+            <Text style={styles.statsBarLabel}>学生</Text>
           </View>
-          <View style={styles.gridItem}>
-            <StatCard icon="book" label="课时" value={`${monthTotalStats.lessons}节`} color={Colors.subjectEnglish} />
+          <View style={styles.statsBarDivider} />
+          <View style={styles.statsBarItem}>
+            <Text style={styles.statsBarValue}>{monthTotalStats.lessons}节</Text>
+            <Text style={styles.statsBarLabel}>课时</Text>
           </View>
-          <View style={styles.gridItem}>
-            <StatCard icon="time" label="时长" value={`${monthTotalStats.hours.toFixed(1)}h`} color={Colors.pending} />
+          <View style={styles.statsBarDivider} />
+          <View style={styles.statsBarItem}>
+            <Text style={styles.statsBarValue}>{monthTotalStats.hours.toFixed(1)}h</Text>
+            <Text style={styles.statsBarLabel}>时长</Text>
           </View>
-          <View style={styles.gridItem}>
-            <StatCard icon="wallet" label="收入" value={`${monthTotalStats.amount.toFixed(0)}元`} color={Colors.paid} />
+          <View style={styles.statsBarDivider} />
+          <View style={styles.statsBarItem}>
+            <Text style={[styles.statsBarValue, { color: Colors.paid }]}>¥{monthTotalStats.amount.toFixed(0)}</Text>
+            <Text style={styles.statsBarLabel}>收入</Text>
           </View>
         </View>
 
         {/* Bar Chart */}
         <View style={[styles.chartCard, Shadows.standard]}>
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
-          <BarChart
-            data={chartData.map((d) => ({
-              value: d.value,
-              label: d.label,
-              frontColor: d.value > 0 ? Colors.primary : Colors.divider,
-              topLabelComponent: d.value > 0 ? () => (
-                <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
-              ) : undefined,
-            }))}
-            barWidth={28}
-            height={130}
-            maxValue={chartMax}
-            stepValue={chartStep}
-            noOfSections={noOfSections}
-            yAxisThickness={0}
-            xAxisThickness={0}
-            isAnimated
-            spacing={Math.max((SCREEN_WIDTH - Spacing.xl * 2 - 28 * 6) / 7, 8)}
-            barBorderRadius={6}
-            hideRules
-            yAxisTextStyle={{ fontSize: 10, color: Colors.caption }}
-            xAxisLabelTextStyle={{ fontSize: 12, color: Colors.caption, fontWeight: '500' }}
-          />
+          <View style={styles.chartWrap}>
+            <BarChart
+              data={chartData.map((d) => ({
+                value: d.value,
+                label: d.label,
+                frontColor: d.value > 0 ? Colors.primary : Colors.divider,
+                topLabelComponent: d.value > 0 ? () => (
+                  <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
+                ) : undefined,
+              }))}
+              barWidth={20}
+              height={120}
+              maxValue={chartMax}
+              stepValue={chartStep}
+              noOfSections={noOfSections}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              isAnimated
+              spacing={14}
+              barBorderRadius={4}
+              hideRules
+              yAxisTextStyle={{ fontSize: 9, color: Colors.caption }}
+              xAxisLabelTextStyle={{ fontSize: 11, color: Colors.caption, fontWeight: '500' }}
+              initialSpacing={8}
+            />
+          </View>
         </View>
 
         {/* Monthly payment overview */}
@@ -341,19 +348,32 @@ const styles = StyleSheet.create({
     minWidth: 120, textAlign: 'center',
   },
 
-  // Stats grid
-  statsGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
-  gridItem: { flex: 1 },
+  // Compact stats bar
+  statsBar: {
+    flexDirection: 'row', alignItems: 'stretch',
+    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+    paddingVertical: Spacing.md, marginBottom: Spacing.xl,
+  },
+  statsBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
+  statsBarValue: {
+    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
+    marginBottom: 2,
+  },
+  statsBarLabel: { fontSize: FontSize.small, color: Colors.caption },
+  statsBarDivider: {
+    width: 1, height: 28, backgroundColor: Colors.divider, alignSelf: 'center',
+  },
 
   // Chart
   chartCard: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
-    padding: Spacing.xl, marginBottom: Spacing.xl,
+    padding: Spacing.lg, marginBottom: Spacing.xl,
   },
   chartTitle: {
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
+  chartWrap: { overflow: 'hidden' },
   barTopLabel: {
     fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.primary,
     marginBottom: 2,
