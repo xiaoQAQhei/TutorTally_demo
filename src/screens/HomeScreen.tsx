@@ -54,7 +54,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         confirmable.push({ ...l, category: 'confirmable' });
       }
     }
-    confirmable.sort((a, b) => b.date.localeCompare(a.date));
+    confirmable.sort((a, b) => a.date.localeCompare(b.date));
     upcoming.sort((a, b) => a.date.localeCompare(b.date));
     setRecentLessons([...confirmable, ...upcoming].slice(0, 30));
 
