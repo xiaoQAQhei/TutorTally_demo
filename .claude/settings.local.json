@@ -4,13 +4,24 @@
       "Bash(npx expo *)",
       "Bash(npx tsc *)",
       "Bash(git *)",
-      "Bash(winget install *)"
+      "Bash(winget install *)",
+      "Bash(gh auth *)",
+      "Bash(C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe auth *)",
+      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth status)",
+      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth list)",
+      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth status -h)",
+      "Bash(C:/Program Files/GitHub CLI/gh auth *)",
+      "Bash(timeout 15 \"C:/Program Files/GitHub CLI/gh\" auth status)",
+      "Bash(git push *)",
+      "Bash('C:/Program Files/GitHub CLI/gh' pr create --title '现代化 UI 改造：课程管理 + 时段选择 + 时间选择器' --body ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   },
   "hooks": {
     "Stop": [
       {
-        "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then changed=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); git add -A && git commit -m \"auto: $(date '+%m-%d %H:%M') | $changed\"; fi"
+        "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then files=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); ts=$(date '+%Y-%m-%d %H:%M'); msg=\"auto: $(date '+%m-%d %H:%M') | $files\"; entry=\"## $ts | $msg\\n$(printf '%s\\n' $files | sed 's/^/- /')\\n\"; if [ -f logs/CHANGELOG.md ]; then (head -1 logs/CHANGELOG.md; printf '%b\\n' \"$entry\"; tail -n +2 logs/CHANGELOG.md) > logs/.cl_tmp && mv logs/.cl_tmp logs/CHANGELOG.md; fi; git add -A && git commit -m \"$msg\" && git push; fi"
       }
     ]
   }
