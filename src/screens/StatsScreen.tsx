@@ -14,9 +14,11 @@ import {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
-const CHART_BAR_W = Math.floor(CHART_AVAIL / 18);
-const CHART_SPACING = Math.floor((CHART_AVAIL - CHART_BAR_W * 7) / 5);
-const CHART_INITIAL = Math.floor((CHART_AVAIL - CHART_BAR_W * 6 - CHART_SPACING * 5) / 2);
+const CHART_LABEL = 14;
+const CHART_INNER = CHART_AVAIL - CHART_LABEL * 2;
+const CHART_BAR_W = Math.floor(CHART_INNER / 13);
+const CHART_SPACING = Math.floor((CHART_INNER - CHART_BAR_W * 6) / 5);
+const CHART_INITIAL = CHART_LABEL;
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
