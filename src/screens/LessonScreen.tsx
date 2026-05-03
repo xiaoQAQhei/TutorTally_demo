@@ -210,7 +210,7 @@ const LessonScreen: React.FC = () => {
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     setDate(tomorrow);
     setTimeSlot('');
-    setDuration('');
+    setDuration('2');
     setLessonRate(firstStudent?.hourlyRate?.toString() || '75');
     setNotes('');
     setModalVisible(true);
@@ -351,6 +351,8 @@ const LessonScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
         ref={flatListRef}
+        initialNumToRender={filteredLessons.length}
+        windowSize={50}
         getItemLayout={(_, index) => {
           const h = itemHeightRef.current;
           return { length: h, offset: h * index, index };
