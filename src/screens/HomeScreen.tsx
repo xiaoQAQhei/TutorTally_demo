@@ -44,7 +44,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     setRecentLessons(lessons.filter((l) => {
       if (l.confirmedAt) return false;
-      if (l.date > today) return true;
       if (l.date === today) return !getEndPassed(l);
       return false;
     }).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10));
@@ -98,7 +97,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>待上课程</Text>
+      <Text style={styles.sectionTitle}>今日待上课程</Text>
       <TouchableOpacity onPress={() => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
