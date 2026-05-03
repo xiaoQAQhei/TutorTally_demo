@@ -314,13 +314,13 @@ const LessonScreen: React.FC = () => {
             </View>
             {item.timeSlot ? (
               <View style={styles.timeSlotBadge}>
-                <Ionicons name="time-outline" size={16} color={Colors.primary} />
+                <Ionicons name="time-outline" size={25} color={Colors.primary} />
                 <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
               </View>
             ) : null}
           </View>
           <View style={styles.amountRow}>
-            <Ionicons name="wallet-outline" size={15} color={Colors.caption} />
+            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
             <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
           </View>
           {item.notes ? (
