@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-gifted-charts';
@@ -11,6 +11,11 @@ import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
   getSubjectColor,
 } from '../styles/theme';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
+const CHART_BAR_W = Math.round(CHART_AVAIL / 15);
+const CHART_SPACING = Math.floor((CHART_AVAIL - 6 * CHART_BAR_W) / 7);
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -221,7 +226,7 @@ const StatsScreen: React.FC = () => {
                   <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
                 ) : undefined,
               }))}
-              barWidth={20}
+              barWidth={CHART_BAR_W}
               height={120}
               maxValue={chartMax}
               stepValue={chartStep}
@@ -229,7 +234,7 @@ const StatsScreen: React.FC = () => {
               yAxisThickness={0}
               xAxisThickness={0}
               isAnimated
-              spacing={14}
+              spacing={CHART_SPACING}
               barBorderRadius={4}
               hideRules
               yAxisTextStyle={{ fontSize: 9, color: Colors.caption }}
