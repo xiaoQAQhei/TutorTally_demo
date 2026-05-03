@@ -48,6 +48,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const confirmable: LessonItem[] = [];
     for (const l of lessons) {
       if (l.confirmedAt) continue;
+      if (l.date !== today) continue;
       if (l.date > today || (l.date === today && !getEndPassed(l))) {
         upcoming.push({ ...l, category: 'upcoming' });
       } else {
@@ -138,7 +139,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>待上课程</Text>
+      <Text style={styles.sectionTitle}>今日待上课</Text>
       <TouchableOpacity onPress={() => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
