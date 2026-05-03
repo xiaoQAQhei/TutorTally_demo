@@ -5,28 +5,24 @@
 
 ## 当前状态
 
-**分支**：`modern-ui-redesign`（已推送，PR #1 已创建）
+**分支**：`better`
 **编译**：`npx tsc --noEmit` 零错误
 **自动化**：Stop hook 已配置（changelog 写入 + commit + push + PR 自动更新）
 
 ## 待完成
 
 ### Bug 修复
-- [x] TimeRangePicker 滚动吸附仍不稳定
 - [ ] TimeRangePicker 顶部横线拖拽交互
 
 ### 功能待开发
-- [ ] **HomeScreen 待上课卡片加"确认下课"按钮**
-- [ ] **账单详细板块**（StatsScreen 扩展 / 独立页面：按月筛选、图表、收款明细）
-- [x] **课程记录 session 限制最多 10 个 card**（分页或虚拟列表）
+- [ ] 点击待付款后，是选择弹窗再次确认还是加一个变成打勾的圆再消失的动画？
 - [ ] 添加课程："每周如此"批量建日程选项（优先级低）
 
 ### 下次计划
 
-1. 首页待上课部分加"确认下课"按键
-2. 处理账单详细板块
-3. 课程记录列表限制 10 条 / 分页
-4. 加"每周如此"批量建日程（不急，放后面）
+1. TimeRangePicker 顶部横线拖拽交互
+2. 点击待付款确认方式（弹窗 vs 打勾动画）
+3. "每周如此"批量建日程（低优先级）
 
 ## 已完成功能
 
@@ -47,7 +43,7 @@
 #### HomeScreen（首页）
 - [x] 问候语 + 日期 + 刷新按钮
 - [x] 3 个快捷操作按钮（添加学生/记录课程/查看统计）
-- [x] 待上课程 FlatList
+- [x] 待上课程改为仅显示今日待上课
 - [x] 底部统计卡片：待收款总额 + 今日课程总额
 - [x] 待上课卡片点击 → 跳转 LessonScreen 对应标签 + 高亮定位
 
@@ -60,12 +56,15 @@
 - [x] CalendarPicker 日期选择器（响应式适配）
 - [x] TimeRangePicker 时间段滚动选择器（时/分四列、底部弹出动画、预览栏）
 - [x] 表单必填校验、点击 StatusBadge 切换收付状态
+- [x] 时间段醒目显示
 
 #### StatsScreen（账单统计）
-- [x] 4 个全局统计卡片
-- [x] 本月收款概览
-- [x] 学生账单汇总表格
-- [x] 点击学生行 → 全屏 Modal 详情页
+- [x] 月份选择器（◀ 月份 ▶ 切换）
+- [x] 紧凑行内统计条（学生/课时/时长/收入）
+- [x] 近6月收入柱状图（react-native-gifted-charts，自适应宽度，Y轴隐藏）
+- [x] 月度收款概览进度条
+- [x] 学生账单卡片（彩色圆点 + 学科标签 + 合计/已收/待收）
+- [x] 点击学生行 → StudentBillingDetailScreen Modal
 
 #### StudentBillingDetailScreen（学生账单详情）
 - [x] 全屏 Modal + 自定义 Header
@@ -75,6 +74,7 @@
 - [x] Stop hook：changelog 写入 + git add/commit/push + PR 自动更新
 - [x] GitHub CLI 安装 + PR #1 创建
 - [x] CLAUDE.md 行为规则（汇报改动、收工写进度）
+- [x] 权限配置（settings.json：git/npx/gh 直接放行）
 
 ## 已知问题
 

@@ -1,23 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npx expo *)",
-      "Bash(npx tsc *)",
-      "Bash(git *)",
-      "Bash(winget install *)",
-      "Bash(gh auth *)",
-      "Bash(C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe auth *)",
-      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth status)",
-      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth list)",
-      "Bash(\"C:/Program Files/GitHub CLI/gh\" auth status -h)",
-      "Bash(C:/Program Files/GitHub CLI/gh auth *)",
-      "Bash(timeout 15 \"C:/Program Files/GitHub CLI/gh\" auth status)",
-      "Bash(git push *)",
-      "Bash('C:/Program Files/GitHub CLI/gh' pr create --title '现代化 UI 改造：课程管理 + 时段选择 + 时间选择器' --body ' *)",
-      "Bash(git add *)",
-      "Bash(git commit -m ' *)"
-    ]
-  },
   "hooks": {
     "Stop": [
       {

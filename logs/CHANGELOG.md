@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-05-03 23:34 StatsScreen 图表自适应 + 月份切换修复
+
+### 图表宽度 useWindowDimensions 自适应 + key 修复换月份渲染
+- **类型**: fix, style
+- **描述**:
+  1. 统计图表宽度改用 `useWindowDimensions` 自适应，替换硬编码的 `Dimensions.get('window')`，旋转屏幕/窗口变化时正确重渲染
+  2. 饼图和柱状图组件添加 `key` 属性绑定月份，修复切换月份时图表数据不更新的问题
+- **文件**:
+  - `src/screens/StatsScreen.tsx`
+
+## 2026-05-03 21:31 时间段醒目优化
+
+### LessonScreen 默认时长 + FlatList 渲染优化
+- **类型**: feat, perf
+- **描述**:
+  1. 新增课程弹窗默认时长设为 2 小时，减少手动输入
+  2. FlatList 添加 initialNumToRender 和 windowSize 参数，优化列表渲染性能，减少滚动空白
+- **文件**:
+  - `src/screens/LessonScreen.tsx`
+
 ## 2026-05-03 确认下课体验 + 列表性能优化
 
 ### HomeScreen 确认下课快捷操作
