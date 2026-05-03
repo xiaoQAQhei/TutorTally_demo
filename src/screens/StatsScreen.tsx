@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { StudentStats, Student } from '../models';
-import { getAllStudents, getLessonsByStudentId } from '../database';
+import { BarChart } from 'react-native-gifted-charts';
+import { StudentStats, Student, Lesson } from '../models';
+import { getAllStudents, getLessonsByStudentId, getAllLessons } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import StudentBillingDetailScreen from './StudentBillingDetailScreen';
@@ -12,7 +13,16 @@ import {
   getSubjectColor,
 } from '../styles/theme';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const MONTH_NAMES: Record<string, string> = {
+  '01': '1月', '02': '2月', '03': '3月', '04': '4月',
+  '05': '5月', '06': '6月', '07': '7月', '08': '8月',
+  '09': '9月', '10': '10月', '11': '11月', '12': '12月',
+};
+
 const StatsScreen: React.FC = () => {
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [stats, setStats] = useState<StudentStats[]>([]);
   const [totalStats, setTotalStats] = useState({
     totalStudents: 0, totalLessons: 0, totalHours: 0,
@@ -20,35 +30,37 @@ const StatsScreen: React.FC = () => {
   });
   const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 });
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
 
   useFocusEffect(useCallback(() => { loadStats(); }, []));
 
   const loadStats = async () => {
     const students = await getAllStudents();
+    const lessons = await getAllLessons();
+    setAllLessons(lessons);
+
     const studentStats: StudentStats[] = [];
     let totalLessons = 0, totalHours = 0, totalAmount = 0, paidAmount = 0;
     let monthPaid = 0, monthPending = 0;
-    const thisMonth = new Date().toISOString().substring(0, 7);
 
     for (const student of students) {
-      const lessons = await getLessonsByStudentId(student.id);
-      const sHours = lessons.reduce((sum, l) => sum + l.duration, 0);
-      const sAmount = lessons.reduce((sum, l) => sum + l.amount, 0);
-      const sPaid = lessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
+      const sLessons = await getLessonsByStudentId(student.id);
+      const sHours = sLessons.reduce((sum, l) => sum + l.duration, 0);
+      const sAmount = sLessons.reduce((sum, l) => sum + l.amount, 0);
+      const sPaid = sLessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
 
       studentStats.push({
-        student, totalLessons: lessons.length, totalHours: sHours,
+        student, totalLessons: sLessons.length, totalHours: sHours,
         totalAmount: sAmount, paidAmount: sPaid,
         pendingAmount: sAmount - sPaid,
       });
 
-      totalLessons += lessons.length;
+      totalLessons += sLessons.length;
       totalHours += sHours;
       totalAmount += sAmount;
       paidAmount += sPaid;
 
-      // Monthly calculation
-      lessons.filter((l) => l.date.startsWith(thisMonth)).forEach((l) => {
+      sLessons.filter((l) => l.date.startsWith(selectedMonth)).forEach((l) => {
         if (l.paid) monthPaid += l.amount;
         else monthPending += l.amount;
       });
@@ -62,12 +74,69 @@ const StatsScreen: React.FC = () => {
     setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
   };
 
-  const paidRatio = totalStats.totalAmount > 0
-    ? (totalStats.paidAmount / totalStats.totalAmount) * 100
-    : 0;
-  const monthRatio = monthStats.total > 0
-    ? (monthStats.paid / monthStats.total) * 100
-    : 0;
+  const monthFilteredStats = useMemo(() => {
+    return stats.map((s) => {
+      const mLessons = allLessons.filter(
+        (l) => l.studentId === s.student.id && l.date.startsWith(selectedMonth)
+      );
+      const mAmount = mLessons.reduce((sum, l) => sum + l.amount, 0);
+      const mPaid = mLessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
+      return {
+        ...s,
+        totalLessons: mLessons.length,
+        totalHours: mLessons.reduce((sum, l) => sum + l.duration, 0),
+        totalAmount: mAmount,
+        paidAmount: mPaid,
+        pendingAmount: mAmount - mPaid,
+      };
+    });
+  }, [stats, allLessons, selectedMonth]);
+
+  const chartData = useMemo(() => {
+    const months: { label: string; value: number }[] = [];
+    const [year, m] = selectedMonth.split('-').map(Number);
+    for (let i = 5; i >= 0; i--) {
+      let mon = m - i;
+      let yr = year;
+      if (mon <= 0) { mon += 12; yr -= 1; }
+      const key = `${yr}-${String(mon).padStart(2, '0')}`;
+      const income = allLessons
+        .filter((l) => l.date.startsWith(key) && l.paid)
+        .reduce((sum, l) => sum + l.amount, 0);
+      months.push({ label: `${mon}月`, value: income });
+    }
+    return months;
+  }, [allLessons, selectedMonth]);
+
+  const monthRatio = monthStats.total > 0 ? (monthStats.paid / monthStats.total) * 100 : 0;
+  const maxBarValue = Math.max(...chartData.map((d) => d.value), 1);
+
+  const changeMonth = (delta: number) => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    let newMonth = m + delta;
+    let newYear = y;
+    if (newMonth > 12) { newMonth = 1; newYear += 1; }
+    if (newMonth < 1) { newMonth = 12; newYear -= 1; }
+    const next = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+    setSelectedMonth(next);
+    setMonthStats({ paid: 0, pending: 0, total: 0 });
+    loadFilteredMonth(next);
+  };
+
+  const loadFilteredMonth = async (month: string) => {
+    const lessons = allLessons;
+    let monthPaid = 0, monthPending = 0;
+    lessons.filter((l) => l.date.startsWith(month)).forEach((l) => {
+      if (l.paid) monthPaid += l.amount;
+      else monthPending += l.amount;
+    });
+    setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
+  };
+
+  const formatSelectedMonth = () => {
+    const [y, m] = selectedMonth.split('-');
+    return `${y}年${MONTH_NAMES[m]}`;
+  };
 
   if (stats.length === 0) {
     return (
@@ -84,6 +153,17 @@ const StatsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Month Selector */}
+        <View style={styles.monthSelector}>
+          <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthArrow}>
+            <Ionicons name="chevron-back" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.monthLabel}>{formatSelectedMonth()}</Text>
+          <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthArrow}>
+            <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
+
         {/* Stats grid 2x2 */}
         <View style={styles.statsGrid}>
           <View style={styles.gridItem}>
@@ -100,6 +180,33 @@ const StatsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Bar Chart */}
+        <View style={[styles.chartCard, Shadows.standard]}>
+          <Text style={styles.chartTitle}>近6月收入趋势</Text>
+          <BarChart
+            data={chartData.map((d) => ({
+              value: d.value,
+              label: d.label,
+              frontColor: d.value > 0 ? Colors.primary : Colors.divider,
+              topLabelComponent: d.value > 0 ? () => (
+                <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
+              ) : undefined,
+            }))}
+            barWidth={32}
+            height={140}
+            maxValue={maxBarValue * 1.25}
+            noOfSections={4}
+            yAxisThickness={0}
+            xAxisThickness={0}
+            isAnimated
+            spacing={(SCREEN_WIDTH - Spacing.xl * 4 - 16) / 7}
+            barBorderRadius={6}
+            hideRules
+            yAxisTextStyle={{ fontSize: 10, color: Colors.caption }}
+            xAxisLabelTextStyle={{ fontSize: 12, color: Colors.caption, fontWeight: '500' }}
+          />
+        </View>
+
         {/* Monthly payment overview */}
         <View style={[styles.overviewCard, Shadows.standard]}>
           <Text style={styles.overviewTitle}>收款概览 · 本月</Text>
@@ -108,66 +215,77 @@ const StatsScreen: React.FC = () => {
           </View>
           <View style={styles.overviewRow}>
             <View style={styles.overviewItem}>
+              <Text style={styles.overviewValue}>{monthRatio.toFixed(0)}%</Text>
+              <Text style={styles.overviewLabel}>已收比例</Text>
+            </View>
+            <View style={styles.overviewDivider} />
+            <View style={styles.overviewItem}>
               <Text style={styles.overviewLabel}>本月已收</Text>
-              <Text style={[styles.overviewValue, { color: Colors.paid }]}>
+              <Text style={[styles.overviewDetail, { color: Colors.paid }]}>
                 {monthStats.paid.toFixed(0)}元
               </Text>
             </View>
             <View style={styles.overviewDivider} />
             <View style={styles.overviewItem}>
               <Text style={styles.overviewLabel}>本月待收</Text>
-              <Text style={[styles.overviewValue, { color: Colors.pending }]}>
+              <Text style={[styles.overviewDetail, { color: Colors.pending }]}>
                 {monthStats.pending.toFixed(0)}元
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Student table */}
-        <View style={[styles.tableCard, Shadows.standard]}>
-          <Text style={styles.tableTitle}>学生账单汇总</Text>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.th, styles.cellName]}>学生</Text>
-            <Text style={styles.th}>课时</Text>
-            <Text style={styles.th}>时长</Text>
-            <Text style={styles.th}>合计</Text>
-            <Text style={styles.th}>已交</Text>
-            <Text style={styles.th}>待交</Text>
-          </View>
-          {stats.map((item, index) => {
-            const subColor = getSubjectColor(item.student.subject);
-            const isPending = item.pendingAmount > 0;
-            return (
-              <TouchableOpacity
-                key={item.student.id}
-                activeOpacity={0.6}
-                onPress={() => setSelectedStudent(item.student)}
-                style={[
-                  styles.tableRow,
-                  index % 2 === 0 && styles.tableRowZebra,
-                  isPending && styles.tableRowPending,
-                ]}
-              >
-                <View style={[styles.td, styles.cellName]}>
-                  <View style={styles.cellNameRow}>
-                    <View style={[styles.miniDot, { backgroundColor: subColor }]} />
-                    <View>
-                      <Text style={styles.cellNameText}>{item.student.name}</Text>
-                      <Text style={styles.cellSubText}>{item.student.subject}</Text>
-                    </View>
+        {/* Student billing cards */}
+        <Text style={styles.sectionTitle}>学生账单</Text>
+        {monthFilteredStats.map((item, index) => {
+          const subColor = getSubjectColor(item.student.subject);
+          const hasPending = item.pendingAmount > 0;
+          return (
+            <TouchableOpacity
+              key={item.student.id}
+              activeOpacity={0.6}
+              onPress={() => setSelectedStudent(item.student)}
+              style={[styles.studentCard, Shadows.subtle, index === monthFilteredStats.length - 1 && styles.studentCardLast]}
+            >
+              <View style={styles.studentHeader}>
+                <View style={styles.studentInfo}>
+                  <View style={[styles.studentDot, { backgroundColor: subColor }]} />
+                  <View>
+                    <Text style={styles.studentName}>{item.student.name}</Text>
+                    <Text style={styles.studentSubject}>{item.student.subject} · {item.student.hourlyRate}元/h</Text>
                   </View>
                 </View>
-                <Text style={[styles.td, styles.cellVal]}>{item.totalLessons}节</Text>
-                <Text style={[styles.td, styles.cellVal]}>{item.totalHours.toFixed(1)}h</Text>
-                <Text style={[styles.td, styles.cellVal]}>{item.totalAmount.toFixed(0)}元</Text>
-                <Text style={[styles.td, styles.cellGreen]}>{item.paidAmount.toFixed(0)}元</Text>
-                <Text style={[styles.td, isPending ? styles.cellRed : styles.cellZero]}>
-                  {item.pendingAmount.toFixed(0)}元
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                {hasPending && (
+                  <View style={styles.pendingTag}>
+                    <Text style={styles.pendingTagText}>有待收</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.studentStats}>
+                <Text style={styles.studentStatText}>{item.totalLessons}节 · {item.totalHours.toFixed(1)}h</Text>
+              </View>
+              <View style={styles.studentAmounts}>
+                <View style={styles.amountCol}>
+                  <Text style={styles.amountColLabel}>合计</Text>
+                  <Text style={styles.amountColValue}>{item.totalAmount.toFixed(0)}元</Text>
+                </View>
+                <View style={styles.amountCol}>
+                  <Text style={styles.amountColLabel}>已收</Text>
+                  <Text style={[styles.amountColValue, { color: Colors.paid }]}>{item.paidAmount.toFixed(0)}元</Text>
+                </View>
+                <View style={styles.amountCol}>
+                  <Text style={styles.amountColLabel}>待收</Text>
+                  <Text style={[styles.amountColValue, { color: hasPending ? Colors.danger : Colors.caption }]}>
+                    {item.pendingAmount.toFixed(0)}元
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+        {monthFilteredStats.length === 0 && (
+          <Text style={styles.emptyMonth}>本月无课程记录</Text>
+        )}
       </ScrollView>
 
       <StudentBillingDetailScreen
@@ -182,8 +300,41 @@ const StatsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: Spacing.xl, paddingBottom: 100 },
+
+  // Month selector
+  monthSelector: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.xl, gap: Spacing.lg,
+  },
+  monthArrow: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  monthLabel: {
+    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
+    minWidth: 120, textAlign: 'center',
+  },
+
+  // Stats grid
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xl },
   gridItem: { width: '47%', flexGrow: 1 },
+
+  // Chart
+  chartCard: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+    padding: Spacing.xl, marginBottom: Spacing.xl,
+  },
+  chartTitle: {
+    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
+    marginBottom: Spacing.lg,
+  },
+  barTopLabel: {
+    fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.primary,
+    marginBottom: 2,
+  },
+
+  // Monthly overview
   overviewCard: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.xl, marginBottom: Spacing.xl,
@@ -203,46 +354,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
   },
   overviewItem: { alignItems: 'center' },
-  overviewLabel: { fontSize: FontSize.caption, color: Colors.caption, marginBottom: Spacing.sm },
-  overviewValue: { fontSize: FontSize.h1, fontWeight: FontWeight.bold },
-  overviewDivider: { width: 1, height: 40, backgroundColor: Colors.divider },
-  tableCard: {
-    backgroundColor: Colors.card, borderRadius: BorderRadius.card, overflow: 'hidden',
-  },
-  tableTitle: {
+  overviewLabel: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
+  overviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary },
+  overviewDetail: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
+  overviewDivider: { width: 1, height: 32, backgroundColor: Colors.divider },
+
+  // Section title
+  sectionTitle: {
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
-    padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.divider,
+    marginBottom: Spacing.md,
   },
-  tableHeader: {
-    flexDirection: 'row', backgroundColor: Colors.background,
-    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider,
+
+  // Student cards
+  studentCard: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+    padding: Spacing.lg, marginBottom: Spacing.md,
   },
-  th: {
-    flex: 1, fontSize: FontSize.small, fontWeight: FontWeight.bold,
-    color: Colors.caption, textAlign: 'center',
+  studentCardLast: { marginBottom: 0 },
+  studentHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
-  tableRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
+  studentInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  studentDot: { width: 10, height: 10, borderRadius: 5 },
+  studentName: {
+    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
   },
-  tableRowZebra: { backgroundColor: Colors.background },
-  tableRowPending: { backgroundColor: Colors.dangerLight },
-  td: { flex: 1, textAlign: 'center' },
-  cellName: { flex: 1.8, paddingLeft: Spacing.md, alignItems: 'flex-start' as const },
-  cellNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  miniDot: { width: 8, height: 8, borderRadius: 4 },
-  cellNameText: {
-    fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.title,
+  studentSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 1 },
+  pendingTag: {
+    backgroundColor: Colors.dangerBg, paddingHorizontal: Spacing.sm, paddingVertical: 2,
+    borderRadius: BorderRadius.pill,
   },
-  cellSubText: { fontSize: FontSize.small, color: Colors.caption, marginTop: 1 },
-  cellVal: { fontSize: FontSize.small, color: Colors.body },
-  cellGreen: {
-    fontSize: FontSize.small, color: Colors.paid, fontWeight: FontWeight.semiBold,
+  pendingTagText: { fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.danger },
+  studentStats: { marginBottom: Spacing.md },
+  studentStatText: { fontSize: FontSize.caption, color: Colors.caption },
+  studentAmounts: {
+    flexDirection: 'row', justifyContent: 'space-around',
+    paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
-  cellRed: {
-    fontSize: FontSize.small, color: Colors.danger, fontWeight: FontWeight.semiBold,
+  amountCol: { alignItems: 'center' },
+  amountColLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: 2 },
+  amountColValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
+  emptyMonth: {
+    fontSize: FontSize.caption, color: Colors.caption,
+    textAlign: 'center', paddingVertical: Spacing.xxl,
   },
-  cellZero: { fontSize: FontSize.small, color: Colors.caption },
 });
 
 export default StatsScreen;
