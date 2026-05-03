@@ -210,7 +210,7 @@ const LessonScreen: React.FC = () => {
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     setDate(tomorrow);
     setTimeSlot('');
-    setDuration('2');
+    setDuration('');
     setLessonRate(firstStudent?.hourlyRate?.toString() || '75');
     setNotes('');
     setModalVisible(true);
@@ -351,8 +351,6 @@ const LessonScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
         ref={flatListRef}
-        initialNumToRender={filteredLessons.length}
-        windowSize={50}
         getItemLayout={(_, index) => {
           const h = itemHeightRef.current;
           return { length: h, offset: h * index, index };
@@ -632,7 +630,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryLight,
   },
   timeSlotBadgeText: {
-    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.primary,
+    fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
