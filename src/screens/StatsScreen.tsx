@@ -14,9 +14,9 @@ import {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
-const CHART_BAR_W = Math.floor(CHART_AVAIL / 14);
-const CHART_GAP = Math.floor((CHART_AVAIL - CHART_BAR_W * 6) / 6);
-const CHART_INITIAL = CHART_AVAIL - CHART_BAR_W * 6 - CHART_GAP * 5;
+const CHART_BAR_W = Math.floor(CHART_AVAIL / 12);
+const CHART_GAP = CHART_BAR_W;
+const CHART_INITIAL = Math.floor(CHART_BAR_W / 2);
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -233,13 +233,14 @@ const StatsScreen: React.FC = () => {
               stepValue={chartStep}
               noOfSections={noOfSections}
               yAxisThickness={0}
-              xAxisThickness={0}
+              xAxisThickness={1}
+              xAxisColor={Colors.divider}
               isAnimated
               spacing={CHART_GAP}
               barBorderRadius={4}
               hideRules
-              yAxisTextStyle={{ fontSize: 9, color: Colors.caption }}
-              xAxisLabelTextStyle={{ fontSize: 11, color: Colors.caption, fontWeight: '500' }}
+              yAxisLabelWidth={0}
+              xAxisLabelTextStyle={{ fontSize: 12, color: Colors.caption, fontWeight: '500' }}
               initialSpacing={CHART_INITIAL}
             />
           </View>
