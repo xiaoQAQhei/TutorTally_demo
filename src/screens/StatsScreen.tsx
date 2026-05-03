@@ -108,8 +108,32 @@ const StatsScreen: React.FC = () => {
     return months;
   }, [allLessons, selectedMonth]);
 
+  const monthTotalStats = useMemo(() => {
+    const uniqueStudents = new Set(monthFilteredStats.map((s) => s.student.id));
+    let lessons = 0, hours = 0, amount = 0, paid = 0;
+    monthFilteredStats.forEach((s) => {
+      lessons += s.totalLessons;
+      hours += s.totalHours;
+      amount += s.totalAmount;
+      paid += s.paidAmount;
+    });
+    return { students: uniqueStudents.size, lessons, hours, amount, paid, pending: amount - paid };
+  }, [monthFilteredStats]);
+
   const monthRatio = monthStats.total > 0 ? (monthStats.paid / monthStats.total) * 100 : 0;
+
   const maxBarValue = Math.max(...chartData.map((d) => d.value), 1);
+  const niceScale = (max: number) => {
+    const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+    const steps = [1, 2, 2.5, 5, 10];
+    for (const s of steps) {
+      const step = s * magnitude / 5;
+      if (max * 1.2 <= step * 4) return { maxValue: step * 4, stepValue: step, noOfSections: 4 };
+    }
+    const fallback = Math.ceil(max * 1.2 / magnitude) * magnitude;
+    return { maxValue: fallback, stepValue: fallback / 4, noOfSections: 4 };
+  };
+  const { maxValue: chartMax, stepValue: chartStep, noOfSections } = niceScale(maxBarValue);
 
   const changeMonth = (delta: number) => {
     const [y, m] = selectedMonth.split('-').map(Number);
@@ -167,16 +191,16 @@ const StatsScreen: React.FC = () => {
         {/* Stats grid 2x2 */}
         <View style={styles.statsGrid}>
           <View style={styles.gridItem}>
-            <StatCard icon="people" label="学生数" value={totalStats.totalStudents} color={Colors.primary} />
+            <StatCard icon="people" label="学生数" value={monthTotalStats.students} color={Colors.primary} />
           </View>
           <View style={styles.gridItem}>
-            <StatCard icon="book" label="总课时" value={`${totalStats.totalLessons}节`} color={Colors.subjectEnglish} />
+            <StatCard icon="book" label="课时" value={`${monthTotalStats.lessons}节`} color={Colors.subjectEnglish} />
           </View>
           <View style={styles.gridItem}>
-            <StatCard icon="time" label="总时长" value={`${totalStats.totalHours.toFixed(1)}h`} color={Colors.pending} />
+            <StatCard icon="time" label="时长" value={`${monthTotalStats.hours.toFixed(1)}h`} color={Colors.pending} />
           </View>
           <View style={styles.gridItem}>
-            <StatCard icon="wallet" label="总收入" value={`${totalStats.totalAmount.toFixed(0)}元`} color={Colors.paid} />
+            <StatCard icon="wallet" label="收入" value={`${monthTotalStats.amount.toFixed(0)}元`} color={Colors.paid} />
           </View>
         </View>
 
@@ -192,14 +216,15 @@ const StatsScreen: React.FC = () => {
                 <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
               ) : undefined,
             }))}
-            barWidth={32}
-            height={140}
-            maxValue={maxBarValue * 1.25}
-            noOfSections={4}
+            barWidth={28}
+            height={130}
+            maxValue={chartMax}
+            stepValue={chartStep}
+            noOfSections={noOfSections}
             yAxisThickness={0}
             xAxisThickness={0}
             isAnimated
-            spacing={(SCREEN_WIDTH - Spacing.xl * 4 - 16) / 7}
+            spacing={Math.max((SCREEN_WIDTH - Spacing.xl * 2 - 28 * 6) / 7, 8)}
             barBorderRadius={6}
             hideRules
             yAxisTextStyle={{ fontSize: 10, color: Colors.caption }}
@@ -317,8 +342,8 @@ const styles = StyleSheet.create({
   },
 
   // Stats grid
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xl },
-  gridItem: { width: '47%', flexGrow: 1 },
+  statsGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
+  gridItem: { flex: 1 },
 
   // Chart
   chartCard: {
