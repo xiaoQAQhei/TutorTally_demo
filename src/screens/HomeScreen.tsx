@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 're
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student } from '../models';
-import { getAllLessons, getAllStudents } from '../database';
+import { getAllLessons, getAllStudents, confirmLesson } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
@@ -11,6 +11,8 @@ import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
 } from '../styles/theme';
+
+type LessonItem = Lesson & { category: 'upcoming' | 'confirmable' };
 
 interface Props {
   navigation: { navigate: (screen: string) => void };
@@ -24,7 +26,7 @@ const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: strin
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { setPendingAction, setPendingFilter, setHighlightLessonId } = useAction();
-  const [recentLessons, setRecentLessons] = useState<Lesson[]>([]);
+  const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
@@ -42,12 +44,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       return new Date() >= new Date(`${l.date}T${endTime}:00`);
     };
 
-    setRecentLessons(lessons.filter((l) => {
-      if (l.confirmedAt) return false;
-      if (l.date > today) return true;
-      if (l.date === today) return !getEndPassed(l);
-      return false;
-    }).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10));
+    const upcoming: LessonItem[] = [];
+    const confirmable: LessonItem[] = [];
+    for (const l of lessons) {
+      if (l.confirmedAt) continue;
+      if (l.date > today || (l.date === today && !getEndPassed(l))) {
+        upcoming.push({ ...l, category: 'upcoming' });
+      } else {
+        confirmable.push({ ...l, category: 'confirmable' });
+      }
+    }
+    confirmable.sort((a, b) => b.date.localeCompare(a.date));
+    upcoming.sort((a, b) => a.date.localeCompare(b.date));
+    setRecentLessons([...confirmable, ...upcoming].slice(0, 30));
 
     const pending = lessons.filter((l) => {
       if (l.paid) return false;
@@ -62,21 +71,52 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
+  const handleConfirmLesson = async (id: number) => {
+    await confirmLesson(id);
+    loadData();
+  };
+
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
   const { opacity, translateY } = useFadeIn();
 
-  const renderLessonItem = ({ item, index }: { item: Lesson; index: number }) => {
+  const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
     const student = getStudent(item.studentId);
     const isLast = index === recentLessons.length - 1;
+    const navigateToLesson = () => {
+      setPendingFilter('upcoming');
+      setHighlightLessonId(item.id);
+      navigation.navigate('Lessons');
+    };
+
+    if (item.category === 'confirmable') {
+      return (
+        <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
+          <View style={[styles.colorBar, { backgroundColor: Colors.danger }]} />
+          <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
+            <View style={styles.recentLeft}>
+              <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+              <Text style={styles.recentDate}>{item.date}</Text>
+            </View>
+            <View style={styles.recentCenter}>
+              {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmLesson(item.id)}>
+            <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+            <View style={styles.confirmBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.danger} />
+              <Text style={styles.confirmBadgeText}>确认下课</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     return (
       <TouchableOpacity
         style={[styles.recentItem, !isLast && styles.recentItemBorder]}
         activeOpacity={0.6}
-        onPress={() => {
-          setPendingFilter('upcoming');
-          setHighlightLessonId(item.id);
-          navigation.navigate('Lessons');
-        }}
+        onPress={navigateToLesson}
       >
         <View style={[styles.colorBar, { backgroundColor: Colors.primary }]} />
         <View style={styles.recentLeft}>
@@ -273,6 +313,16 @@ const styles = StyleSheet.create({
   },
   miniBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.pill },
   miniBadgeText: { fontSize: 10, fontWeight: FontWeight.semiBold },
+  recentContentLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  confirmRight: {
+    alignItems: 'flex-end', paddingVertical: Spacing.sm, paddingLeft: Spacing.lg,
+  },
+  confirmBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: Spacing.sm, paddingVertical: 2,
+    borderRadius: BorderRadius.pill, backgroundColor: '#FEE2E2',
+  },
+  confirmBadgeText: { fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.danger },
   overviewRow: {
     flexDirection: 'row', gap: Spacing.md,
     marginTop: Spacing.md, marginBottom: Spacing.md,
