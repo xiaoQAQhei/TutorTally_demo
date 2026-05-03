@@ -14,11 +14,9 @@ import {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
-const CHART_LABEL = 14;
-const CHART_INNER = CHART_AVAIL - CHART_LABEL * 2;
-const CHART_BAR_W = Math.floor(CHART_INNER / 13);
-const CHART_SPACING = Math.floor((CHART_INNER - CHART_BAR_W * 6) / 5);
-const CHART_INITIAL = CHART_LABEL;
+const CHART_BAR_W = Math.max(20, Math.floor(CHART_AVAIL / 14));
+const CHART_SPACING = Math.floor((CHART_AVAIL - CHART_BAR_W * 6) / 7);
+const CHART_INITIAL = Math.floor(CHART_SPACING * 0.8);
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -219,12 +217,12 @@ const StatsScreen: React.FC = () => {
         {/* Bar Chart */}
         <View style={[styles.chartCard, Shadows.standard]}>
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
-          <View style={[styles.chartWrap, { width: CHART_AVAIL }]}>
+          <View style={styles.chartWrap}>
             <BarChart
               data={chartData.map((d) => ({
                 value: d.value,
                 label: d.label,
-                frontColor: d.value > 0 ? Colors.primary : Colors.divider,
+                frontColor: d.value > 0 ? Colors.primary : Colors.primaryLight,
                 topLabelComponent: d.value > 0 ? () => (
                   <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
                 ) : undefined,
