@@ -14,8 +14,9 @@ import {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
-const CHART_BAR_W = Math.round(CHART_AVAIL / 15);
-const CHART_SPACING = Math.floor((CHART_AVAIL - 6 * CHART_BAR_W) / 7);
+const CHART_BAR_W = Math.floor(CHART_AVAIL / 18);
+const CHART_SPACING = Math.floor((CHART_AVAIL - CHART_BAR_W * 7) / 5);
+const CHART_INITIAL = Math.floor((CHART_AVAIL - CHART_BAR_W * 6 - CHART_SPACING * 5) / 2);
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -216,7 +217,7 @@ const StatsScreen: React.FC = () => {
         {/* Bar Chart */}
         <View style={[styles.chartCard, Shadows.standard]}>
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
-          <View style={styles.chartWrap}>
+          <View style={[styles.chartWrap, { width: CHART_AVAIL }]}>
             <BarChart
               data={chartData.map((d) => ({
                 value: d.value,
@@ -239,7 +240,7 @@ const StatsScreen: React.FC = () => {
               hideRules
               yAxisTextStyle={{ fontSize: 9, color: Colors.caption }}
               xAxisLabelTextStyle={{ fontSize: 11, color: Colors.caption, fontWeight: '500' }}
-              initialSpacing={8}
+              initialSpacing={CHART_INITIAL}
             />
           </View>
         </View>
