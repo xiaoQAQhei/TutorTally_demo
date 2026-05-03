@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-gifted-charts';
@@ -12,11 +12,6 @@ import {
   getSubjectColor,
 } from '../styles/theme';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_AVAIL = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
-const CHART_BAR_W = Math.floor(CHART_AVAIL / 12);
-const CHART_GAP = CHART_BAR_W;
-const CHART_INITIAL = Math.floor(CHART_BAR_W / 2);
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
   '05': '5月', '06': '6月', '07': '7月', '08': '8月',
@@ -34,6 +29,11 @@ const StatsScreen: React.FC = () => {
   const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 });
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const { width: screenW } = useWindowDimensions();
+  const chartAvail = screenW - Spacing.xl * 2 - Spacing.lg * 2;
+  const chartBarW = Math.floor(chartAvail / 12);
+  const chartGap = chartBarW;
+  const chartInitial = Math.floor(chartBarW / 2);
 
   useFocusEffect(useCallback(() => { loadStats(); }, []));
 
@@ -219,6 +219,7 @@ const StatsScreen: React.FC = () => {
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
           <View style={styles.chartWrap}>
             <BarChart
+              key={`${selectedMonth}-${screenW}`}
               data={chartData.map((d) => ({
                 value: d.value,
                 label: d.label,
@@ -227,7 +228,7 @@ const StatsScreen: React.FC = () => {
                   <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
                 ) : undefined,
               }))}
-              barWidth={CHART_BAR_W}
+              barWidth={chartBarW}
               height={120}
               maxValue={chartMax}
               stepValue={chartStep}
@@ -236,12 +237,12 @@ const StatsScreen: React.FC = () => {
               xAxisThickness={1}
               xAxisColor={Colors.divider}
               isAnimated
-              spacing={CHART_GAP}
+              spacing={chartGap}
               barBorderRadius={4}
               hideRules
               yAxisLabelWidth={0}
               xAxisLabelTextStyle={{ fontSize: 12, color: Colors.caption, fontWeight: '500' }}
-              initialSpacing={CHART_INITIAL}
+              initialSpacing={chartInitial}
             />
           </View>
         </View>
