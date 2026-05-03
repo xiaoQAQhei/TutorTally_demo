@@ -302,20 +302,22 @@ const LessonScreen: React.FC = () => {
 
         <View style={styles.cardBody}>
           <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={15} color={Colors.caption} />
-              <Text style={styles.infoText}>{item.date}</Text>
+            <View style={styles.infoLeft}>
+              <View style={styles.infoItem}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{item.date}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{item.duration}h</Text>
+              </View>
             </View>
             {item.timeSlot ? (
-              <View style={styles.infoItem}>
-                <Ionicons name="time-outline" size={15} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.timeSlot}</Text>
+              <View style={styles.timeSlotBadge}>
+                <Ionicons name="time-outline" size={16} color={Colors.primary} />
+                <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
               </View>
             ) : null}
-            <View style={styles.infoItem}>
-              <Ionicons name="hourglass-outline" size={15} color={Colors.caption} />
-              <Text style={styles.infoText}>{item.duration}h</Text>
-            </View>
           </View>
           <View style={styles.amountRow}>
             <Ionicons name="wallet-outline" size={15} color={Colors.caption} />
@@ -616,9 +618,22 @@ const styles = StyleSheet.create({
   studentName: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
   subject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
   cardBody: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  infoRow: { flexDirection: 'row', gap: Spacing.xl, marginBottom: Spacing.sm },
+  infoRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  infoLeft: { flexDirection: 'row', gap: Spacing.md },
   infoItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   infoText: { fontSize: FontSize.caption, color: Colors.body },
+  timeSlotBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.smallCard,
+    backgroundColor: Colors.primaryLight,
+  },
+  timeSlotBadgeText: {
+    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.primary,
+  },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
