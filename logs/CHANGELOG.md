@@ -13,6 +13,80 @@
 
 ---
 
+## 2026-05-03 确认下课体验 + 列表性能优化
+
+### HomeScreen 确认下课快捷操作
+- **类型**: feat
+- **描述**:
+  1. 首页课程列表拆分为「待确认下课」和「待上课」两个分区，已过下课时间的课程自动归入确认区
+  2. 确认区课程显示红色左侧条和红色「确认下课」按钮，视觉上与蓝色待上课区分明显
+  3. 点击确认按钮直接调用 confirmLesson 完成下课，无需跳转页面
+  4. 确认区按日期倒序、待上课区按日期正序排列
+- **文件**:
+  - `src/screens/HomeScreen.tsx`
+
+### LessonScreen 列表滚动性能优化
+- **类型**: perf
+- **描述**:
+  1. 卡片 onLayout 测量高度，为 getItemLayout 提供精准 item 高度
+  2. FlatList 启用 getItemLayout 跳过布局计算，大幅提升滚动性能
+  3. initialNumToRender 渲染全部可见项，windowSize 增大到 50，减少空白闪烁
+  4. onScrollToIndexFailed 加入重试机制，高亮跳转失败时自动重试
+- **文件**:
+  - `src/screens/LessonScreen.tsx`
+
+### 项目文档更新
+- **类型**: docs
+- **描述**: CLAUDE.md、PROGRESS.md、settings 配置及改动日志同步更新
+- **文件**:
+  - `CLAUDE.md`
+  - `PROGRESS.md`
+  - `.claude/settings.local.json`
+  - `logs/CHANGELOG.md`
+
+## 2026-05-03 01:39 时间段选择器 + 课程流程完善
+
+### TimeRangePicker 时间段选择器
+- **类型**: feat
+- **描述**:
+  1. 创建 TimeRangePicker 组件：时/分四列滚动选择器，开始/结束时间联动
+  2. 吸附优化：改用 decelerationRate=0 + 手动 scrollTo 替代 snapToInterval，精准定位
+  3. 字体放大：非选中项 FontSize.h3，选中项 FontSize.h1，视觉层级分明
+  4. 预览栏优化：时间范围+时长合并到同一行显示，信息密度更高
+  5. 底部弹出动画：Animated.spring slide-up + 遮罩渐变，交互流畅
+- **文件**:
+  - `src/components/TimeRangePicker.tsx` (新增)
+  - `src/components/BottomSheet.tsx`
+  - `src/components/StatusBadge.tsx`
+  - `src/contexts/ActionContext.tsx` (新增)
+
+### LessonScreen 集成时间段选择 + 课程流程完善
+- **类型**: feat
+- **描述**:
+  1. LessonScreen 集成 TimeRangePicker，课程表单支持选择时段
+  2. 待上课状态可确认下课，完善课程生命周期
+  3. HomeScreen 待上课点击跳转完善
+- **文件**:
+  - `src/screens/LessonScreen.tsx`
+  - `src/screens/HomeScreen.tsx`
+  - `src/database/index.ts`
+  - `src/models/index.ts`
+  - `src/App.tsx`
+
+### CalendarPicker 响应式修复
+- **类型**: fix
+- **描述**: 使用 useWindowDimensions + maxWidth 400 限制日历宽度，适配不同屏幕尺寸
+- **文件**: `src/components/CalendarPicker.tsx`
+
+### 自动化工具链
+- **类型**: feat
+- **描述**:
+  1. Stop hook 改为自动 git push，每轮对话结束自动提交并推送
+  2. 项目指令 CLAUDE.md 完善
+- **文件**:
+  - `.claude/settings.local.json`
+  - `CLAUDE.md`
+
 ## 2026-05-02
 
 ### Claude Code 自动化配置

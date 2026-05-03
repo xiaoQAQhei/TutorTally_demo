@@ -56,6 +56,7 @@ const LessonScreen: React.FC = () => {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
+  const itemHeightRef = useRef(180);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -277,6 +278,10 @@ const LessonScreen: React.FC = () => {
     return (
       <Animated.View
         style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg }]}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (h > 0) itemHeightRef.current = h;
+        }}
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
@@ -344,6 +349,22 @@ const LessonScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
         ref={flatListRef}
+        initialNumToRender={filteredLessons.length}
+        windowSize={50}
+        getItemLayout={(_, index) => {
+          const h = itemHeightRef.current;
+          return { length: h, offset: h * index, index };
+        }}
+        onScrollToIndexFailed={(info) => {
+          const h = itemHeightRef.current;
+          const retryInterval = setInterval(() => {
+            if (info.index < filteredLessons.length) {
+              clearInterval(retryInterval);
+              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+            }
+          }, 50);
+          setTimeout(() => clearInterval(retryInterval), 1000);
+        }}
         ListHeaderComponent={
           <View style={styles.filterRow}>
             {/* Standalone: 待上课 */}
