@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-05 02:12 | auto: 05-05 02:12 | eas.json 
+- eas.json
+
 ## 2026-05-05 02:09 | auto: 05-05 02:09 | .claude/settings.local.json 
 - .claude/settings.local.json
 
