@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm cache *)",
+      "Bash(eas *)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {
