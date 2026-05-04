@@ -2,7 +2,13 @@
   "hooks": {
     "Stop": [
       {
-        "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then files=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); ts=$(date '+%Y-%m-%d %H:%M'); msg=\"auto: $(date '+%m-%d %H:%M') | $files\"; entry=\"## $ts | $msg\\n$(printf '%s\\n' $files | sed 's/^/- /')\\n\"; if [ -f logs/CHANGELOG.md ]; then (head -1 logs/CHANGELOG.md; printf '%b\\n' \"$entry\"; tail -n +2 logs/CHANGELOG.md) > logs/.cl_tmp && mv logs/.cl_tmp logs/CHANGELOG.md; fi; git add -A && git commit -m \"$msg\" && git push; fi"
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then files=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); ts=$(date '+%Y-%m-%d %H:%M'); msg=\"auto: $(date '+%m-%d %H:%M') | $files\"; entry=\"## $ts | $msg\\n$(printf '%s\\n' $files | sed 's/^/- /')\\n\"; if [ -f logs/CHANGELOG.md ]; then (head -1 logs/CHANGELOG.md; printf '%b\\n' \"$entry\"; tail -n +2 logs/CHANGELOG.md) > logs/.cl_tmp && mv logs/.cl_tmp logs/CHANGELOG.md; fi; git add -A && git commit -m \"$msg\" && git push; fi"
+          }
+        ]
       }
     ]
   }

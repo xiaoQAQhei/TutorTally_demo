@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-05 01:45 | auto: 05-05 01:45 | .claude/settings.local.json 
+- .claude/settings.local.json
+
 
 记录项目所有功能改动、UI 优化和 Bug 修复。
 
