@@ -1,4 +1,11 @@
 # 改动日志
+## 2026-05-05 18:42 | auto: 05-05 18:42 | .claude/settings.local.json package-lock.json package.json geometry-figure.html geometry-figure.png 
+- .claude/settings.local.json
+- package-lock.json
+- package.json
+- geometry-figure.html
+- geometry-figure.png
+
 ## 2026-05-05 13:07 | auto: 05-05 13:07 | .claude/settings.local.json android/app/build.gradle android/app/src/main/AndroidManifest.xml android/app/src/main/java/com/tutorbill/MainActivity.java android/app/src/main/java/com/tutorbill/MainApplication.java android/build.gradle app.json eas.json ios/TutorBill.xcodeproj/project.pbxproj ios/TutorBill/AppDelegate.h ios/TutorBill/AppDelegate.m ios/TutorBill/Info.plist ios/TutorBill/main.m package-lock.json package.json android/.gitignore android/app/debug.keystore android/app/proguard-rules.pro android/app/src/debug/ android/app/src/main/java/com/tutorbill/app/ android/app/src/main/res/ android/app/src/release/ android/gradle.properties android/gradle/ android/gradlew android/gradlew.bat android/settings.gradle 
 - .claude/settings.local.json
 - android/app/build.gradle
