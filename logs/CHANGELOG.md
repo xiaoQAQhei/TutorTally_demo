@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-05 19:45 | auto: 05-05 19:45 | .claude/settings.local.json .playwright-mcp/ 
+- .claude/settings.local.json
+- .playwright-mcp/
+
 ## 2026-05-05 19:40 | auto: 05-05 19:40 | geometry-figure.html geometry-figure.png 
 - geometry-figure.html
 - geometry-figure.png
