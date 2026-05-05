@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(npm cache *)",
-      "Bash(eas *)"
+      "Bash(eas *)",
+      "Bash(npm uninstall *)"
     ]
   },
   "hooks": {

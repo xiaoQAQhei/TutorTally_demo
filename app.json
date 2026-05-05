@@ -24,6 +24,12 @@
       },
       "package": "com.tutorbill.app"
     },
-    "web": {}
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "4e87e1be-e6dc-489a-8b2e-2575176fc9bc"
+      }
+    },
+    "owner": "xiaoqaqhei"
   }
 }
