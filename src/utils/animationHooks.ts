@@ -14,7 +14,7 @@ export function useSlideManager() {
     const anim = getValue(id);
     anim.setValue(0);
     Animated.timing(anim, {
-      toValue: 1, duration: 350, useNativeDriver: true,
+      toValue: 1, duration: 350, useNativeDriver: false,
     }).start();
   }, [getValue]);
 

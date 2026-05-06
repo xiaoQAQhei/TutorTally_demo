@@ -172,8 +172,11 @@ const LessonScreen: React.FC = () => {
       }
       const cd = cancelAnims.current.get(lesson.id)!;
       Animated.timing(cd.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
-        setCancellingId(null);
-        setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+        // Keep cancelled visual for 800ms before reloading
+        setTimeout(() => {
+          setCancellingId(null);
+          setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+        }, 800);
       });
     };
     if (confirmBeforeChange) {
