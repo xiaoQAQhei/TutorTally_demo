@@ -52,7 +52,7 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
-  const cancellingIds = useRef<Set<number>>(new Set());
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -147,10 +147,12 @@ const LessonScreen: React.FC = () => {
     const doChange = () => {
       if (nextStatus === 'completed') {
         slideMgr.triggerSlide(lesson.id);
+        setLessonStatus(lesson.id, nextStatus); // update DB but don't reload yet
+        setTimeout(() => loadLessons(), 400); // reload after animation finishes
       } else {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
       }
-      setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
     };
     if (confirmBeforeChange) {
       const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
@@ -162,14 +164,13 @@ const LessonScreen: React.FC = () => {
 
   const handleCancelLesson = (lesson: Lesson) => {
     const doCancel = () => {
-      cancellingIds.current.add(lesson.id);
-      // Trigger strikethrough animation immediately
+      setCancellingId(lesson.id);
       if (!cancelAnims.current.has(lesson.id)) {
         cancelAnims.current.set(lesson.id, { anim: new Animated.Value(0), width: 0 });
       }
       const cd = cancelAnims.current.get(lesson.id)!;
       Animated.timing(cd.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
-        cancellingIds.current.delete(lesson.id);
+        setCancellingId(null);
         setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
       });
     };
@@ -271,7 +272,7 @@ const LessonScreen: React.FC = () => {
 
     const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
-    const isCancelling = cancellingIds.current.has(lessonId);
+    const isCancelling = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
