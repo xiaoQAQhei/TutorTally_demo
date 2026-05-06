@@ -283,7 +283,7 @@ const LessonScreen: React.FC = () => {
       <Animated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          overflow: shatterMgr.activeId === lessonId ? 'visible' as const : 'hidden' as const,
+          ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
           opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
             ...(slideMgr.isSliding(lessonId) ? slideMgr.getTransform(lessonId) : []),
