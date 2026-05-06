@@ -51,6 +51,7 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const cancelLineAnims = useRef<Map<number, Animated.Value>>(new Map());
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -233,10 +234,20 @@ const LessonScreen: React.FC = () => {
 
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
+    const lessonId = item.id;
 
     const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
     const isHighlighted = item.id === highlightedId;
+
+    // Animated strikethrough line
+    if (!cancelLineAnims.current.has(lessonId)) {
+      cancelLineAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    const lineAnim = cancelLineAnims.current.get(lessonId)!;
+    if (isCancelled) {
+      Animated.timing(lineAnim, { toValue: 1, duration: 400, useNativeDriver: false }).start();
+    }
 
     const cardBg = isCancelled
       ? '#F3F4F6'
@@ -301,9 +312,14 @@ const LessonScreen: React.FC = () => {
           ) : null}
           {isCancelled && (
             <View style={styles.strikethrough}>
-              <View style={styles.strikethroughLine} />
-              <Text style={styles.strikethroughText}>已取消</Text>
-              <View style={styles.strikethroughLine} />
+              <Animated.View style={[styles.strikethroughBg, {
+                transform: [{
+                  scaleX: lineAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+                }],
+              }]} />
+              <Animated.Text style={[styles.strikethroughText, {
+                opacity: lineAnim.interpolate({ inputRange: [0.6, 1], outputRange: [0, 1] }),
+              }]}>已取消</Animated.Text>
             </View>
           )}
         </View>
@@ -647,9 +663,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
   timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },
-  strikethrough: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, gap: Spacing.sm },
-  strikethroughLine: { flex: 1, height: 1, backgroundColor: '#D1D5DB' },
-  strikethroughText: { fontSize: FontSize.small, color: Colors.caption, fontWeight: FontWeight.medium },
+  strikethrough: { justifyContent: 'center', alignItems: 'center', marginTop: Spacing.md, height: 24 },
+  strikethroughBg: {
+    position: 'absolute', left: -Spacing.xl, right: -Spacing.xl, top: 11, height: 1.5,
+    backgroundColor: '#9CA3AF',
+  },
+  strikethroughText: { fontSize: FontSize.small, color: '#9CA3AF', fontWeight: FontWeight.medium, zIndex: 1, backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.sm },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
