@@ -53,7 +53,8 @@ const LessonScreen: React.FC = () => {
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const deleteAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const shatterAnims = useRef<{ master: Animated.Value; fragments: Array<{ dx: Animated.AnimatedInterpolation<number>; dy: Animated.AnimatedInterpolation<number>; rot: Animated.AnimatedInterpolation<string>; opacity: Animated.AnimatedInterpolation<number>; x: number; y: number; w: number; h: number; color: string }> } | null>(null);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -143,15 +144,13 @@ const LessonScreen: React.FC = () => {
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
-      if (nextStatus === 'completed' && !slideAnims.current.has(lesson.id)) {
-        slideAnims.current.set(lesson.id, new Animated.Value(0));
-      }
-      setLessonStatus(lesson.id, nextStatus).then(() => {
+      setLessonStatus(lesson.id, nextStatus).then(async () => {
         if (nextStatus === 'completed') {
-          const anim = slideAnims.current.get(lesson.id);
-          if (anim) {
-            Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true }).start(() => loadLessons());
-          }
+          await loadLessons();
+          setTimeout(() => {
+            const anim = slideAnims.current.get(lesson.id);
+            if (anim) Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+          }, 50);
         } else {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           loadLessons();
@@ -183,12 +182,25 @@ const LessonScreen: React.FC = () => {
 
   const handleDelete = (id: number) => {
     const doDelete = () => {
-      if (!deleteAnims.current.has(id)) {
-        deleteAnims.current.set(id, new Animated.Value(0));
+      setDeletingId(id);
+      const master = new Animated.Value(0);
+      const COLORS = ['#6366F1', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6'];
+      const fragmentCount = 12;
+      const fragments = [];
+      for (let i = 0; i < fragmentCount; i++) {
+        fragments.push({
+          x: Math.random() * 0.7, y: Math.random() * 0.7,
+          w: 0.15 + Math.random() * 0.25, h: 0.08 + Math.random() * 0.12,
+          dx: master.interpolate({ inputRange: [0, 1], outputRange: [0, (Math.random() - 0.5) * 200] }),
+          dy: master.interpolate({ inputRange: [0, 1], outputRange: [0, 180 + Math.random() * 120] }),
+          rot: master.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${(Math.random() - 0.5) * 360}deg`] }),
+          opacity: master.interpolate({ inputRange: [0, 0.3, 1], outputRange: [1, 1, 0] }),
+          color: COLORS[i % COLORS.length],
+        });
       }
-      const anim = deleteAnims.current.get(id)!;
-      Animated.timing(anim, { toValue: 1, duration: 350, useNativeDriver: true }).start(() => {
-        deleteLesson(id).then(loadLessons);
+      shatterAnims.current = { master, fragments };
+      Animated.timing(master, { toValue: 1, duration: 600, useNativeDriver: true }).start(() => {
+        deleteLesson(id).then(() => { setDeletingId(null); shatterAnims.current = null; loadLessons(); });
       });
     };
     if (confirmBeforeChange) {
@@ -278,12 +290,6 @@ const LessonScreen: React.FC = () => {
     }
     const slideAnim = slideAnims.current.get(lessonId)!;
 
-    // Delete crush animation
-    if (!deleteAnims.current.has(lessonId)) {
-      deleteAnims.current.set(lessonId, new Animated.Value(0));
-    }
-    const delAnim = deleteAnims.current.get(lessonId)!;
-
     // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
@@ -306,11 +312,9 @@ const LessonScreen: React.FC = () => {
       <Animated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          opacity: isCancelled ? 0.6 : delAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          opacity: isCancelled ? 0.6 : 1,
           transform: [
             ...(item.status === 'completed' ? [{ translateX: slideAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 40, 0] }) }] : []),
-            { scale: delAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.3, 0] }) },
-            { rotate: delAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: ['0deg', '3deg', '-4deg', '5deg', '-3deg', '0deg'] }) },
           ],
         }]}
         onLayout={(e) => {
@@ -396,6 +400,27 @@ const LessonScreen: React.FC = () => {
             <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           </TouchableOpacity>
         </View>
+
+        {deletingId === lessonId && shatterAnims.current && (
+          <View style={styles.shatterOverlay} pointerEvents="none">
+            {shatterAnims.current.fragments.map((f, i) => (
+              <Animated.View
+                key={i}
+                style={[styles.shatterPiece, {
+                  left: `${f.x * 100}%`, top: `${f.y * 100}%`,
+                  width: `${f.w * 100}%`, height: `${f.h * 100}%`,
+                  backgroundColor: f.color,
+                  opacity: f.opacity,
+                  transform: [
+                    { translateX: f.dx },
+                    { translateY: f.dy },
+                    { rotate: f.rot },
+                  ],
+                }]}
+              />
+            ))}
+          </View>
+        )}
       </Animated.View>
     );
   };
@@ -729,6 +754,8 @@ const styles = StyleSheet.create({
     position: 'absolute', left: -30, height: 2,
     backgroundColor: '#9CA3AF',
   },
+  shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
+  shatterPiece: { position: 'absolute', borderRadius: 4 },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
     backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
