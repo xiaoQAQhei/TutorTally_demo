@@ -283,7 +283,6 @@ const LessonScreen: React.FC = () => {
       deleteAnims.current.set(lessonId, new Animated.Value(0));
     }
     const delAnim = deleteAnims.current.get(lessonId)!;
-    const isDeleting = (delAnim as any)._value > 0 || false;
 
     // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
@@ -305,7 +304,15 @@ const LessonScreen: React.FC = () => {
 
     return (
       <Animated.View
-        style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg, opacity: isCancelled ? 0.6 : 1 }]}
+        style={[styles.card, Shadows.standard, {
+          borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
+          opacity: isCancelled ? 0.6 : delAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          transform: [
+            ...(item.status === 'completed' ? [{ translateX: slideAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 40, 0] }) }] : []),
+            { scale: delAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.3, 0] }) },
+            { rotate: delAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: ['0deg', '3deg', '-4deg', '5deg', '-3deg', '0deg'] }) },
+          ],
+        }]}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           const w = e.nativeEvent.layout.width;
