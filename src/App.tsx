@@ -10,6 +10,7 @@ import StatsScreen from './screens/StatsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import { ActionProvider } from './contexts/ActionContext';
 import { initDatabase, migrateFromV1 } from './database';
+import { requestPermission, scheduleAllReminders } from './utils/notifications';
 import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
 
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,7 @@ const App: React.FC = () => {
     const setupDatabase = async () => {
       try { await initDatabase(); await migrateFromV1(); } catch (e) { console.warn('Database init failed:', e); }
       setIsLoading(false);
+      requestPermission().then(granted => { if (granted) scheduleAllReminders(); });
     };
     setupDatabase();
   }, []);
