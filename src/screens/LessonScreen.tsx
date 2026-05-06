@@ -18,7 +18,7 @@ import EmptyState from '../components/EmptyState';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
-import { useSlideManager, useShatterManager, triggerAfterRender } from '../utils/animationHooks';
+import { useSlideManager, useShatterManager } from '../utils/animationHooks';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -52,6 +52,7 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [slidingId, setSlidingId] = useState<number | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -147,7 +148,7 @@ const LessonScreen: React.FC = () => {
       setLessonStatus(lesson.id, nextStatus).then(async () => {
         if (nextStatus === 'completed') {
           await loadLessons();
-          triggerAfterRender(() => slideMgr.triggerSlide(lesson.id));
+          setSlidingId(lesson.id);
         } else {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           loadLessons();
@@ -256,6 +257,14 @@ const LessonScreen: React.FC = () => {
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
+  // Trigger slide animation after card re-renders as 'completed'
+  useEffect(() => {
+    if (slidingId !== null) {
+      slideMgr.triggerSlide(slidingId);
+      setSlidingId(null);
+    }
+  }, [slidingId, slideMgr]);
+
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
@@ -286,10 +295,11 @@ const LessonScreen: React.FC = () => {
       <Animated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? shatterMgr.cardOpacity : 1,
+          overflow: shatterMgr.activeId === lessonId ? 'visible' as const : 'hidden' as const,
+          opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
             ...(item.status === 'completed' && shatterMgr.activeId !== lessonId ? slideMgr.getTransform(lessonId) : []),
-            ...(shatterMgr.activeId === lessonId ? [{ scale: shatterMgr.cardScale }] : []),
+            ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
           ],
         }]}
         onLayout={(e) => {
