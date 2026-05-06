@@ -18,6 +18,7 @@ import EmptyState from '../components/EmptyState';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
+import { useSlideManager, useShatterManager, triggerAfterRender } from '../utils/animationHooks';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -52,9 +53,8 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
-  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const shatterAnims = useRef<{ master: Animated.Value; fragments: Array<{ dx: Animated.AnimatedInterpolation<number>; dy: Animated.AnimatedInterpolation<number>; rot: Animated.AnimatedInterpolation<string>; opacity: Animated.AnimatedInterpolation<number>; x: number; y: number; w: number; h: number; color: string }> } | null>(null);
+  const slideMgr = useSlideManager();
+  const shatterMgr = useShatterManager();
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -147,10 +147,7 @@ const LessonScreen: React.FC = () => {
       setLessonStatus(lesson.id, nextStatus).then(async () => {
         if (nextStatus === 'completed') {
           await loadLessons();
-          setTimeout(() => {
-            const anim = slideAnims.current.get(lesson.id);
-            if (anim) Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-          }, 50);
+          triggerAfterRender(() => slideMgr.triggerSlide(lesson.id));
         } else {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           loadLessons();
@@ -182,25 +179,8 @@ const LessonScreen: React.FC = () => {
 
   const handleDelete = (id: number) => {
     const doDelete = () => {
-      setDeletingId(id);
-      const master = new Animated.Value(0);
-      const COLORS = ['#6366F1', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6'];
-      const fragmentCount = 12;
-      const fragments = [];
-      for (let i = 0; i < fragmentCount; i++) {
-        fragments.push({
-          x: Math.random() * 0.7, y: Math.random() * 0.7,
-          w: 0.15 + Math.random() * 0.25, h: 0.08 + Math.random() * 0.12,
-          dx: master.interpolate({ inputRange: [0, 1], outputRange: [0, (Math.random() - 0.5) * 200] }),
-          dy: master.interpolate({ inputRange: [0, 1], outputRange: [0, 180 + Math.random() * 120] }),
-          rot: master.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${(Math.random() - 0.5) * 360}deg`] }),
-          opacity: master.interpolate({ inputRange: [0, 0.3, 1], outputRange: [1, 1, 0] }),
-          color: COLORS[i % COLORS.length],
-        });
-      }
-      shatterAnims.current = { master, fragments };
-      Animated.timing(master, { toValue: 1, duration: 600, useNativeDriver: true }).start(() => {
-        deleteLesson(id).then(() => { setDeletingId(null); shatterAnims.current = null; loadLessons(); });
+      shatterMgr.triggerShatter(id, () => {
+        deleteLesson(id).then(loadLessons);
       });
     };
     if (confirmBeforeChange) {
@@ -284,12 +264,6 @@ const LessonScreen: React.FC = () => {
     const isCancelled = item.status === 'cancelled';
     const isHighlighted = item.id === highlightedId;
 
-    // Slide animation (completed status)
-    if (!slideAnims.current.has(lessonId)) {
-      slideAnims.current.set(lessonId, new Animated.Value(0));
-    }
-    const slideAnim = slideAnims.current.get(lessonId)!;
-
     // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
@@ -314,7 +288,7 @@ const LessonScreen: React.FC = () => {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           opacity: isCancelled ? 0.6 : 1,
           transform: [
-            ...(item.status === 'completed' ? [{ translateX: slideAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 40, 0] }) }] : []),
+            ...(item.status === 'completed' ? slideMgr.getTransform(lessonId) : []),
           ],
         }]}
         onLayout={(e) => {
@@ -401,9 +375,9 @@ const LessonScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {deletingId === lessonId && shatterAnims.current && (
+        {shatterMgr.activeId === lessonId && shatterMgr.fragDataRef.current.length > 0 && (
           <View style={styles.shatterOverlay} pointerEvents="none">
-            {shatterAnims.current.fragments.map((f, i) => (
+            {shatterMgr.fragDataRef.current.map((f, i) => (
               <Animated.View
                 key={i}
                 style={[styles.shatterPiece, {
