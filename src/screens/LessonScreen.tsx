@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -141,6 +141,19 @@ const LessonScreen: React.FC = () => {
     loadLessons();
   };
 
+  const handleCancelLesson = (lesson: Lesson) => {
+    Alert.alert('取消课程', '确定要取消这个课程吗？', [
+      { text: '返回', style: 'cancel' },
+      { text: '确定取消', style: 'destructive', onPress: () => setLessonStatus(lesson.id, 'cancelled').then(loadLessons) },
+    ]);
+  };
+
+  const isClassEnded = (lesson: Lesson): boolean => {
+    const endTime = lesson.timeSlot?.split('-')[1]?.trim();
+    if (!endTime) return true;
+    return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
+  };
+
   const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
 
   const handleEdit = (lesson: Lesson) => {
@@ -238,7 +251,11 @@ const LessonScreen: React.FC = () => {
               <Text style={styles.subject}>{student?.phone || ''}</Text>
             </View>
           </View>
-          <StatusBadge status={item.status} onToggle={(nextStatus) => handleStatusChange(item, nextStatus)} />
+          <StatusBadge
+              status={item.status}
+              disabled={item.status === 'scheduled' && !isClassEnded(item)}
+              onToggle={(nextStatus) => handleStatusChange(item, nextStatus)}
+            />
         </View>
 
         <View style={styles.cardBody}>
@@ -276,6 +293,11 @@ const LessonScreen: React.FC = () => {
           <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
             <Ionicons name="pencil" size={18} color={Colors.primary} />
           </TouchableOpacity>
+          {(item.status === 'scheduled' || item.status === 'completed') && (
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(item)}>
+              <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
             <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           </TouchableOpacity>

@@ -10,14 +10,15 @@ const StatusIcons: Record<string, 'book' | 'time' | 'checkmark-circle' | 'close-
 
 interface StatusBadgeProps {
   status: LessonStatus;
+  disabled?: boolean;
   onToggle?: (nextStatus: LessonStatus) => void;
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, onToggle }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const colors = LessonStatusColors[status];
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
-  const tappable = nextStatuses.length > 0 && onToggle;
+  const tappable = !disabled && nextStatuses.length > 0 && onToggle;
 
   const handleTap = () => {
     if (!tappable || nextStatuses.length === 0) return;
