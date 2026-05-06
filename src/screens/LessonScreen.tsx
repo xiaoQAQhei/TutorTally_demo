@@ -4,8 +4,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Lesson, Student } from '../models';
-import { addLesson, getAllLessons, updateLesson, deleteLesson, toggleLessonPaid, confirmLesson, getAllStudents } from '../database';
+import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
+import { addLesson, getAllLessons, updateLesson, deleteLesson, setLessonStatus, getAllStudents, getSubjectsByStudentId, addPayment, getPaymentsByLessonId } from '../database';
 import { useAction } from '../contexts/ActionContext';
 import GradientFAB from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
@@ -20,14 +20,6 @@ import {
 } from '../styles/theme';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
-
-const todayStr = new Date().toISOString().split('T')[0];
-
-const getEndPassed = (lesson: Lesson): boolean => {
-  const endTime = lesson.timeSlot?.split('-')[1]?.trim();
-  if (!endTime) return true;
-  return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
-};
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'upcoming', label: '待上课', color: '#6366F1' },
@@ -75,35 +67,13 @@ const LessonScreen: React.FC = () => {
   const filteredLessons = (() => {
     let filtered: Lesson[];
     if (filterStatus === 'upcoming') {
-      filtered = lessons.filter((l) => {
-        if (l.confirmedAt) return false;
-        if (l.paid) return false;
-        return true;
-      });
-      filtered.sort((a, b) => {
-        const aCanConfirm = !a.paid && !a.confirmedAt && getEndPassed(a) && a.date <= todayStr;
-        const bCanConfirm = !b.paid && !b.confirmedAt && getEndPassed(b) && b.date <= todayStr;
-        if (aCanConfirm && !bCanConfirm) return -1;
-        if (!aCanConfirm && bCanConfirm) return 1;
-        const dc = a.date.localeCompare(b.date);
-        if (dc !== 0) return dc;
-        return (a.timeSlot || '').localeCompare(b.timeSlot || '');
-      });
+      filtered = lessons.filter((l) => l.status === 'scheduled');
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
     } else if (filterStatus === 'unpaid') {
-      filtered = lessons.filter((l) => {
-        if (l.paid) return false;
-        if (!l.confirmedAt) return false;
-        return true;
-      });
+      filtered = lessons.filter((l) => l.status === 'completed');
       filtered.sort((a, b) => a.date.localeCompare(b.date));
     } else if (filterStatus === 'paid') {
-      filtered = lessons.filter((l) => {
-        if (!l.paid) return false;
-        if (l.confirmedAt) return true;
-        if (l.date < todayStr) return true;
-        if (l.date === todayStr) return getEndPassed(l);
-        return false;
-      });
+      filtered = lessons.filter((l) => l.status === 'paid');
       filtered.sort((a, b) => b.date.localeCompare(a.date));
     } else {
       filtered = [...lessons];
@@ -113,23 +83,9 @@ const LessonScreen: React.FC = () => {
   })();
 
   const counts = (() => {
-    const upcoming = lessons.filter((l) => {
-      if (l.confirmedAt) return false;
-      if (l.paid) return false;
-      return true;
-    }).length;
-    const paid = lessons.filter((l) => {
-      if (!l.paid) return false;
-      if (l.confirmedAt) return true;
-      if (l.date < todayStr) return true;
-      if (l.date === todayStr) return getEndPassed(l);
-      return false;
-    }).length;
-    const unpaid = lessons.filter((l) => {
-      if (l.paid) return false;
-      if (!l.confirmedAt) return false;
-      return true;
-    }).length;
+    const upcoming = lessons.filter((l) => l.status === 'scheduled').length;
+    const paid = lessons.filter((l) => l.status === 'paid').length;
+    const unpaid = lessons.filter((l) => l.status === 'completed').length;
     return { upcoming, paid, unpaid, all: lessons.length };
   })();
 
@@ -166,7 +122,7 @@ const LessonScreen: React.FC = () => {
     } else {
       await addLesson({
         studentId: selectedStudentId, date, timeSlot, duration: parseFloat(duration),
-        amount, paid: false, confirmedAt: null, notes, createdAt: new Date().toISOString(),
+        amount, status: 'scheduled', confirmedAt: null, notes, createdAt: new Date().toISOString(),
       });
     }
     setModalVisible(false);
@@ -180,13 +136,9 @@ const LessonScreen: React.FC = () => {
     setToast({ visible: true, message: editingLesson ? '课程已更新' : '课程已添加', type: 'success' });
   };
 
-  const handleTogglePaid = async (lesson: Lesson) => {
-    await toggleLessonPaid(lesson.id, !lesson.paid);
+  const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
+    await setLessonStatus(lesson.id, nextStatus);
     loadLessons();
-  };
-
-  const handleConfirmLesson = (lesson: Lesson) => {
-    confirmLesson(lesson.id).then(() => loadLessons());
   };
 
   const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
@@ -198,7 +150,7 @@ const LessonScreen: React.FC = () => {
     setTimeSlot(lesson.timeSlot || '');
     setDuration(lesson.duration.toString());
     const student = getStudent(lesson.studentId);
-    setLessonRate(student?.hourlyRate?.toString() || '75');
+    setLessonRate('75');
     setNotes(lesson.notes || '');
     setModalVisible(true);
   };
@@ -211,7 +163,7 @@ const LessonScreen: React.FC = () => {
     setDate(tomorrow);
     setTimeSlot('');
     setDuration('2');
-    setLessonRate(firstStudent?.hourlyRate?.toString() || '75');
+    setLessonRate('75');
     setNotes('');
     setModalVisible(true);
   };
@@ -259,13 +211,8 @@ const LessonScreen: React.FC = () => {
 
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
-    const today = new Date().toISOString().split('T')[0];
-    const endPassed = getEndPassed(item);
-    const isUpcoming = !item.paid && !item.confirmedAt
-      && (item.date > today || (item.date === today && !endPassed));
-    const canConfirm = !item.paid && !item.confirmedAt && endPassed && item.date <= today;
 
-    const borderColor = item.paid ? Colors.paid : canConfirm || isUpcoming ? Colors.primary : Colors.pending;
+    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : Colors.primary;
     const isHighlighted = item.id === highlightedId;
 
     const cardBg = isHighlighted
@@ -285,19 +232,13 @@ const LessonScreen: React.FC = () => {
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            {student && <StudentAvatar name={student.name} subject={student.subject} size={40} />}
+            {student && <StudentAvatar name={student.name} size={40} />}
             <View>
               <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.subject}>{student?.subject || ''}</Text>
+              <Text style={styles.subject}>{student?.phone || ''}</Text>
             </View>
           </View>
-          {isUpcoming && !canConfirm ? (
-            <StatusBadge isPaid={false} isUpcoming={true} onToggle={() => {}} />
-          ) : canConfirm ? (
-            <StatusBadge isPaid={false} confirmMode={true} onToggle={() => handleConfirmLesson(item)} />
-          ) : (
-            <StatusBadge isPaid={item.paid} isUpcoming={false} onToggle={() => handleTogglePaid(item)} />
-          )}
+          <StatusBadge status={item.status} onToggle={(nextStatus) => handleStatusChange(item, nextStatus)} />
         </View>
 
         <View style={styles.cardBody}>
@@ -468,7 +409,7 @@ const LessonScreen: React.FC = () => {
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
-              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} subject={getStudent(selectedStudentId)?.subject || ''} size={28} />
+              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={28} />
               <Text style={styles.pickerText}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
@@ -550,10 +491,10 @@ const LessonScreen: React.FC = () => {
               style={[styles.studentItem, selectedStudentId === s.id && styles.studentItemActive]}
               onPress={() => { setSelectedStudentId(s.id); setShowStudentPicker(false); }}
             >
-              <StudentAvatar name={s.name} subject={s.subject} size={40} />
+              <StudentAvatar name={s.name} size={40} />
               <View style={styles.studentItemInfo}>
                 <Text style={[styles.studentItemName, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
-                <Text style={styles.studentItemSubject}>{s.subject} · {s.hourlyRate}元/h</Text>
+                <Text style={styles.studentItemSubject}>{s.phone || ''}</Text>
               </View>
               {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
             </TouchableOpacity>

@@ -3,13 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensio
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-gifted-charts';
-import { StudentStats, Student, Lesson } from '../models';
-import { getAllStudents, getLessonsByStudentId, getAllLessons } from '../database';
+import { StudentStats, Student, StudentSubject, Lesson } from '../models';
+import { getAllStudents, getLessonsByStudentId, getAllLessons, getSubjectsByStudentId } from '../database';
 import EmptyState from '../components/EmptyState';
 import StudentBillingDetailScreen from './StudentBillingDetailScreen';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
-  getSubjectColor,
 } from '../styles/theme';
 
 const MONTH_NAMES: Record<string, string> = {
@@ -50,11 +49,16 @@ const StatsScreen: React.FC = () => {
       const sLessons = await getLessonsByStudentId(student.id);
       const sHours = sLessons.reduce((sum, l) => sum + l.duration, 0);
       const sAmount = sLessons.reduce((sum, l) => sum + l.amount, 0);
-      const sPaid = sLessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
+      const sPaid = sLessons.filter((l) => l.status === 'paid').reduce((sum, l) => sum + l.amount, 0);
+      const sSubjects = await getSubjectsByStudentId(student.id);
 
       studentStats.push({
-        student, totalLessons: sLessons.length, totalHours: sHours,
-        totalAmount: sAmount, paidAmount: sPaid,
+        student,
+        subjects: sSubjects,
+        totalLessons: sLessons.length,
+        totalHours: sHours,
+        totalAmount: sAmount,
+        paidAmount: sPaid,
         pendingAmount: sAmount - sPaid,
       });
 
@@ -64,7 +68,7 @@ const StatsScreen: React.FC = () => {
       paidAmount += sPaid;
 
       sLessons.filter((l) => l.date.startsWith(selectedMonth)).forEach((l) => {
-        if (l.paid) monthPaid += l.amount;
+        if (l.status === 'paid') monthPaid += l.amount;
         else monthPending += l.amount;
       });
     }
@@ -83,7 +87,7 @@ const StatsScreen: React.FC = () => {
         (l) => l.studentId === s.student.id && l.date.startsWith(selectedMonth)
       );
       const mAmount = mLessons.reduce((sum, l) => sum + l.amount, 0);
-      const mPaid = mLessons.filter((l) => l.paid).reduce((sum, l) => sum + l.amount, 0);
+      const mPaid = mLessons.filter((l) => l.status === 'paid').reduce((sum, l) => sum + l.amount, 0);
       return {
         ...s,
         totalLessons: mLessons.length,
@@ -104,7 +108,7 @@ const StatsScreen: React.FC = () => {
       if (mon <= 0) { mon += 12; yr -= 1; }
       const key = `${yr}-${String(mon).padStart(2, '0')}`;
       const income = allLessons
-        .filter((l) => l.date.startsWith(key) && l.paid)
+        .filter((l) => l.date.startsWith(key) && l.status === 'paid')
         .reduce((sum, l) => sum + l.amount, 0);
       months.push({ label: `${mon}月`, value: income });
     }
@@ -154,7 +158,7 @@ const StatsScreen: React.FC = () => {
     const lessons = allLessons;
     let monthPaid = 0, monthPending = 0;
     lessons.filter((l) => l.date.startsWith(month)).forEach((l) => {
-      if (l.paid) monthPaid += l.amount;
+      if (l.status === 'paid') monthPaid += l.amount;
       else monthPending += l.amount;
     });
     setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
@@ -278,7 +282,7 @@ const StatsScreen: React.FC = () => {
         {/* Student billing cards */}
         <Text style={styles.sectionTitle}>学生账单</Text>
         {monthFilteredStats.map((item, index) => {
-          const subColor = getSubjectColor(item.student.subject);
+          const subColor = item.subjects?.[0]?.color || Colors.primary;
           const hasPending = item.pendingAmount > 0;
           return (
             <TouchableOpacity
@@ -292,7 +296,7 @@ const StatsScreen: React.FC = () => {
                   <View style={[styles.studentDot, { backgroundColor: subColor }]} />
                   <View>
                     <Text style={styles.studentName}>{item.student.name}</Text>
-                    <Text style={styles.studentSubject}>{item.student.subject} · {item.student.hourlyRate}元/h</Text>
+                    <Text style={styles.studentSubject}>{item.subjects?.[0]?.subject || '未分类'} · {item.subjects?.[0]?.hourlyRate || 0}元/h</Text>
                   </View>
                 </View>
                 {hasPending && (
