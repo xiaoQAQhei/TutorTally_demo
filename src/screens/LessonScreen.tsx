@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, Alert,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -50,6 +50,7 @@ const LessonScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -141,21 +142,14 @@ const LessonScreen: React.FC = () => {
     const doChange = () => { setLessonStatus(lesson.id, nextStatus).then(loadLessons); };
     if (confirmBeforeChange) {
       const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
-      Alert.alert('确认操作', `确定要标记为「${nextLabel}」吗？`, [
-        { text: '取消', style: 'cancel' },
-        { text: '确定', onPress: doChange },
-      ]);
+      setConfirmDialog({ visible: true, title: '确认操作', message: `确定要标记为「${nextLabel}」吗？`, onConfirm: doChange });
     } else {
       doChange();
     }
   };
 
-
   const handleCancelLesson = (lesson: Lesson) => {
-    Alert.alert('取消课程', '确定要取消这个课程吗？', [
-      { text: '返回', style: 'cancel' },
-      { text: '确定取消', style: 'destructive', onPress: () => setLessonStatus(lesson.id, 'cancelled').then(loadLessons) },
-    ]);
+    setConfirmDialog({ visible: true, title: '取消课程', message: '确定要取消这个课程吗？', onConfirm: () => setLessonStatus(lesson.id, 'cancelled').then(loadLessons) });
   };
 
   const isClassEnded = (lesson: Lesson): boolean => {
@@ -556,6 +550,23 @@ const LessonScreen: React.FC = () => {
         type={toast.type}
         onDismiss={() => setToast({ ...toast, visible: false })}
       />
+
+      {confirmDialog && (
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmBox, Shadows.floating]}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -633,12 +644,21 @@ const styles = StyleSheet.create({
   },
   actionButton: { padding: Spacing.sm },
   scrollTopBtn: {
-    position: 'absolute', bottom: 100, right: 24,
+    position: 'absolute', bottom: 100, right: 30,
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
     justifyContent: 'center', alignItems: 'center',
     ...Shadows.standard,
   },
+  confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, width: '80%' },
+  confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.sm },
+  confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmCancelBtn: { flex: 1, height: 44, borderRadius: BorderRadius.button, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelText: { fontSize: FontSize.body, color: Colors.caption },
+  confirmOkBtn: { flex: 1, height: 44, borderRadius: BorderRadius.button, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
   datePickerButton: {
     flexDirection: 'row', alignItems: 'center',
     height: 50, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
