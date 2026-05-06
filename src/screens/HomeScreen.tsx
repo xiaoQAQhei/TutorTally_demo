@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 're
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student } from '../models';
-import { getAllLessons, getAllStudents, confirmLesson } from '../database';
+import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
@@ -38,20 +38,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const studentsData = await getAllStudents();
     setStudents(studentsData);
     const today = new Date().toISOString().split('T')[0];
-    const getEndPassed = (l: Lesson): boolean => {
-      const endTime = l.timeSlot?.split('-')[1]?.trim();
-      if (!endTime) return true;
-      return new Date() >= new Date(`${l.date}T${endTime}:00`);
-    };
 
     const upcoming: LessonItem[] = [];
     const confirmable: LessonItem[] = [];
     for (const l of lessons) {
-      if (l.confirmedAt) continue;
       if (l.date !== today) continue;
-      if (l.date > today || (l.date === today && !getEndPassed(l))) {
+      if (l.status === 'scheduled') {
         upcoming.push({ ...l, category: 'upcoming' });
-      } else {
+      } else if (l.status === 'completed') {
         confirmable.push({ ...l, category: 'confirmable' });
       }
     }
@@ -60,10 +54,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setRecentLessons([...confirmable, ...upcoming].slice(0, 30));
 
     const pending = lessons.filter((l) => {
-      if (l.paid) return false;
-      if (l.confirmedAt) return true;
-      if (l.date < today) return true;
-      if (l.date === today) return getEndPassed(l);
+      if (l.status === 'paid') return false;
+      if (l.status === 'completed') return true;
+      if (l.date < today) return l.status !== 'cancelled';
       return false;
     }).reduce((sum, l) => sum + l.amount, 0);
     setPendingAmount(pending);
@@ -73,7 +66,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleConfirmLesson = async (id: number) => {
-    await confirmLesson(id);
+    await setLessonStatus(id, 'completed');
     loadData();
   };
 

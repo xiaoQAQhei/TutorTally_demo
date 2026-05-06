@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Student, Lesson } from '../models';
-import { getLessonsByStudentId } from '../database';
+import { Student, StudentSubject, Lesson } from '../models';
+import { getLessonsByStudentId, getSubjectsByStudentId } from '../database';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
-  getSubjectColor,
 } from '../styles/theme';
 
 interface Props {
@@ -29,19 +28,21 @@ const MONTH_NAMES: Record<string, string> = {
 
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
 
   useEffect(() => {
     if (student) {
       getLessonsByStudentId(student.id).then(setLessons);
+      getSubjectsByStudentId(student.id).then(setSubjects);
     }
   }, [student]);
 
   if (!student) return null;
 
-  const subjectColor = getSubjectColor(student.subject);
+  const subjectColor = subjects?.[0]?.color || Colors.primary;
 
   const totalAmount = lessons.reduce((s, l) => s + l.amount, 0);
-  const paidAmount = lessons.filter((l) => l.paid).reduce((s, l) => s + l.amount, 0);
+  const paidAmount = lessons.filter((l) => l.status === 'paid').reduce((s, l) => s + l.amount, 0);
   const pendingAmount = totalAmount - paidAmount;
   const totalHours = lessons.reduce((s, l) => s + l.duration, 0);
 
@@ -74,7 +75,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
             <Text style={styles.headerTitle}>{student.name}</Text>
             <View style={styles.headerSubRow}>
               <View style={[styles.subjectDot, { backgroundColor: subjectColor }]} />
-              <Text style={styles.headerSub}>{student.subject} · {student.hourlyRate}元/h</Text>
+              <Text style={styles.headerSub}>{subjects?.[0]?.subject || '未分类'} · {subjects?.[0]?.hourlyRate || 0}元/h</Text>
             </View>
           </View>
           <View style={styles.closeBtn} />
@@ -128,9 +129,9 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
                   <View style={styles.lessonRight}>
                     <Text style={styles.lessonDuration}>{l.duration.toFixed(1)}h</Text>
                     <Text style={styles.lessonAmount}>{l.amount.toFixed(0)}元</Text>
-                    <View style={[l.paid ? styles.inlineBadgePaid : styles.inlineBadgePending]}>
-                      <Text style={[styles.inlineBadgeText, { color: l.paid ? Colors.paid : Colors.pending }]}>
-                        {l.paid ? '已收' : '待收'}
+                    <View style={[l.status === 'paid' ? styles.inlineBadgePaid : styles.inlineBadgePending]}>
+                      <Text style={[styles.inlineBadgeText, { color: l.status === 'paid' ? Colors.paid : Colors.pending }]}>
+                        {l.status === 'paid' ? '已收' : '待收'}
                       </Text>
                     </View>
                   </View>
