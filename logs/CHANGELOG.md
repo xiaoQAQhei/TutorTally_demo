@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-06 19:38 | auto: 05-06 19:38 | .claude/settings.local.json 
+- .claude/settings.local.json
+
 ## 2026-05-05 19:45 | auto: 05-05 19:45 | .claude/settings.local.json .playwright-mcp/ 
 - .claude/settings.local.json
 - .playwright-mcp/
