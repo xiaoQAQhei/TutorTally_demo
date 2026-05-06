@@ -51,7 +51,7 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
-  const cancelLineAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -240,13 +240,13 @@ const LessonScreen: React.FC = () => {
     const isCancelled = item.status === 'cancelled';
     const isHighlighted = item.id === highlightedId;
 
-    // Animated strikethrough line
-    if (!cancelLineAnims.current.has(lessonId)) {
-      cancelLineAnims.current.set(lessonId, new Animated.Value(0));
+    // Animated strikethrough line — left-to-right with overshoot
+    if (!cancelAnims.current.has(lessonId)) {
+      cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
     }
-    const lineAnim = cancelLineAnims.current.get(lessonId)!;
+    const cancelData = cancelAnims.current.get(lessonId)!;
     if (isCancelled) {
-      Animated.timing(lineAnim, { toValue: 1, duration: 400, useNativeDriver: false }).start();
+      Animated.timing(cancelData.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start();
     }
 
     const cardBg = isCancelled
@@ -263,7 +263,11 @@ const LessonScreen: React.FC = () => {
         style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg, opacity: isCancelled ? 0.6 : 1 }]}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
+          const w = e.nativeEvent.layout.width;
           if (h > 0) itemHeightRef.current = h;
+          if (w > 0 && cancelAnims.current.has(lessonId)) {
+            cancelAnims.current.get(lessonId)!.width = w;
+          }
         }}
       >
         <View style={styles.cardHeader}>
@@ -311,14 +315,15 @@ const LessonScreen: React.FC = () => {
             </View>
           ) : null}
           {isCancelled && (
-            <View style={styles.strikethrough}>
-              <Animated.View style={[styles.strikethroughBg, {
-                transform: [{
-                  scaleX: lineAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
-                }],
+            <View style={styles.strikethroughOverlay} pointerEvents="none">
+              <Animated.View style={[styles.strikethroughLine, {
+                width: cancelData.anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 40 : 400],
+                }),
               }]} />
-              <Animated.Text style={[styles.strikethroughText, {
-                opacity: lineAnim.interpolate({ inputRange: [0.6, 1], outputRange: [0, 1] }),
+              <Animated.Text style={[styles.strikethroughLabel, {
+                opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
               }]}>已取消</Animated.Text>
             </View>
           )}
@@ -663,12 +668,20 @@ const styles = StyleSheet.create({
     fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
   timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },
-  strikethrough: { justifyContent: 'center', alignItems: 'center', marginTop: Spacing.md, height: 24 },
-  strikethroughBg: {
-    position: 'absolute', left: -Spacing.xl, right: -Spacing.xl, top: 11, height: 1.5,
+  strikethroughOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center', alignItems: 'center', zIndex: 10,
+    overflow: 'visible',
+  },
+  strikethroughLine: {
+    position: 'absolute', left: -20, height: 2,
     backgroundColor: '#9CA3AF',
   },
-  strikethroughText: { fontSize: FontSize.small, color: '#9CA3AF', fontWeight: FontWeight.medium, zIndex: 1, backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.sm },
+  strikethroughLabel: {
+    fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
+    backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
+    borderRadius: BorderRadius.pill, overflow: 'hidden',
+  },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
