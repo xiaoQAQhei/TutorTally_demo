@@ -1,4 +1,32 @@
 # 改动日志
+## 2026-05-06 20:43 | auto: 05-06 20:43 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+## 2026-05-06 20:42 | v2.0 数据库层重写 — 6表+迁移+完整CRUD+Mock数据
+- 重写 database/index.ts，替换 v1 三表结构为 v2.0 六表结构（students, student_subjects, rate_history, lessons, payments, recurring_rules）
+- 学生数据拆分：subject/hourlyRate 移至 student_subjects 独立实体，支持多科目
+- Lesson 改用 status 四态枚举（scheduled/completed/paid/cancelled），移除 paid: boolean
+- 新增 rate_history 表记录课时费变更历史
+- 新增 recurring_rules 表支持周期性课程规则
+- Payment 升级增加 paidAt/notes 等字段
+- 全局使用软删除（deletedAt），替代物理删除
+- 新增 migrateFromV1：从旧 tutor_bill.db 迁移数据到新库
+- 新增 setLessonStatus 替代 toggleLessonPaid/confirmLesson
+- 新增 addSubject/getSubjectsByStudentId/updateSubject/deleteSubject 科目 CRUD
+- 新增 addRateHistory/getRateHistoryBySubjectId 费率历史
+- 新增 addRecurringRule/getAllRecurringRules/updateRecurringRule/deleteRecurringRule 周期规则 CRUD
+- Mock 数据升级：3 学生 + 3 科目 + 15 条课程（状态混合）
+  - 文件: src/database/index.ts, package.json, package-lock.json
+
+## 2026-05-06 20:12 | v2.0 数据模型升级 — 多科目、四态状态、支付记录、周期规则
+- 替换数据模型为 v2.0 类型定义，Student 移除 subject/hourlyRate 字段，新增 StudentSubject 独立实体
+- Lesson 新增 status 四态枚举（scheduled/completed/paid/cancelled），移除 paid: boolean
+- 新增 RateHistory、RecurringRule 类型定义
+- Payment 升级，新增 paidAt/notes/updatedAt/deletedAt/_uuid 字段
+- 所有实体新增 _uuid 用于导入导出
+- StudentStats 新增 subjects: StudentSubject[] 字段
+  - 文件: src/models/index.ts
+
 ## 2026-05-06 19:38 | auto: 05-06 19:38 | .claude/settings.local.json 
 - .claude/settings.local.json
 
