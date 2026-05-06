@@ -13,16 +13,15 @@ export function useSlideManager() {
   const triggerSlide = useCallback((id: number) => {
     const anim = getValue(id);
     anim.setValue(0);
-    Animated.timing(anim, {
-      toValue: 1, duration: 350, useNativeDriver: false,
-    }).start();
+    Animated.sequence([
+      Animated.timing(anim, { toValue: 35, duration: 200, useNativeDriver: false }),
+      Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }),
+    ]).start();
   }, [getValue]);
 
   const getTransform = useCallback((id: number) => {
     const anim = getValue(id);
-    return [{
-      translateX: anim.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, 35, 0] }),
-    }];
+    return [{ translateX: anim }];
   }, [getValue]);
 
   return { triggerSlide, getTransform };
@@ -61,10 +60,10 @@ export function useShatterManager() {
     const animations = frags.map((f, i) => {
       const delay = i * 50;
       return Animated.parallel([
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.dx, { toValue: (i % 2 === 0 ? -1 : 1) * (60 + Math.random() * 100), duration: 350, useNativeDriver: true })]),
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.dy, { toValue: 100 + i * 30 + Math.random() * 100, duration: 350, useNativeDriver: true })]),
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.rot, { toValue: (i % 2 === 0 ? -1 : 1) * (1 + Math.random() * 3), duration: 350, useNativeDriver: true })]),
-        Animated.sequence([Animated.delay(delay + 250), Animated.timing(f.opacity, { toValue: 0, duration: 150, useNativeDriver: true })]),
+        Animated.sequence([Animated.delay(delay), Animated.timing(f.dx, { toValue: (i % 2 === 0 ? -1 : 1) * (60 + Math.random() * 100), duration: 350, useNativeDriver: false })]),
+        Animated.sequence([Animated.delay(delay), Animated.timing(f.dy, { toValue: 100 + i * 30 + Math.random() * 100, duration: 350, useNativeDriver: false })]),
+        Animated.sequence([Animated.delay(delay), Animated.timing(f.rot, { toValue: (i % 2 === 0 ? -1 : 1) * (1 + Math.random() * 3), duration: 350, useNativeDriver: false })]),
+        Animated.sequence([Animated.delay(delay + 250), Animated.timing(f.opacity, { toValue: 0, duration: 150, useNativeDriver: false })]),
       ]);
     });
 
