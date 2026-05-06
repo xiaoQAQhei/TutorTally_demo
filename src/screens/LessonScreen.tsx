@@ -16,7 +16,7 @@ import StatusBadge from '../components/StatusBadge';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
+  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
@@ -44,11 +44,12 @@ const LessonScreen: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
-  const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight } = useAction();
+  const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   const itemHeightRef = useRef(180);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -137,9 +138,18 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
-    await setLessonStatus(lesson.id, nextStatus);
-    loadLessons();
+    const doChange = () => { setLessonStatus(lesson.id, nextStatus).then(loadLessons); };
+    if (confirmBeforeChange) {
+      const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
+      Alert.alert('确认操作', `确定要标记为「${nextLabel}」吗？`, [
+        { text: '取消', style: 'cancel' },
+        { text: '确定', onPress: doChange },
+      ]);
+    } else {
+      doChange();
+    }
   };
+
 
   const handleCancelLesson = (lesson: Lesson) => {
     Alert.alert('取消课程', '确定要取消这个课程吗？', [
@@ -225,10 +235,13 @@ const LessonScreen: React.FC = () => {
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
 
-    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : Colors.primary;
+    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
+    const isCancelled = item.status === 'cancelled';
     const isHighlighted = item.id === highlightedId;
 
-    const cardBg = isHighlighted
+    const cardBg = isCancelled
+      ? '#F3F4F6'
+      : isHighlighted
       ? highlightAnim.interpolate({
           inputRange: [0, 1],
           outputRange: [Colors.card, Colors.primary + '18'],
@@ -237,7 +250,7 @@ const LessonScreen: React.FC = () => {
 
     return (
       <Animated.View
-        style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg }]}
+        style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg, opacity: isCancelled ? 0.6 : 1 }]}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           if (h > 0) itemHeightRef.current = h;
@@ -316,6 +329,8 @@ const LessonScreen: React.FC = () => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
         ref={flatListRef}
+        onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
+        scrollEventThrottle={16}
         initialNumToRender={filteredLessons.length}
         windowSize={50}
         getItemLayout={(_, index) => {
@@ -426,6 +441,15 @@ const LessonScreen: React.FC = () => {
         }
       />
 
+      {showScrollTop && (
+        <TouchableOpacity
+          style={styles.scrollTopBtn}
+          activeOpacity={0.7}
+          onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+        >
+          <Ionicons name="arrow-up" size={22} color={Colors.primary} />
+        </TouchableOpacity>
+      )}
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.primary} />
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
@@ -608,6 +632,12 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
   actionButton: { padding: Spacing.sm },
+  scrollTopBtn: {
+    position: 'absolute', bottom: 90, right: Spacing.xl,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.card, justifyContent: 'center', alignItems: 'center',
+    ...Shadows.standard,
+  },
   datePickerButton: {
     flexDirection: 'row', alignItems: 'center',
     height: 50, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,

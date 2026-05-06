@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 import Toast from '../components/Toast';
+import { useAction } from '../contexts/ActionContext';
 import { exportAllToExcel } from '../utils/export';
 import { pickAndImportCsv } from '../utils/import';
 import { generateStudentPdf } from '../utils/pdf';
@@ -16,6 +17,7 @@ interface Props {
 
 const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigateToStudentSelect }) => {
   const [exportMode, setExportMode] = useState<ExportMode>(null);
+  const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
 
   const handleExport = async (mode: ExportMode) => {
@@ -59,6 +61,15 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
             <Ionicons name="chevron-forward" size={18} color={Colors.caption} />
           </TouchableOpacity>
         ))}
+
+        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>偏好设置</Text>
+        <View style={[styles.menuItem, Shadows.subtle]}>
+          <View style={styles.menuText}>
+            <Text style={styles.menuLabel}>状态变更前提醒</Text>
+            <Text style={styles.menuSub}>点击 badge 切换状态时弹窗确认</Text>
+          </View>
+          <Switch value={confirmBeforeChange} onValueChange={toggleConfirmBeforeChange} trackColor={{ false: Colors.divider, true: Colors.primary }} />
+        </View>
 
         <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>

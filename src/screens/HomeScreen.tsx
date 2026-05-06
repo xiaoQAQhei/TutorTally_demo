@@ -185,10 +185,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           ListEmptyComponent={
             <EmptyState
               icon="book-outline"
-              title="没有待上课程"
+              title="今天没有待上课程"
               subtitle="去课程记录添加未来的课程安排"
               buttonLabel="添加课程"
-              onButtonPress={() => navigation.navigate('Lessons')}
+              onButtonPress={() => { setPendingAction('addLesson'); navigation.navigate('Lessons'); }}
             />
           }
         />
