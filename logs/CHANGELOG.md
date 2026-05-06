@@ -1,31 +1,63 @@
-# 改动日志
+﻿## [2026-05-06 21:49] feat: adapt remaining screens to v2 data model — status/subjects/rate history
+- HomeScreen: replaced `paid`/`confirmedAt` logic with `status` enum for filtering and pending amount calculation; replaced `confirmLesson` with `setLessonStatus(id, 'completed')`
+- StatsScreen: replaced all `l.paid` references with `l.status === 'paid'`; load subjects per student via `getSubjectsByStudentId`; display subject name/rate from `StudentSubject` instead of `Student.subject`/`Student.hourlyRate`
+- StudentBillingDetailScreen: load subjects for the student; use `subjects[0]` for subject info display; replaced `l.paid` with `l.status === 'paid'` in summary and lesson row badge
+  - file: src/screens/HomeScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx
+
+## [2026-05-06 21:42] feat: local notifications — pre-lesson 30min + post-lesson 2h payment reminders
+- Created notifications.ts with notification handler, permission request, and scheduleAllReminders()
+- Pre-lesson reminders: 30 min before scheduled lesson start time
+- Post-lesson reminders: 2h after end time for completed lessons (payment reminder)
+- Integrated into App.tsx useEffect after database init
+  - file: src/utils/notifications.ts, src/App.tsx
+
+## [2026-05-06 21:25] feat: LessonScreen v2 -- 4-status filter, manual amount, subject picker
+- Rewrote filter/count logic from `paid`/`confirmedAt` booleans to `status` enum (scheduled/completed/paid)
+- Removed `getEndPassed`, `handleTogglePaid`, `handleConfirmLesson` functions
+- Added subject picker in lesson form (loads from `student_subjects` table based on selected student)
+- Added manual amount toggle (Switch) -- when enabled, hides rate/duration auto-calc and shows manual amount input
+- Added lessonRate auto-fill when subject changes (from subject.hourlyRate)
+- Updated StatusBadge usage to new v2 API (status, showNextAction, onToggle, allowPaid)
+- Updated `handleSave` to write `studentSubjectId`, `manualAmount`, `status: 'scheduled'`
+- Updated `handleEdit`/`openAddModal` to load subjects and set selected subject/rate
+- Removed student.subject / student.hourlyRate references (no longer in Student model)
+  - file: src/screens/LessonScreen.tsx
+
+## [2026-05-06 21:02] feat: StatusBadge v2 -- 4 statuses + next-action buttons with animation
+- Rewrote StatusBadge to use single status prop instead of isPaid/isUpcoming/confirmMode booleans
+- Added next-action buttons (completed/paid/cancelled) with spring animation
+- Icon mapping per status: scheduled=book, completed=time, paid=checkmark-circle, cancelled=close-circle
+- Status transitions driven by StatusTransitions from theme
+  - file: src/components/StatusBadge.tsx
+
+# 鏀瑰姩鏃ュ織
 ## 2026-05-06 20:43 | auto: 05-06 20:43 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 
-## 2026-05-06 20:42 | v2.0 数据库层重写 — 6表+迁移+完整CRUD+Mock数据
-- 重写 database/index.ts，替换 v1 三表结构为 v2.0 六表结构（students, student_subjects, rate_history, lessons, payments, recurring_rules）
-- 学生数据拆分：subject/hourlyRate 移至 student_subjects 独立实体，支持多科目
-- Lesson 改用 status 四态枚举（scheduled/completed/paid/cancelled），移除 paid: boolean
-- 新增 rate_history 表记录课时费变更历史
-- 新增 recurring_rules 表支持周期性课程规则
-- Payment 升级增加 paidAt/notes 等字段
-- 全局使用软删除（deletedAt），替代物理删除
-- 新增 migrateFromV1：从旧 tutor_bill.db 迁移数据到新库
-- 新增 setLessonStatus 替代 toggleLessonPaid/confirmLesson
-- 新增 addSubject/getSubjectsByStudentId/updateSubject/deleteSubject 科目 CRUD
-- 新增 addRateHistory/getRateHistoryBySubjectId 费率历史
-- 新增 addRecurringRule/getAllRecurringRules/updateRecurringRule/deleteRecurringRule 周期规则 CRUD
-- Mock 数据升级：3 学生 + 3 科目 + 15 条课程（状态混合）
-  - 文件: src/database/index.ts, package.json, package-lock.json
+## 2026-05-06 20:42 | v2.0 鏁版嵁搴撳眰閲嶅啓 鈥?6琛?杩佺Щ+瀹屾暣CRUD+Mock鏁版嵁
+- 閲嶅啓 database/index.ts锛屾浛鎹?v1 涓夎〃缁撴瀯涓?v2.0 鍏〃缁撴瀯锛坰tudents, student_subjects, rate_history, lessons, payments, recurring_rules锛?
+- 瀛︾敓鏁版嵁鎷嗗垎锛歴ubject/hourlyRate 绉昏嚦 student_subjects 鐙珛瀹炰綋锛屾敮鎸佸绉戠洰
+- Lesson 鏀圭敤 status 鍥涙€佹灇涓撅紙scheduled/completed/paid/cancelled锛夛紝绉婚櫎 paid: boolean
+- 鏂板 rate_history 琛ㄨ褰曡鏃惰垂鍙樻洿鍘嗗彶
+- 鏂板 recurring_rules 琛ㄦ敮鎸佸懆鏈熸€ц绋嬭鍒?
+- Payment 鍗囩骇澧炲姞 paidAt/notes 绛夊瓧娈?
+- 鍏ㄥ眬浣跨敤杞垹闄わ紙deletedAt锛夛紝鏇夸唬鐗╃悊鍒犻櫎
+- 鏂板 migrateFromV1锛氫粠鏃?tutor_bill.db 杩佺Щ鏁版嵁鍒版柊搴?
+- 鏂板 setLessonStatus 鏇夸唬 toggleLessonPaid/confirmLesson
+- 鏂板 addSubject/getSubjectsByStudentId/updateSubject/deleteSubject 绉戠洰 CRUD
+- 鏂板 addRateHistory/getRateHistoryBySubjectId 璐圭巼鍘嗗彶
+- 鏂板 addRecurringRule/getAllRecurringRules/updateRecurringRule/deleteRecurringRule 鍛ㄦ湡瑙勫垯 CRUD
+- Mock 鏁版嵁鍗囩骇锛? 瀛︾敓 + 3 绉戠洰 + 15 鏉¤绋嬶紙鐘舵€佹贩鍚堬級
+  - 鏂囦欢: src/database/index.ts, package.json, package-lock.json
 
-## 2026-05-06 20:12 | v2.0 数据模型升级 — 多科目、四态状态、支付记录、周期规则
-- 替换数据模型为 v2.0 类型定义，Student 移除 subject/hourlyRate 字段，新增 StudentSubject 独立实体
-- Lesson 新增 status 四态枚举（scheduled/completed/paid/cancelled），移除 paid: boolean
-- 新增 RateHistory、RecurringRule 类型定义
-- Payment 升级，新增 paidAt/notes/updatedAt/deletedAt/_uuid 字段
-- 所有实体新增 _uuid 用于导入导出
-- StudentStats 新增 subjects: StudentSubject[] 字段
-  - 文件: src/models/index.ts
+## 2026-05-06 20:12 | v2.0 鏁版嵁妯″瀷鍗囩骇 鈥?澶氱鐩€佸洓鎬佺姸鎬併€佹敮浠樿褰曘€佸懆鏈熻鍒?
+- 鏇挎崲鏁版嵁妯″瀷涓?v2.0 绫诲瀷瀹氫箟锛孲tudent 绉婚櫎 subject/hourlyRate 瀛楁锛屾柊澧?StudentSubject 鐙珛瀹炰綋
+- Lesson 鏂板 status 鍥涙€佹灇涓撅紙scheduled/completed/paid/cancelled锛夛紝绉婚櫎 paid: boolean
+- 鏂板 RateHistory銆丷ecurringRule 绫诲瀷瀹氫箟
+- Payment 鍗囩骇锛屾柊澧?paidAt/notes/updatedAt/deletedAt/_uuid 瀛楁
+- 鎵€鏈夊疄浣撴柊澧?_uuid 鐢ㄤ簬瀵煎叆瀵煎嚭
+- StudentStats 鏂板 subjects: StudentSubject[] 瀛楁
+  - 鏂囦欢: src/models/index.ts
 
 ## 2026-05-06 19:38 | auto: 05-06 19:38 | .claude/settings.local.json 
 - .claude/settings.local.json
@@ -84,234 +116,235 @@
 - .claude/settings.local.json
 
 
-记录项目所有功能改动、UI 优化和 Bug 修复。
+璁板綍椤圭洰鎵€鏈夊姛鑳芥敼鍔ㄣ€乁I 浼樺寲鍜?Bug 淇銆?
 
-## 格式说明
+## 鏍煎紡璇存槑
 
-每条记录包含：
-- **日期** — 改动日期
-- **类型** — `feat`(新功能) / `style`(UI 样式) / `fix`(修复) / `refactor`(重构) / `docs`(文档)
-- **描述** — 改了什么
-- **文件** — 涉及的文件列表
-- **备注** — 可选说明
+姣忔潯璁板綍鍖呭惈锛?
+- **鏃ユ湡** 鈥?鏀瑰姩鏃ユ湡
+- **绫诲瀷** 鈥?`feat`(鏂板姛鑳? / `style`(UI 鏍峰紡) / `fix`(淇) / `refactor`(閲嶆瀯) / `docs`(鏂囨。)
+- **鎻忚堪** 鈥?鏀逛簡浠€涔?
+- **鏂囦欢** 鈥?娑夊強鐨勬枃浠跺垪琛?
+- **澶囨敞** 鈥?鍙€夎鏄?
 
 ---
 
-## 2026-05-03 23:34 StatsScreen 图表自适应 + 月份切换修复
+## 2026-05-03 23:34 StatsScreen 鍥捐〃鑷€傚簲 + 鏈堜唤鍒囨崲淇
 
-### 图表宽度 useWindowDimensions 自适应 + key 修复换月份渲染
-- **类型**: fix, style
-- **描述**:
-  1. 统计图表宽度改用 `useWindowDimensions` 自适应，替换硬编码的 `Dimensions.get('window')`，旋转屏幕/窗口变化时正确重渲染
-  2. 饼图和柱状图组件添加 `key` 属性绑定月份，修复切换月份时图表数据不更新的问题
-- **文件**:
+### 鍥捐〃瀹藉害 useWindowDimensions 鑷€傚簲 + key 淇鎹㈡湀浠芥覆鏌?
+- **绫诲瀷**: fix, style
+- **鎻忚堪**:
+  1. 缁熻鍥捐〃瀹藉害鏀圭敤 `useWindowDimensions` 鑷€傚簲锛屾浛鎹㈢‖缂栫爜鐨?`Dimensions.get('window')`锛屾棆杞睆骞?绐楀彛鍙樺寲鏃舵纭噸娓叉煋
+  2. 楗煎浘鍜屾煴鐘跺浘缁勪欢娣诲姞 `key` 灞炴€х粦瀹氭湀浠斤紝淇鍒囨崲鏈堜唤鏃跺浘琛ㄦ暟鎹笉鏇存柊鐨勯棶棰?
+- **鏂囦欢**:
   - `src/screens/StatsScreen.tsx`
 
-## 2026-05-03 21:31 时间段醒目优化
+## 2026-05-03 21:31 鏃堕棿娈甸啋鐩紭鍖?
 
-### LessonScreen 默认时长 + FlatList 渲染优化
-- **类型**: feat, perf
-- **描述**:
-  1. 新增课程弹窗默认时长设为 2 小时，减少手动输入
-  2. FlatList 添加 initialNumToRender 和 windowSize 参数，优化列表渲染性能，减少滚动空白
-- **文件**:
+### LessonScreen 榛樿鏃堕暱 + FlatList 娓叉煋浼樺寲
+- **绫诲瀷**: feat, perf
+- **鎻忚堪**:
+  1. 鏂板璇剧▼寮圭獥榛樿鏃堕暱璁句负 2 灏忔椂锛屽噺灏戞墜鍔ㄨ緭鍏?
+  2. FlatList 娣诲姞 initialNumToRender 鍜?windowSize 鍙傛暟锛屼紭鍖栧垪琛ㄦ覆鏌撴€ц兘锛屽噺灏戞粴鍔ㄧ┖鐧?
+- **鏂囦欢**:
   - `src/screens/LessonScreen.tsx`
 
-## 2026-05-03 确认下课体验 + 列表性能优化
+## 2026-05-03 纭涓嬭浣撻獙 + 鍒楄〃鎬ц兘浼樺寲
 
-### HomeScreen 确认下课快捷操作
-- **类型**: feat
-- **描述**:
-  1. 首页课程列表拆分为「待确认下课」和「待上课」两个分区，已过下课时间的课程自动归入确认区
-  2. 确认区课程显示红色左侧条和红色「确认下课」按钮，视觉上与蓝色待上课区分明显
-  3. 点击确认按钮直接调用 confirmLesson 完成下课，无需跳转页面
-  4. 确认区按日期倒序、待上课区按日期正序排列
-- **文件**:
+### HomeScreen 纭涓嬭蹇嵎鎿嶄綔
+- **绫诲瀷**: feat
+- **鎻忚堪**:
+  1. 棣栭〉璇剧▼鍒楄〃鎷嗗垎涓恒€屽緟纭涓嬭銆嶅拰銆屽緟涓婅銆嶄袱涓垎鍖猴紝宸茶繃涓嬭鏃堕棿鐨勮绋嬭嚜鍔ㄥ綊鍏ョ‘璁ゅ尯
+  2. 纭鍖鸿绋嬫樉绀虹孩鑹插乏渚ф潯鍜岀孩鑹层€岀‘璁や笅璇俱€嶆寜閽紝瑙嗚涓婁笌钃濊壊寰呬笂璇惧尯鍒嗘槑鏄?
+  3. 鐐瑰嚮纭鎸夐挳鐩存帴璋冪敤 confirmLesson 瀹屾垚涓嬭锛屾棤闇€璺宠浆椤甸潰
+  4. 纭鍖烘寜鏃ユ湡鍊掑簭銆佸緟涓婅鍖烘寜鏃ユ湡姝ｅ簭鎺掑垪
+- **鏂囦欢**:
   - `src/screens/HomeScreen.tsx`
 
-### LessonScreen 列表滚动性能优化
-- **类型**: perf
-- **描述**:
-  1. 卡片 onLayout 测量高度，为 getItemLayout 提供精准 item 高度
-  2. FlatList 启用 getItemLayout 跳过布局计算，大幅提升滚动性能
-  3. initialNumToRender 渲染全部可见项，windowSize 增大到 50，减少空白闪烁
-  4. onScrollToIndexFailed 加入重试机制，高亮跳转失败时自动重试
-- **文件**:
+### LessonScreen 鍒楄〃婊氬姩鎬ц兘浼樺寲
+- **绫诲瀷**: perf
+- **鎻忚堪**:
+  1. 鍗＄墖 onLayout 娴嬮噺楂樺害锛屼负 getItemLayout 鎻愪緵绮惧噯 item 楂樺害
+  2. FlatList 鍚敤 getItemLayout 璺宠繃甯冨眬璁＄畻锛屽ぇ骞呮彁鍗囨粴鍔ㄦ€ц兘
+  3. initialNumToRender 娓叉煋鍏ㄩ儴鍙椤癸紝windowSize 澧炲ぇ鍒?50锛屽噺灏戠┖鐧介棯鐑?
+  4. onScrollToIndexFailed 鍔犲叆閲嶈瘯鏈哄埗锛岄珮浜烦杞け璐ユ椂鑷姩閲嶈瘯
+- **鏂囦欢**:
   - `src/screens/LessonScreen.tsx`
 
-### 项目文档更新
-- **类型**: docs
-- **描述**: CLAUDE.md、PROGRESS.md、settings 配置及改动日志同步更新
-- **文件**:
+### 椤圭洰鏂囨。鏇存柊
+- **绫诲瀷**: docs
+- **鎻忚堪**: CLAUDE.md銆丳ROGRESS.md銆乻ettings 閰嶇疆鍙婃敼鍔ㄦ棩蹇楀悓姝ユ洿鏂?
+- **鏂囦欢**:
   - `CLAUDE.md`
   - `PROGRESS.md`
   - `.claude/settings.local.json`
   - `logs/CHANGELOG.md`
 
-## 2026-05-03 01:39 时间段选择器 + 课程流程完善
+## 2026-05-03 01:39 鏃堕棿娈甸€夋嫨鍣?+ 璇剧▼娴佺▼瀹屽杽
 
-### TimeRangePicker 时间段选择器
-- **类型**: feat
-- **描述**:
-  1. 创建 TimeRangePicker 组件：时/分四列滚动选择器，开始/结束时间联动
-  2. 吸附优化：改用 decelerationRate=0 + 手动 scrollTo 替代 snapToInterval，精准定位
-  3. 字体放大：非选中项 FontSize.h3，选中项 FontSize.h1，视觉层级分明
-  4. 预览栏优化：时间范围+时长合并到同一行显示，信息密度更高
-  5. 底部弹出动画：Animated.spring slide-up + 遮罩渐变，交互流畅
-- **文件**:
-  - `src/components/TimeRangePicker.tsx` (新增)
+### TimeRangePicker 鏃堕棿娈甸€夋嫨鍣?
+- **绫诲瀷**: feat
+- **鎻忚堪**:
+  1. 鍒涘缓 TimeRangePicker 缁勪欢锛氭椂/鍒嗗洓鍒楁粴鍔ㄩ€夋嫨鍣紝寮€濮?缁撴潫鏃堕棿鑱斿姩
+  2. 鍚搁檮浼樺寲锛氭敼鐢?decelerationRate=0 + 鎵嬪姩 scrollTo 鏇夸唬 snapToInterval锛岀簿鍑嗗畾浣?
+  3. 瀛椾綋鏀惧ぇ锛氶潪閫変腑椤?FontSize.h3锛岄€変腑椤?FontSize.h1锛岃瑙夊眰绾у垎鏄?
+  4. 棰勮鏍忎紭鍖栵細鏃堕棿鑼冨洿+鏃堕暱鍚堝苟鍒板悓涓€琛屾樉绀猴紝淇℃伅瀵嗗害鏇撮珮
+  5. 搴曢儴寮瑰嚭鍔ㄧ敾锛欰nimated.spring slide-up + 閬僵娓愬彉锛屼氦浜掓祦鐣?
+- **鏂囦欢**:
+  - `src/components/TimeRangePicker.tsx` (鏂板)
   - `src/components/BottomSheet.tsx`
   - `src/components/StatusBadge.tsx`
-  - `src/contexts/ActionContext.tsx` (新增)
+  - `src/contexts/ActionContext.tsx` (鏂板)
 
-### LessonScreen 集成时间段选择 + 课程流程完善
-- **类型**: feat
-- **描述**:
-  1. LessonScreen 集成 TimeRangePicker，课程表单支持选择时段
-  2. 待上课状态可确认下课，完善课程生命周期
-  3. HomeScreen 待上课点击跳转完善
-- **文件**:
+### LessonScreen 闆嗘垚鏃堕棿娈甸€夋嫨 + 璇剧▼娴佺▼瀹屽杽
+- **绫诲瀷**: feat
+- **鎻忚堪**:
+  1. LessonScreen 闆嗘垚 TimeRangePicker锛岃绋嬭〃鍗曟敮鎸侀€夋嫨鏃舵
+  2. 寰呬笂璇剧姸鎬佸彲纭涓嬭锛屽畬鍠勮绋嬬敓鍛藉懆鏈?
+  3. HomeScreen 寰呬笂璇剧偣鍑昏烦杞畬鍠?
+- **鏂囦欢**:
   - `src/screens/LessonScreen.tsx`
   - `src/screens/HomeScreen.tsx`
   - `src/database/index.ts`
   - `src/models/index.ts`
   - `src/App.tsx`
 
-### CalendarPicker 响应式修复
-- **类型**: fix
-- **描述**: 使用 useWindowDimensions + maxWidth 400 限制日历宽度，适配不同屏幕尺寸
-- **文件**: `src/components/CalendarPicker.tsx`
+### CalendarPicker 鍝嶅簲寮忎慨澶?
+- **绫诲瀷**: fix
+- **鎻忚堪**: 浣跨敤 useWindowDimensions + maxWidth 400 闄愬埗鏃ュ巻瀹藉害锛岄€傞厤涓嶅悓灞忓箷灏哄
+- **鏂囦欢**: `src/components/CalendarPicker.tsx`
 
-### 自动化工具链
-- **类型**: feat
-- **描述**:
-  1. Stop hook 改为自动 git push，每轮对话结束自动提交并推送
-  2. 项目指令 CLAUDE.md 完善
-- **文件**:
+### 鑷姩鍖栧伐鍏烽摼
+- **绫诲瀷**: feat
+- **鎻忚堪**:
+  1. Stop hook 鏀逛负鑷姩 git push锛屾瘡杞璇濈粨鏉熻嚜鍔ㄦ彁浜ゅ苟鎺ㄩ€?
+  2. 椤圭洰鎸囦护 CLAUDE.md 瀹屽杽
+- **鏂囦欢**:
   - `.claude/settings.local.json`
   - `CLAUDE.md`
 
 ## 2026-05-02
 
-### Claude Code 自动化配置
-- **类型**: feat
-- **描述**:
-  1. 配置 Stop hook，每轮对话结束后自动 `git add -A && git commit`
-  2. 创建 CLAUDE.md，约束 Claude Code 行为（每轮开始汇报改动、每轮结束写日志）
-  3. 日志子 agent：每轮对话结束后自动在 `logs/CHANGELOG.md` 写入人话改动记录
-- **文件**:
-  - `CLAUDE.md` (新增)
-  - `.claude/settings.local.json` (修改，新增 Stop hook + git 权限)
+### Claude Code 鑷姩鍖栭厤缃?
+- **绫诲瀷**: feat
+- **鎻忚堪**:
+  1. 閰嶇疆 Stop hook锛屾瘡杞璇濈粨鏉熷悗鑷姩 `git add -A && git commit`
+  2. 鍒涘缓 CLAUDE.md锛岀害鏉?Claude Code 琛屼负锛堟瘡杞紑濮嬫眹鎶ユ敼鍔ㄣ€佹瘡杞粨鏉熷啓鏃ュ織锛?
+  3. 鏃ュ織瀛?agent锛氭瘡杞璇濈粨鏉熷悗鑷姩鍦?`logs/CHANGELOG.md` 鍐欏叆浜鸿瘽鏀瑰姩璁板綍
+- **鏂囦欢**:
+  - `CLAUDE.md` (鏂板)
+  - `.claude/settings.local.json` (淇敼锛屾柊澧?Stop hook + git 鏉冮檺)
 
 ## 2026-04-30
 
-### 项目初始化
-- **类型**: feat
-- **描述**: 家教课程账单 React Native (Expo) 应用初始化
-- **文件**: 全部初始文件
+### 椤圭洰鍒濆鍖?
+- **绫诲瀷**: feat
+- **鎻忚堪**: 瀹舵暀璇剧▼璐﹀崟 React Native (Expo) 搴旂敤鍒濆鍖?
+- **鏂囦欢**: 鍏ㄩ儴鍒濆鏂囦欢
 
-### 整体 UI 重新设计
-- **类型**: style
-- **描述**: 现代化 UI 改造，统一设计语言（主题色、间距、圆角、阴影体系），重写所有屏幕和组件
-- **涉及改动**:
-  - 创建主题 tokens 系统 `src/styles/theme.ts`
-  - 创建动画 hooks `src/styles/animations.ts`
-  - 重写全部 6 个通用组件（StatCard, GradientFAB, EmptyState, BottomSheet, StatusBadge, StudentAvatar）
-  - 重写全部 4 个页面（HomeScreen, StudentScreen, LessonScreen, StatsScreen）
-  - 重写 App.tsx 底部导航栏
-- **文件**:
-  - `src/styles/theme.ts` (新增)
-  - `src/styles/animations.ts` (新增)
-  - `src/components/StatCard.tsx` (新增)
-  - `src/components/GradientFAB.tsx` (新增)
-  - `src/components/EmptyState.tsx` (新增)
-  - `src/components/BottomSheet.tsx` (新增)
-  - `src/components/StatusBadge.tsx` (新增)
-  - `src/components/StudentAvatar.tsx` (新增)
-  - `src/screens/HomeScreen.tsx` (重写)
-  - `src/screens/StudentScreen.tsx` (重写)
-  - `src/screens/LessonScreen.tsx` (重写)
-  - `src/screens/StatsScreen.tsx` (重写)
-  - `src/App.tsx` (重写)
+### 鏁翠綋 UI 閲嶆柊璁捐
+- **绫诲瀷**: style
+- **鎻忚堪**: 鐜颁唬鍖?UI 鏀归€狅紝缁熶竴璁捐璇█锛堜富棰樿壊銆侀棿璺濄€佸渾瑙掋€侀槾褰变綋绯伙級锛岄噸鍐欐墍鏈夊睆骞曞拰缁勪欢
+- **娑夊強鏀瑰姩**:
+  - 鍒涘缓涓婚 tokens 绯荤粺 `src/styles/theme.ts`
+  - 鍒涘缓鍔ㄧ敾 hooks `src/styles/animations.ts`
+  - 閲嶅啓鍏ㄩ儴 6 涓€氱敤缁勪欢锛圫tatCard, GradientFAB, EmptyState, BottomSheet, StatusBadge, StudentAvatar锛?
+  - 閲嶅啓鍏ㄩ儴 4 涓〉闈紙HomeScreen, StudentScreen, LessonScreen, StatsScreen锛?
+  - 閲嶅啓 App.tsx 搴曢儴瀵艰埅鏍?
+- **鏂囦欢**:
+  - `src/styles/theme.ts` (鏂板)
+  - `src/styles/animations.ts` (鏂板)
+  - `src/components/StatCard.tsx` (鏂板)
+  - `src/components/GradientFAB.tsx` (鏂板)
+  - `src/components/EmptyState.tsx` (鏂板)
+  - `src/components/BottomSheet.tsx` (鏂板)
+  - `src/components/StatusBadge.tsx` (鏂板)
+  - `src/components/StudentAvatar.tsx` (鏂板)
+  - `src/screens/HomeScreen.tsx` (閲嶅啓)
+  - `src/screens/StudentScreen.tsx` (閲嶅啓)
+  - `src/screens/LessonScreen.tsx` (閲嶅啓)
+  - `src/screens/StatsScreen.tsx` (閲嶅啓)
+  - `src/App.tsx` (閲嶅啓)
 
-### LessonScreen 筛选标签改造
-- **类型**: feat
-- **描述**: 在课程记录页新增"待上课"筛选分类，重新排列为**待上课 → 待收款 → 已收款 → 全部**，其中待收款和已收款用 segmented control 样式框在一起
-- **文件**: `src/screens/LessonScreen.tsx`
-- **备注**: FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all'
+### LessonScreen 绛涢€夋爣绛炬敼閫?
+- **绫诲瀷**: feat
+- **鎻忚堪**: 鍦ㄨ绋嬭褰曢〉鏂板"寰呬笂璇?绛涢€夊垎绫伙紝閲嶆柊鎺掑垪涓?*寰呬笂璇?鈫?寰呮敹娆?鈫?宸叉敹娆?鈫?鍏ㄩ儴**锛屽叾涓緟鏀舵鍜屽凡鏀舵鐢?segmented control 鏍峰紡妗嗗湪涓€璧?
+- **鏂囦欢**: `src/screens/LessonScreen.tsx`
+- **澶囨敞**: FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all'
 
-### HomeScreen 布局调整
-- **类型**: style
-- **描述**: 
-  1. 最近课程只显示未来日期（待上课）
-  2. 待上课程放到最上方，待收款总额和今日收入放到最下方
-- **文件**: `src/screens/HomeScreen.tsx`
+### HomeScreen 甯冨眬璋冩暣
+- **绫诲瀷**: style
+- **鎻忚堪**: 
+  1. 鏈€杩戣绋嬪彧鏄剧ず鏈潵鏃ユ湡锛堝緟涓婅锛?
+  2. 寰呬笂璇剧▼鏀惧埌鏈€涓婃柟锛屽緟鏀舵鎬婚鍜屼粖鏃ユ敹鍏ユ斁鍒版渶涓嬫柟
+- **鏂囦欢**: `src/screens/HomeScreen.tsx`
 
-### HomeScreen 全页固定布局
-- **类型**: style
-- **描述**: 
-  1. 首页刚好占满一屏，移除 ScrollView 整体滚动
-  2. 仅"待上课程"区域用 FlatList 独立滚动
-  3. 新增 3 个 mock 学生数据和 5 条未来日期课程数据
-- **文件**:
+### HomeScreen 鍏ㄩ〉鍥哄畾甯冨眬
+- **绫诲瀷**: style
+- **鎻忚堪**: 
+  1. 棣栭〉鍒氬ソ鍗犳弧涓€灞忥紝绉婚櫎 ScrollView 鏁翠綋婊氬姩
+  2. 浠?寰呬笂璇剧▼"鍖哄煙鐢?FlatList 鐙珛婊氬姩
+  3. 鏂板 3 涓?mock 瀛︾敓鏁版嵁鍜?5 鏉℃湭鏉ユ棩鏈熻绋嬫暟鎹?
+- **鏂囦欢**:
   - `src/screens/HomeScreen.tsx`
   - `src/database/index.ts`
-- **备注**: 新增学生王五（物理，¥180/h），mock 课程数从 4 条增至 9 条
+- **澶囨敞**: 鏂板瀛︾敓鐜嬩簲锛堢墿鐞嗭紝楼180/h锛夛紝mock 璇剧▼鏁颁粠 4 鏉″鑷?9 鏉?
 
-### 账单统计板块优化
-- **类型**: feat
-- **描述**: 
-  1. HomeScreen "今日收入" → "今日课程"（今日全部课程总额）
-  2. StatsScreen 收款概览改为本月数据（本月已收/待收）
-  3. 新增 StudentBillingDetailScreen：点击学生行 → 全屏 Modal，含总收入/已收/待收汇总、月度分布、详细账单
-- **文件**: `src/screens/HomeScreen.tsx`, `src/screens/StatsScreen.tsx`, `src/screens/StudentBillingDetailScreen.tsx` (新增)
+### 璐﹀崟缁熻鏉垮潡浼樺寲
+- **绫诲瀷**: feat
+- **鎻忚堪**: 
+  1. HomeScreen "浠婃棩鏀跺叆" 鈫?"浠婃棩璇剧▼"锛堜粖鏃ュ叏閮ㄨ绋嬫€婚锛?
+  2. StatsScreen 鏀舵姒傝鏀逛负鏈湀鏁版嵁锛堟湰鏈堝凡鏀?寰呮敹锛?
+  3. 鏂板 StudentBillingDetailScreen锛氱偣鍑诲鐢熻 鈫?鍏ㄥ睆 Modal锛屽惈鎬绘敹鍏?宸叉敹/寰呮敹姹囨€汇€佹湀搴﹀垎甯冦€佽缁嗚处鍗?
+- **鏂囦欢**: `src/screens/HomeScreen.tsx`, `src/screens/StatsScreen.tsx`, `src/screens/StudentBillingDetailScreen.tsx` (鏂板)
 
-### 首页快捷按钮改为水平布局 + 整体紧凑化
-- **类型**: style
-- **描述**: 
-  1. QuickActionButton 内部结构从垂直堆叠改为水平排列（图标左、文字右），节省垂直空间
-  2. 图标容器 28×28、图标 size 16
-  3. 整体间距系统性收紧（container padding、按钮间隙、列表项内边距、底部卡片边距）
-- **文件**: `src/screens/HomeScreen.tsx`
+### 棣栭〉蹇嵎鎸夐挳鏀逛负姘村钩甯冨眬 + 鏁翠綋绱у噾鍖?
+- **绫诲瀷**: style
+- **鎻忚堪**: 
+  1. QuickActionButton 鍐呴儴缁撴瀯浠庡瀭鐩村爢鍙犳敼涓烘按骞虫帓鍒楋紙鍥炬爣宸︺€佹枃瀛楀彸锛夛紝鑺傜渷鍨傜洿绌洪棿
+  2. 鍥炬爣瀹瑰櫒 28脳28銆佸浘鏍?size 16
+  3. 鏁翠綋闂磋窛绯荤粺鎬ф敹绱э紙container padding銆佹寜閽棿闅欍€佸垪琛ㄩ」鍐呰竟璺濄€佸簳閮ㄥ崱鐗囪竟璺濓級
+- **鏂囦欢**: `src/screens/HomeScreen.tsx`
 
-### LessonScreen 日期选择器
-- **类型**: feat
-- **描述**: 日历选择器组件替代纯文本日期输入；居中弹窗式，支持月份切换、6×7 网格、今天标记、选中高亮
-- **文件**:
-  - `src/components/CalendarPicker.tsx` (新增)
+### LessonScreen 鏃ユ湡閫夋嫨鍣?
+- **绫诲瀷**: feat
+- **鎻忚堪**: 鏃ュ巻閫夋嫨鍣ㄧ粍浠舵浛浠ｇ函鏂囨湰鏃ユ湡杈撳叆锛涘眳涓脊绐楀紡锛屾敮鎸佹湀浠藉垏鎹€?脳7 缃戞牸銆佷粖澶╂爣璁般€侀€変腑楂樹寒
+- **鏂囦欢**:
+  - `src/components/CalendarPicker.tsx` (鏂板)
   - `src/screens/LessonScreen.tsx`
-- **备注**: 跨平台纯 RN 实现，无原生依赖
+- **澶囨敞**: 璺ㄥ钩鍙扮函 RN 瀹炵幇锛屾棤鍘熺敓渚濊禆
 
-### LessonScreen 默认待上课 + 可编辑课时费
-- **类型**: feat
-- **描述**: 
-  1. 新建课程默认日期为明天（自动待上课状态）
-  2. 课时费改为可编辑 TextInput，默认 75 元/小时，选择学生后自动填充该学生单价
-- **文件**: `src/screens/LessonScreen.tsx`
+### LessonScreen 榛樿寰呬笂璇?+ 鍙紪杈戣鏃惰垂
+- **绫诲瀷**: feat
+- **鎻忚堪**: 
+  1. 鏂板缓璇剧▼榛樿鏃ユ湡涓烘槑澶╋紙鑷姩寰呬笂璇剧姸鎬侊級
+  2. 璇炬椂璐规敼涓哄彲缂栬緫 TextInput锛岄粯璁?75 鍏?灏忔椂锛岄€夋嫨瀛︾敓鍚庤嚜鍔ㄥ～鍏呰瀛︾敓鍗曚环
+- **鏂囦欢**: `src/screens/LessonScreen.tsx`
 
-### 底部 Toast 提示 + 学生地址
-- **类型**: feat
-- **描述**: 
-  1. 新增 Toast 组件，表单必填项校验失败时弹出底部提示
-  2. Student 接口新增选填 address 字段，学生表单和卡片支持显示
-- **文件**:
-  - `src/components/Toast.tsx` (新增)
+### 搴曢儴 Toast 鎻愮ず + 瀛︾敓鍦板潃
+- **绫诲瀷**: feat
+- **鎻忚堪**: 
+  1. 鏂板 Toast 缁勪欢锛岃〃鍗曞繀濉」鏍￠獙澶辫触鏃跺脊鍑哄簳閮ㄦ彁绀?
+  2. Student 鎺ュ彛鏂板閫夊～ address 瀛楁锛屽鐢熻〃鍗曞拰鍗＄墖鏀寔鏄剧ず
+- **鏂囦欢**:
+  - `src/components/Toast.tsx` (鏂板)
   - `src/screens/LessonScreen.tsx`
   - `src/models/index.ts`
   - `src/database/index.ts`
   - `src/screens/StudentScreen.tsx`
 
-### Toast 提示位置调整
-- **类型**: fix
-- **描述**: Toast 提示从屏幕底部移到顶部（导航栏下方），确保用户可见
-- **文件**: `src/screens/LessonScreen.tsx`
+### Toast 鎻愮ず浣嶇疆璋冩暣
+- **绫诲瀷**: fix
+- **鎻忚堪**: Toast 鎻愮ず浠庡睆骞曞簳閮ㄧЩ鍒伴《閮紙瀵艰埅鏍忎笅鏂癸級锛岀‘淇濈敤鎴峰彲瑙?
+- **鏂囦欢**: `src/screens/LessonScreen.tsx`
 
-### StudentScreen 添加 Toast 校验提示
-- **类型**: feat
-- **描述**: 学生管理页添加表单校验 Toast，必填项缺失时提示"请填写学生姓名、科目和课时费"，添加/更新成功后提示
-- **文件**: `src/screens/StudentScreen.tsx`
+### StudentScreen 娣诲姞 Toast 鏍￠獙鎻愮ず
+- **绫诲瀷**: feat
+- **鎻忚堪**: 瀛︾敓绠＄悊椤垫坊鍔犺〃鍗曟牎楠?Toast锛屽繀濉」缂哄け鏃舵彁绀?璇峰～鍐欏鐢熷鍚嶃€佺鐩拰璇炬椂璐?锛屾坊鍔?鏇存柊鎴愬姛鍚庢彁绀?
+- **鏂囦欢**: `src/screens/StudentScreen.tsx`
 
-### LessonScreen 课时费加入必填校验
-- **类型**: fix
-- **描述**: 添加课程表单中课时费也标记为必填项，缺失时 Toast 提示
-- **文件**: `src/screens/LessonScreen.tsx`
+### LessonScreen 璇炬椂璐瑰姞鍏ュ繀濉牎楠?
+- **绫诲瀷**: fix
+- **鎻忚堪**: 娣诲姞璇剧▼琛ㄥ崟涓鏃惰垂涔熸爣璁颁负蹇呭～椤癸紝缂哄け鏃?Toast 鎻愮ず
+- **鏂囦欢**: `src/screens/LessonScreen.tsx`
+
