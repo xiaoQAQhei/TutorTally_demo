@@ -633,9 +633,10 @@ const styles = StyleSheet.create({
   },
   actionButton: { padding: Spacing.sm },
   scrollTopBtn: {
-    position: 'absolute', bottom: 90, right: Spacing.xl,
+    position: 'absolute', bottom: 100, right: 24,
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.card, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
+    justifyContent: 'center', alignItems: 'center',
     ...Shadows.standard,
   },
   datePickerButton: {
