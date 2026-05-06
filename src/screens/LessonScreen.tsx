@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, Alert, Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Lesson, Student } from '../models';
-import { addLesson, getAllLessons, updateLesson, deleteLesson, toggleLessonPaid, confirmLesson, getAllStudents } from '../database';
+import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
+import { addLesson, getAllLessons, updateLesson, deleteLesson, setLessonStatus, addPayment, getPaymentsByLessonId, deletePayment, getSubjectsByStudentId, getAllStudents } from '../database';
 import { useAction } from '../contexts/ActionContext';
 import GradientFAB from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
@@ -20,14 +20,6 @@ import {
 } from '../styles/theme';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
-
-const todayStr = new Date().toISOString().split('T')[0];
-
-const getEndPassed = (lesson: Lesson): boolean => {
-  const endTime = lesson.timeSlot?.split('-')[1]?.trim();
-  if (!endTime) return true;
-  return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
-};
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'upcoming', label: '待上课', color: '#6366F1' },
@@ -52,6 +44,12 @@ const LessonScreen: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
+  const [useManualAmount, setUseManualAmount] = useState(false);
+  const [manualAmount, setManualAmount] = useState('');
+  const [paymentsMap, setPaymentsMap] = useState<Record<number, Payment[]>>({});
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
@@ -72,38 +70,37 @@ const LessonScreen: React.FC = () => {
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
 
+  const loadSubjects = async (studentId: number) => {
+    const subs = await getSubjectsByStudentId(studentId);
+    setSubjects(subs);
+    if (subs.length > 0 && !selectedSubjectId) setSelectedSubjectId(subs[0].id);
+  };
+
+  // Load subjects when the selected student changes
+  useEffect(() => {
+    if (selectedStudentId) {
+      loadSubjects(selectedStudentId);
+    }
+  }, [selectedStudentId]);
+
+  // Auto-fill lessonRate when subject changes
+  useEffect(() => {
+    if (selectedSubjectId) {
+      const sub = subjects.find(s => s.id === selectedSubjectId);
+      if (sub) setLessonRate(sub.hourlyRate.toString());
+    }
+  }, [selectedSubjectId]);
+
   const filteredLessons = (() => {
     let filtered: Lesson[];
     if (filterStatus === 'upcoming') {
-      filtered = lessons.filter((l) => {
-        if (l.confirmedAt) return false;
-        if (l.paid) return false;
-        return true;
-      });
-      filtered.sort((a, b) => {
-        const aCanConfirm = !a.paid && !a.confirmedAt && getEndPassed(a) && a.date <= todayStr;
-        const bCanConfirm = !b.paid && !b.confirmedAt && getEndPassed(b) && b.date <= todayStr;
-        if (aCanConfirm && !bCanConfirm) return -1;
-        if (!aCanConfirm && bCanConfirm) return 1;
-        const dc = a.date.localeCompare(b.date);
-        if (dc !== 0) return dc;
-        return (a.timeSlot || '').localeCompare(b.timeSlot || '');
-      });
+      filtered = lessons.filter(l => l.status === 'scheduled');
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
     } else if (filterStatus === 'unpaid') {
-      filtered = lessons.filter((l) => {
-        if (l.paid) return false;
-        if (!l.confirmedAt) return false;
-        return true;
-      });
+      filtered = lessons.filter(l => l.status === 'completed');
       filtered.sort((a, b) => a.date.localeCompare(b.date));
     } else if (filterStatus === 'paid') {
-      filtered = lessons.filter((l) => {
-        if (!l.paid) return false;
-        if (l.confirmedAt) return true;
-        if (l.date < todayStr) return true;
-        if (l.date === todayStr) return getEndPassed(l);
-        return false;
-      });
+      filtered = lessons.filter(l => l.status === 'paid');
       filtered.sort((a, b) => b.date.localeCompare(a.date));
     } else {
       filtered = [...lessons];
@@ -113,23 +110,9 @@ const LessonScreen: React.FC = () => {
   })();
 
   const counts = (() => {
-    const upcoming = lessons.filter((l) => {
-      if (l.confirmedAt) return false;
-      if (l.paid) return false;
-      return true;
-    }).length;
-    const paid = lessons.filter((l) => {
-      if (!l.paid) return false;
-      if (l.confirmedAt) return true;
-      if (l.date < todayStr) return true;
-      if (l.date === todayStr) return getEndPassed(l);
-      return false;
-    }).length;
-    const unpaid = lessons.filter((l) => {
-      if (l.paid) return false;
-      if (!l.confirmedAt) return false;
-      return true;
-    }).length;
+    const upcoming = lessons.filter(l => l.status === 'scheduled').length;
+    const paid = lessons.filter(l => l.status === 'paid').length;
+    const unpaid = lessons.filter(l => l.status === 'completed').length;
     return { upcoming, paid, unpaid, all: lessons.length };
   })();
 
@@ -139,11 +122,15 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
-      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时和课时费', type: 'error' });
+    if (!selectedStudentId || !date || !timeSlot || !duration) {
+      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时', type: 'error' });
       return;
     }
-    const amount = calculateAmount();
+    if (!useManualAmount && !lessonRate) {
+      setToast({ visible: true, message: '请填写课时费', type: 'error' });
+      return;
+    }
+    const amount = useManualAmount ? parseFloat(manualAmount) : calculateAmount();
 
     // 校验时段与课时是否一致
     const parts = timeSlot.split('-');
@@ -159,15 +146,9 @@ const LessonScreen: React.FC = () => {
     }
 
     if (editingLesson) {
-      await updateLesson({
-        ...editingLesson, studentId: selectedStudentId, date, timeSlot,
-        duration: parseFloat(duration), amount, notes,
-      });
+      await updateLesson({ ...editingLesson, studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined, date, timeSlot, duration: parseFloat(duration), amount, manualAmount: useManualAmount ? parseFloat(manualAmount) : undefined, notes });
     } else {
-      await addLesson({
-        studentId: selectedStudentId, date, timeSlot, duration: parseFloat(duration),
-        amount, paid: false, confirmedAt: null, notes, createdAt: new Date().toISOString(),
-      });
+      await addLesson({ studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined, date, timeSlot, duration: parseFloat(duration), amount, manualAmount: useManualAmount ? parseFloat(manualAmount) : undefined, status: 'scheduled', confirmedAt: null, notes, createdAt: new Date().toISOString() });
     }
     setModalVisible(false);
     setEditingLesson(null);
@@ -176,34 +157,44 @@ const LessonScreen: React.FC = () => {
     setDuration('2');
     setLessonRate('');
     setNotes('');
+    setSelectedSubjectId(null);
+    setUseManualAmount(false);
+    setManualAmount('');
     loadLessons();
     setToast({ visible: true, message: editingLesson ? '课程已更新' : '课程已添加', type: 'success' });
   };
 
-  const handleTogglePaid = async (lesson: Lesson) => {
-    await toggleLessonPaid(lesson.id, !lesson.paid);
-    loadLessons();
-  };
-
-  const handleConfirmLesson = (lesson: Lesson) => {
-    confirmLesson(lesson.id).then(() => loadLessons());
-  };
-
   const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
 
-  const handleEdit = (lesson: Lesson) => {
+  const handleEdit = async (lesson: Lesson) => {
     setEditingLesson(lesson);
     setSelectedStudentId(lesson.studentId);
+    setSelectedSubjectId(lesson.studentSubjectId || null);
     setDate(lesson.date);
     setTimeSlot(lesson.timeSlot || '');
     setDuration(lesson.duration.toString());
-    const student = getStudent(lesson.studentId);
-    setLessonRate(student?.hourlyRate?.toString() || '75');
     setNotes(lesson.notes || '');
+    setUseManualAmount(!!lesson.manualAmount);
+    setManualAmount(lesson.manualAmount?.toString() || '');
+
+    // Load subjects for this student and set rate
+    const subs = await getSubjectsByStudentId(lesson.studentId);
+    setSubjects(subs);
+    if (lesson.studentSubjectId) {
+      const sub = subs.find(s => s.id === lesson.studentSubjectId);
+      if (sub) setLessonRate(sub.hourlyRate.toString());
+      else setLessonRate('75');
+    } else if (subs.length > 0) {
+      setSelectedSubjectId(subs[0].id);
+      setLessonRate(subs[0].hourlyRate.toString());
+    } else {
+      setLessonRate('75');
+    }
+
     setModalVisible(true);
   };
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setEditingLesson(null);
     const firstStudent = students[0];
     setSelectedStudentId(firstStudent?.id || null);
@@ -211,8 +202,25 @@ const LessonScreen: React.FC = () => {
     setDate(tomorrow);
     setTimeSlot('');
     setDuration('2');
-    setLessonRate(firstStudent?.hourlyRate?.toString() || '75');
+    setUseManualAmount(false);
+    setManualAmount('');
+    setSelectedSubjectId(null);
     setNotes('');
+
+    if (firstStudent) {
+      const subs = await getSubjectsByStudentId(firstStudent.id);
+      setSubjects(subs);
+      if (subs.length > 0) {
+        setSelectedSubjectId(subs[0].id);
+        setLessonRate(subs[0].hourlyRate.toString());
+      } else {
+        setLessonRate('75');
+      }
+    } else {
+      setSubjects([]);
+      setLessonRate('75');
+    }
+
     setModalVisible(true);
   };
 
@@ -241,11 +249,11 @@ const LessonScreen: React.FC = () => {
       highlightAnim.stopAnimation();
       highlightAnim.setValue(0);
       setHighlightedId(highlightLessonId);
-      
+
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
       });
-      
+
       Animated.sequence([
         Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
         Animated.delay(2000),
@@ -259,13 +267,9 @@ const LessonScreen: React.FC = () => {
 
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
-    const today = new Date().toISOString().split('T')[0];
-    const endPassed = getEndPassed(item);
-    const isUpcoming = !item.paid && !item.confirmedAt
-      && (item.date > today || (item.date === today && !endPassed));
-    const canConfirm = !item.paid && !item.confirmedAt && endPassed && item.date <= today;
+    const subject = item.studentSubjectId ? subjects.find(s => s.id === item.studentSubjectId) : null;
 
-    const borderColor = item.paid ? Colors.paid : canConfirm || isUpcoming ? Colors.primary : Colors.pending;
+    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'scheduled' ? Colors.primary : Colors.pending;
     const isHighlighted = item.id === highlightedId;
 
     const cardBg = isHighlighted
@@ -285,19 +289,29 @@ const LessonScreen: React.FC = () => {
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            {student && <StudentAvatar name={student.name} subject={student.subject} size={40} />}
+            {student && <StudentAvatar name={student.name} subject={subject?.subject || ''} size={40} />}
             <View>
               <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.subject}>{student?.subject || ''}</Text>
+              <Text style={styles.subject}>{subject?.subject || ''}</Text>
             </View>
           </View>
-          {isUpcoming && !canConfirm ? (
-            <StatusBadge isPaid={false} isUpcoming={true} onToggle={() => {}} />
-          ) : canConfirm ? (
-            <StatusBadge isPaid={false} confirmMode={true} onToggle={() => handleConfirmLesson(item)} />
-          ) : (
-            <StatusBadge isPaid={item.paid} isUpcoming={false} onToggle={() => handleTogglePaid(item)} />
-          )}
+          <StatusBadge
+            status={item.status}
+            showNextAction={true}
+            onToggle={(nextStatus) => {
+              if (nextStatus === 'cancelled') {
+                Alert.alert('取消课程', '确定要取消这个课程吗？', [
+                  { text: '返回', style: 'cancel' },
+                  { text: '确定取消', onPress: () => setLessonStatus(item.id, 'cancelled').then(loadLessons) },
+                ]);
+              } else if (nextStatus === 'paid') {
+                setLessonStatus(item.id, 'paid').then(loadLessons);
+              } else {
+                setLessonStatus(item.id, nextStatus).then(loadLessons);
+              }
+            }}
+            allowPaid={true}
+          />
         </View>
 
         <View style={styles.cardBody}>
@@ -468,11 +482,23 @@ const LessonScreen: React.FC = () => {
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
-              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} subject={getStudent(selectedStudentId)?.subject || ''} size={28} />
+              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} subject={subjects.find(s => s.id === selectedSubjectId)?.subject || ''} size={28} />
               <Text style={styles.pickerText}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
             <Text style={styles.pickerPlaceholder}>请选择学生</Text>
+          )}
+          <Ionicons name="chevron-down" size={20} color={Colors.caption} />
+        </TouchableOpacity>
+
+        <Text style={styles.formLabel}>科目（可选）</Text>
+        <TouchableOpacity style={styles.pickerButton} onPress={() => setShowSubjectPicker(true)}>
+          {selectedSubjectId ? (
+            <View style={styles.pickerSelected}>
+              <Text style={styles.pickerText}>{subjects.find(s => s.id === selectedSubjectId)?.subject || '选择科目'}</Text>
+            </View>
+          ) : (
+            <Text style={styles.pickerPlaceholder}>选择科目（自动计算课时费）</Text>
           )}
           <Ionicons name="chevron-down" size={20} color={Colors.caption} />
         </TouchableOpacity>
@@ -495,28 +521,40 @@ const LessonScreen: React.FC = () => {
           <Ionicons name="chevron-down" size={16} color={Colors.caption} />
         </TouchableOpacity>
 
-        <View style={styles.formRow}>
-          <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>课时（小时）</Text>
-            <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
-          </View>
-          <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>课时费（元/小时）</Text>
-            <TextInput
-              style={[styles.input, styles.rateInput]}
-              placeholder="如 75"
-              value={lessonRate}
-              onChangeText={setLessonRate}
-              keyboardType="numeric"
-              placeholderTextColor={Colors.caption}
-            />
-          </View>
-        </View>
+        {!useManualAmount && (
+          <>
+            <View style={styles.formRow}>
+              <View style={styles.formHalf}>
+                <Text style={styles.formLabel}>课时（小时）</Text>
+                <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
+              </View>
+              <View style={styles.formHalf}>
+                <Text style={styles.formLabel}>课时费（元/小时）</Text>
+                <TextInput
+                  style={[styles.input, styles.rateInput]}
+                  placeholder="如 75"
+                  value={lessonRate}
+                  onChangeText={setLessonRate}
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.caption}
+                />
+              </View>
+            </View>
 
-        <View style={styles.amountPreview}>
-          <Text style={styles.amountPreviewLabel}>预计课时费</Text>
-          <Text style={styles.amountPreviewValue}>{calculateAmount().toFixed(0)}元</Text>
+            <View style={styles.amountPreview}>
+              <Text style={styles.amountPreviewLabel}>预计课时费</Text>
+              <Text style={styles.amountPreviewValue}>{calculateAmount().toFixed(0)}元</Text>
+            </View>
+          </>
+        )}
+
+        <View style={styles.toggleRow}>
+          <Text style={styles.formLabel}>手动金额</Text>
+          <Switch value={useManualAmount} onValueChange={setUseManualAmount} trackColor={{ false: Colors.divider, true: Colors.primary }} />
         </View>
+        {useManualAmount && (
+          <TextInput style={styles.input} placeholder="输入实际金额" value={manualAmount} onChangeText={setManualAmount} keyboardType="numeric" placeholderTextColor={Colors.caption} />
+        )}
 
         <Text style={styles.formLabel}>备注（可选）</Text>
         <TextInput style={[styles.input, styles.textArea]} placeholder="添加备注..." value={notes} onChangeText={setNotes} multiline placeholderTextColor={Colors.caption} />
@@ -550,12 +588,29 @@ const LessonScreen: React.FC = () => {
               style={[styles.studentItem, selectedStudentId === s.id && styles.studentItemActive]}
               onPress={() => { setSelectedStudentId(s.id); setShowStudentPicker(false); }}
             >
-              <StudentAvatar name={s.name} subject={s.subject} size={40} />
+              <StudentAvatar name={s.name} subject="" size={40} />
               <View style={styles.studentItemInfo}>
                 <Text style={[styles.studentItemName, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
-                <Text style={styles.studentItemSubject}>{s.subject} · {s.hourlyRate}元/h</Text>
               </View>
               {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+            </TouchableOpacity>
+          ))}
+        </BottomSheet>
+      )}
+
+      {showSubjectPicker && (
+        <BottomSheet visible={showSubjectPicker} onClose={() => setShowSubjectPicker(false)} title="选择科目">
+          {subjects.map((sub) => (
+            <TouchableOpacity
+              key={sub.id}
+              style={[styles.studentItem, selectedSubjectId === sub.id && styles.studentItemActive]}
+              onPress={() => { setSelectedSubjectId(sub.id); setShowSubjectPicker(false); }}
+            >
+              <View style={styles.studentItemInfo}>
+                <Text style={[styles.studentItemName, selectedSubjectId === sub.id && { color: Colors.primary }]}>{sub.subject}</Text>
+                <Text style={styles.studentItemSubject}>{sub.hourlyRate}元/h</Text>
+              </View>
+              {selectedSubjectId === sub.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
             </TouchableOpacity>
           ))}
         </BottomSheet>
@@ -676,6 +731,7 @@ const styles = StyleSheet.create({
   },
   amountPreviewLabel: { fontSize: FontSize.body, color: Colors.body, fontWeight: FontWeight.medium },
   amountPreviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
   saveButton: {
     backgroundColor: Colors.primary, height: 52, borderRadius: BorderRadius.button,
     justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
