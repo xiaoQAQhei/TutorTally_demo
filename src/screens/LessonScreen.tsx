@@ -52,6 +52,8 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
+  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const deleteAnims = useRef<Map<number, Animated.Value>>(new Map());
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -140,7 +142,22 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
-    const doChange = () => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setLessonStatus(lesson.id, nextStatus).then(loadLessons); };
+    const doChange = () => {
+      if (nextStatus === 'completed' && !slideAnims.current.has(lesson.id)) {
+        slideAnims.current.set(lesson.id, new Animated.Value(0));
+      }
+      setLessonStatus(lesson.id, nextStatus).then(() => {
+        if (nextStatus === 'completed') {
+          const anim = slideAnims.current.get(lesson.id);
+          if (anim) {
+            Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true }).start(() => loadLessons());
+          }
+        } else {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          loadLessons();
+        }
+      });
+    };
     if (confirmBeforeChange) {
       const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
       setConfirmDialog({ visible: true, title: '确认操作', message: `确定要标记为「${nextLabel}」吗？`, onConfirm: doChange });
@@ -165,7 +182,15 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
-    const doDelete = () => { deleteLesson(id).then(loadLessons); };
+    const doDelete = () => {
+      if (!deleteAnims.current.has(id)) {
+        deleteAnims.current.set(id, new Animated.Value(0));
+      }
+      const anim = deleteAnims.current.get(id)!;
+      Animated.timing(anim, { toValue: 1, duration: 350, useNativeDriver: true }).start(() => {
+        deleteLesson(id).then(loadLessons);
+      });
+    };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '删除课程', message: '确定要删除这个课程吗？删除后无法恢复。', onConfirm: doDelete });
     } else {
@@ -246,6 +271,19 @@ const LessonScreen: React.FC = () => {
     const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
     const isHighlighted = item.id === highlightedId;
+
+    // Slide animation (completed status)
+    if (!slideAnims.current.has(lessonId)) {
+      slideAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    const slideAnim = slideAnims.current.get(lessonId)!;
+
+    // Delete crush animation
+    if (!deleteAnims.current.has(lessonId)) {
+      deleteAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    const delAnim = deleteAnims.current.get(lessonId)!;
+    const isDeleting = (delAnim as any)._value > 0 || false;
 
     // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
