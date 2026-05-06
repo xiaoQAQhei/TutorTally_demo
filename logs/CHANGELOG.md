@@ -1,7 +1,12 @@
-﻿## [2026-05-06 21:49] feat: adapt remaining screens to v2 data model — status/subjects/rate history
-## 2026-05-06 21:51 | auto: 05-06 21:51 | .claude/settings.local.json 
-- .claude/settings.local.json
+﻿## [2026-05-06 21:51] chore: final changelog sync & permissions update (all 15 feature tasks committed)
+## 2026-05-06 21:51 | auto: 05-06 21:51 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
 
+- Restructured CHANGELOG.md to unify feature entries under proper format
+- Added allowed commands to .claude/settings.local.json (Select-String, Test-Path, findstr, etc.)
+  - files: logs/CHANGELOG.md, .claude/settings.local.json
+
+## [2026-05-06 21:49] feat: adapt remaining screens to v2 data model — status/subjects/rate history
 - HomeScreen: replaced `paid`/`confirmedAt` logic with `status` enum for filtering and pending amount calculation; replaced `confirmLesson` with `setLessonStatus(id, 'completed')`
 - StatsScreen: replaced all `l.paid` references with `l.status === 'paid'`; load subjects per student via `getSubjectsByStudentId`; display subject name/rate from `StudentSubject` instead of `Student.subject`/`Student.hourlyRate`
 - StudentBillingDetailScreen: load subjects for the student; use `subjects[0]` for subject info display; replaced `l.paid` with `l.status === 'paid'` in summary and lesson row badge
