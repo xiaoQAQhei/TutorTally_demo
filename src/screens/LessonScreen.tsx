@@ -286,9 +286,10 @@ const LessonScreen: React.FC = () => {
       <Animated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          opacity: isCancelled ? 0.6 : 1,
+          opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? shatterMgr.cardOpacity : 1,
           transform: [
-            ...(item.status === 'completed' ? slideMgr.getTransform(lessonId) : []),
+            ...(item.status === 'completed' && shatterMgr.activeId !== lessonId ? slideMgr.getTransform(lessonId) : []),
+            ...(shatterMgr.activeId === lessonId ? [{ scale: shatterMgr.cardScale }] : []),
           ],
         }]}
         onLayout={(e) => {
