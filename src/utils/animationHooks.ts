@@ -4,7 +4,6 @@ import { Animated } from 'react-native';
 // ---- useSlideManager ----
 export function useSlideManager() {
   const values = useRef<Map<number, Animated.Value>>(new Map()).current;
-  const sliding = useRef<Set<number>>(new Set()).current;
 
   const getValue = useCallback((id: number) => {
     if (!values.has(id)) values.set(id, new Animated.Value(0));
@@ -12,15 +11,12 @@ export function useSlideManager() {
   }, []);
 
   const triggerSlide = useCallback((id: number) => {
-    sliding.add(id);
     const anim = getValue(id);
     anim.setValue(0);
     Animated.timing(anim, {
       toValue: 1, duration: 350, useNativeDriver: true,
-    }).start(() => { sliding.delete(id); });
+    }).start();
   }, [getValue]);
-
-  const isSliding = useCallback((id: number) => sliding.has(id), []);
 
   const getTransform = useCallback((id: number) => {
     const anim = getValue(id);
@@ -29,7 +25,7 @@ export function useSlideManager() {
     }];
   }, [getValue]);
 
-  return { triggerSlide, isSliding, getTransform };
+  return { triggerSlide, getTransform };
 }
 
 // ---- useShatterManager ----

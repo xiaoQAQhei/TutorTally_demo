@@ -53,6 +53,7 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [slidingId, setSlidingId] = useState<number | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -147,8 +148,9 @@ const LessonScreen: React.FC = () => {
     const doChange = () => {
       if (nextStatus === 'completed') {
         slideMgr.triggerSlide(lesson.id);
-        setLessonStatus(lesson.id, nextStatus); // update DB but don't reload yet
-        setTimeout(() => loadLessons(), 400); // reload after animation finishes
+        setSlidingId(lesson.id); // force re-render to apply transform
+        setLessonStatus(lesson.id, nextStatus);
+        setTimeout(() => { setSlidingId(null); loadLessons(); }, 400);
       } else {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
@@ -281,8 +283,9 @@ const LessonScreen: React.FC = () => {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
     }
     const cancelData = cancelAnims.current.get(lessonId)!;
-    if (showCancelAnim) {
-      Animated.timing(cancelData.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start();
+    if (isCancelled && !isCancelling) {
+      // Already cancelled (from DB reload) — set to final state instantly
+      cancelData.anim.setValue(1);
     }
 
     const cardBg = showCancelAnim
@@ -301,7 +304,7 @@ const LessonScreen: React.FC = () => {
           ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
           opacity: showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
-            ...(slideMgr.isSliding(lessonId) ? slideMgr.getTransform(lessonId) : []),
+            ...(slidingId === lessonId ? slideMgr.getTransform(lessonId) : []),
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
           ],
         }]}
