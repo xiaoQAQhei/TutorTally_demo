@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -139,7 +139,7 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
-    const doChange = () => { setLessonStatus(lesson.id, nextStatus).then(loadLessons); };
+    const doChange = () => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setLessonStatus(lesson.id, nextStatus).then(loadLessons); };
     if (confirmBeforeChange) {
       const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
       setConfirmDialog({ visible: true, title: '确认操作', message: `确定要标记为「${nextLabel}」吗？`, onConfirm: doChange });
@@ -149,7 +149,12 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleCancelLesson = (lesson: Lesson) => {
-    setConfirmDialog({ visible: true, title: '取消课程', message: '确定要取消这个课程吗？', onConfirm: () => setLessonStatus(lesson.id, 'cancelled').then(loadLessons) });
+    const doCancel = () => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setLessonStatus(lesson.id, 'cancelled').then(loadLessons); };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '取消课程', message: '确定要取消这个课程吗？', onConfirm: doCancel });
+    } else {
+      doCancel();
+    }
   };
 
   const isClassEnded = (lesson: Lesson): boolean => {
@@ -278,9 +283,9 @@ const LessonScreen: React.FC = () => {
               </View>
             </View>
             {item.timeSlot ? (
-              <View style={styles.timeSlotBadge}>
-                <Ionicons name="time-outline" size={25} color={Colors.primary} />
-                <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
+              <View style={[styles.timeSlotBadge, isCancelled && styles.timeSlotBadgeCancelled]}>
+                <Ionicons name="time-outline" size={25} color={isCancelled ? Colors.caption : Colors.primary} />
+                <Text style={[styles.timeSlotBadgeText, isCancelled && { color: Colors.caption }]}>{item.timeSlot}</Text>
               </View>
             ) : null}
           </View>
@@ -294,6 +299,13 @@ const LessonScreen: React.FC = () => {
               <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
             </View>
           ) : null}
+          {isCancelled && (
+            <View style={styles.strikethrough}>
+              <View style={styles.strikethroughLine} />
+              <Text style={styles.strikethroughText}>已取消</Text>
+              <View style={styles.strikethroughLine} />
+            </View>
+          )}
         </View>
 
         <View style={styles.actions}>
@@ -634,6 +646,10 @@ const styles = StyleSheet.create({
   timeSlotBadgeText: {
     fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
+  timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },
+  strikethrough: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, gap: Spacing.sm },
+  strikethroughLine: { flex: 1, height: 1, backgroundColor: '#D1D5DB' },
+  strikethroughText: { fontSize: FontSize.small, color: Colors.caption, fontWeight: FontWeight.medium },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
