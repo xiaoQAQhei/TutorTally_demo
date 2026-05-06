@@ -7,8 +7,9 @@ import HomeScreen from './screens/HomeScreen';
 import StudentScreen from './screens/StudentScreen';
 import LessonScreen from './screens/LessonScreen';
 import StatsScreen from './screens/StatsScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import { ActionProvider } from './contexts/ActionContext';
-import { initDatabase } from './database';
+import { initDatabase, migrateFromV1 } from './database';
 import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
 
 const Tab = createBottomTabNavigator();
@@ -18,6 +19,7 @@ const TAB_ICONS: Record<string, [string, string]> = {
   Students: ['people', 'people-outline'],
   Lessons: ['book', 'book-outline'],
   Stats: ['stats-chart', 'stats-chart-outline'],
+  Settings: ['settings', 'settings-outline'],
 };
 
 const App: React.FC = () => {
@@ -25,7 +27,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const setupDatabase = async () => {
-      try { await initDatabase(); } catch (e) { console.warn('Database init failed:', e); }
+      try { await initDatabase(); await migrateFromV1(); } catch (e) { console.warn('Database init failed:', e); }
       setIsLoading(false);
     };
     setupDatabase();
@@ -83,6 +85,7 @@ const App: React.FC = () => {
         <Tab.Screen name="Students" component={StudentScreen} options={{ title: '学生' }} />
         <Tab.Screen name="Lessons" component={LessonScreen} options={{ title: '课程记录' }} />
         <Tab.Screen name="Stats" component={StatsScreen} options={{ title: '账单统计' }} />
+        <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: '设置' }} />
       </Tab.Navigator>
       </NavigationContainer>
     </ActionProvider>
