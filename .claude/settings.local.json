@@ -8,7 +8,13 @@
       "Bash(node -e ' *)",
       "mcp__plugin_everything-claude-code_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_navigate",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "Bash(Select-String \"StatusBadge\")",
+      "PowerShell(Test-Path *)",
+      "Bash(start \"\" cmd /c \"echo Writing changelog...\")",
+      "Bash(not exist *)",
+      "Bash(findstr /I \"notifications.ts App.tsx\")",
+      "Bash(Write-Changelog.ps1)"
     ]
   },
   "hooks": {
