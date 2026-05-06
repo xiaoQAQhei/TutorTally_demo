@@ -33,16 +33,22 @@ export const Colors = {
   subjectChinese: '#10B981',
 } as const;
 
-export const SubjectColors: Record<string, string> = {
-  '数学': Colors.subjectMath,
-  '英语': Colors.subjectEnglish,
-  '物理': Colors.subjectPhysics,
-  '语文': Colors.subjectChinese,
+export const SubjectColorPalette = [
+  '#5B8DEF', '#FF8C6B', '#FF9500', '#4ECDC4',
+  '#34C759', '#FF3B6E', '#AF52DE', '#8E8E93',
+];
+
+export const DefaultSubjectColors: Record<string, string> = {
+  '数学': '#5B8DEF', '英语': '#FF8C6B', '物理': '#FF9500',
+  '化学': '#4ECDC4', '生物': '#34C759', '语文': '#FF3B6E',
+  '历史': '#AF52DE',
 };
 
-export const StatusColors = {
-  paid: { bg: Colors.paidBg, text: Colors.paid, label: '已收款' },
-  unpaid: { bg: Colors.pendingBg, text: Colors.pending, label: '待收款' },
+export const LessonStatusColors: Record<string, { bg: string; text: string; label: string }> = {
+  scheduled: { bg: '#EEF2FF', text: '#6366F1', label: '待上课' },
+  completed: { bg: '#FFFBEB', text: '#F59E0B', label: '待收款' },
+  paid: { bg: '#ECFDF5', text: '#10B981', label: '已收款' },
+  cancelled: { bg: '#F3F4F6', text: '#8E8E93', label: '已取消' },
 } as const;
 
 export const StudentEmojis = ['🎓', '👧', '👦', '👩‍🎓', '🧑‍🎓', '👨‍🎓', '👩', '👨'];
@@ -56,7 +62,7 @@ export function getStudentEmoji(name: string): string {
 }
 
 export function getSubjectColor(subject: string): string {
-  return SubjectColors[subject] || Colors.primary;
+  return DefaultSubjectColors[subject] || SubjectColorPalette[0];
 }
 
 export const Spacing = {
@@ -125,3 +131,10 @@ export const Shadows = {
     elevation: 4,
   },
 } as const;
+
+export const StatusTransitions: Record<string, string[]> = {
+  scheduled: ['completed', 'cancelled'],
+  completed: ['paid', 'cancelled'],
+  paid: [],
+  cancelled: [],
+};
