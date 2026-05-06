@@ -164,7 +164,14 @@ const LessonScreen: React.FC = () => {
     return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
   };
 
-  const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
+  const handleDelete = (id: number) => {
+    const doDelete = () => { deleteLesson(id).then(loadLessons); };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '删除课程', message: '确定要删除这个课程吗？删除后无法恢复。', onConfirm: doDelete });
+    } else {
+      doDelete();
+    }
+  };
 
   const handleEdit = (lesson: Lesson) => {
     setEditingLesson(lesson);
@@ -319,7 +326,7 @@ const LessonScreen: React.FC = () => {
               <Animated.View style={[styles.strikethroughLine, {
                 width: cancelData.anim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 40 : 400],
+                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
                 }),
               }]} />
               <Animated.Text style={[styles.strikethroughLabel, {
@@ -674,7 +681,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   strikethroughLine: {
-    position: 'absolute', left: -20, height: 2,
+    position: 'absolute', left: -30, height: 2,
     backgroundColor: '#9CA3AF',
   },
   strikethroughLabel: {
