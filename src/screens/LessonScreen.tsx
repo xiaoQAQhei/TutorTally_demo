@@ -52,6 +52,7 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const cancellingIds = useRef<Set<number>>(new Set());
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -160,7 +161,18 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleCancelLesson = (lesson: Lesson) => {
-    const doCancel = () => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setLessonStatus(lesson.id, 'cancelled').then(loadLessons); };
+    const doCancel = () => {
+      cancellingIds.current.add(lesson.id);
+      // Trigger strikethrough animation immediately
+      if (!cancelAnims.current.has(lesson.id)) {
+        cancelAnims.current.set(lesson.id, { anim: new Animated.Value(0), width: 0 });
+      }
+      const cd = cancelAnims.current.get(lesson.id)!;
+      Animated.timing(cd.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
+        cancellingIds.current.delete(lesson.id);
+        setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+      });
+    };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '取消课程', message: '确定要取消这个课程吗？', onConfirm: doCancel });
     } else {
@@ -259,6 +271,8 @@ const LessonScreen: React.FC = () => {
 
     const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'completed' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
+    const isCancelling = cancellingIds.current.has(lessonId);
+    const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
     // Animated strikethrough line — left-to-right with overshoot
@@ -266,11 +280,11 @@ const LessonScreen: React.FC = () => {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
     }
     const cancelData = cancelAnims.current.get(lessonId)!;
-    if (isCancelled) {
+    if (showCancelAnim) {
       Animated.timing(cancelData.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start();
     }
 
-    const cardBg = isCancelled
+    const cardBg = showCancelAnim
       ? '#F3F4F6'
       : isHighlighted
       ? highlightAnim.interpolate({
@@ -284,7 +298,7 @@ const LessonScreen: React.FC = () => {
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
-          opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
+          opacity: showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
             ...(slideMgr.isSliding(lessonId) ? slideMgr.getTransform(lessonId) : []),
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
@@ -327,9 +341,9 @@ const LessonScreen: React.FC = () => {
               </View>
             </View>
             {item.timeSlot ? (
-              <View style={[styles.timeSlotBadge, isCancelled && styles.timeSlotBadgeCancelled]}>
-                <Ionicons name="time-outline" size={25} color={isCancelled ? Colors.caption : Colors.primary} />
-                <Text style={[styles.timeSlotBadgeText, isCancelled && { color: Colors.caption }]}>{item.timeSlot}</Text>
+              <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
+                <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
+                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{item.timeSlot}</Text>
               </View>
             ) : null}
           </View>
@@ -343,7 +357,7 @@ const LessonScreen: React.FC = () => {
               <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
             </View>
           ) : null}
-          {isCancelled && (
+          {showCancelAnim && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
               <Animated.View style={[styles.strikethroughLine, {
                 width: cancelData.anim.interpolate({
