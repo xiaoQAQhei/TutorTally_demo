@@ -52,7 +52,6 @@ const LessonScreen: React.FC = () => {
   const itemHeightRef = useRef(180);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
-  const [slidingId, setSlidingId] = useState<number | null>(null);
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -145,15 +144,12 @@ const LessonScreen: React.FC = () => {
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
-      setLessonStatus(lesson.id, nextStatus).then(async () => {
-        if (nextStatus === 'completed') {
-          await loadLessons();
-          setSlidingId(lesson.id);
-        } else {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          loadLessons();
-        }
-      });
+      if (nextStatus === 'completed') {
+        slideMgr.triggerSlide(lesson.id);
+      } else {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
+      setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
     };
     if (confirmBeforeChange) {
       const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
@@ -257,14 +253,6 @@ const LessonScreen: React.FC = () => {
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
-  // Trigger slide animation after card re-renders as 'completed'
-  useEffect(() => {
-    if (slidingId !== null) {
-      slideMgr.triggerSlide(slidingId);
-      setSlidingId(null);
-    }
-  }, [slidingId, slideMgr]);
-
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
@@ -298,7 +286,7 @@ const LessonScreen: React.FC = () => {
           overflow: shatterMgr.activeId === lessonId ? 'visible' as const : 'hidden' as const,
           opacity: isCancelled ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
-            ...(item.status === 'completed' && shatterMgr.activeId !== lessonId ? slideMgr.getTransform(lessonId) : []),
+            ...(slideMgr.isSliding(lessonId) ? slideMgr.getTransform(lessonId) : []),
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
           ],
         }]}
