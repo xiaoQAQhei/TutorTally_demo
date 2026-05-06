@@ -16,9 +16,16 @@ interface StatusBadgeProps {
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
   const scale = useRef(new Animated.Value(1)).current;
-  const colors = LessonStatusColors[status];
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
+
+  // scheduled + class ended → show red "确认下课" CTA badge
+  const isConfirmMode = status === 'scheduled' && !disabled;
+  const colors = isConfirmMode
+    ? { bg: '#FEE2E2', text: '#EF4444' }
+    : LessonStatusColors[status];
+  const label = isConfirmMode ? '确认下课' : LessonStatusColors[status].label;
+  const icon = isConfirmMode ? 'checkmark-circle' as const : StatusIcons[status];
 
   const handleTap = () => {
     if (!tappable || nextStatuses.length === 0) return;
@@ -32,8 +39,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
   return (
     <TouchableOpacity activeOpacity={tappable ? 0.75 : 1} onPress={handleTap} disabled={!tappable}>
       <Animated.View style={[styles.badge, { backgroundColor: colors.bg, transform: [{ scale }] }]}>
-        <Ionicons name={StatusIcons[status]} size={14} color={colors.text} />
-        <Text style={[styles.text, { color: colors.text }]}>{colors.label}</Text>
+        <Ionicons name={icon} size={14} color={colors.text} />
+        <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
       </Animated.View>
     </TouchableOpacity>
   );

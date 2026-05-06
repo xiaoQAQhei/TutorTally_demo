@@ -290,10 +290,12 @@ const LessonScreen: React.FC = () => {
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
-            <Ionicons name="pencil" size={18} color={Colors.primary} />
-          </TouchableOpacity>
-          {(item.status === 'scheduled' || item.status === 'completed') && (
+          {(item.status !== 'paid' && item.status !== 'cancelled') && (
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
+              <Ionicons name="pencil" size={18} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
+          {item.status === 'scheduled' && !isClassEnded(item) && (
             <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(item)}>
               <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
             </TouchableOpacity>
