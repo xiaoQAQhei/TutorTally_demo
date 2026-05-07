@@ -26,7 +26,7 @@ const ActionContext = createContext<ActionContextType>({
   highlightLessonId: null,
   setHighlightLessonId: () => {},
   clearHighlight: () => {},
-  confirmBeforeChange: true,
+  confirmBeforeChange: false,
   toggleConfirmBeforeChange: () => {},
 });
 
@@ -34,7 +34,7 @@ export const ActionProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [pendingAction, setPendingAction] = useState<'addStudent' | 'addLesson' | null>(null);
   const [pendingFilter, setPendingFilter] = useState<FilterStatus | null>(null);
   const [highlightLessonId, setHighlightLessonId] = useState<number | null>(null);
-  const [confirmBeforeChange, setConfirmBeforeChange] = useState(true);
+  const [confirmBeforeChange, setConfirmBeforeChange] = useState(false);
 
   const clearAction = useCallback(() => setPendingAction(null), []);
   const clearFilter = useCallback(() => setPendingFilter(null), []);

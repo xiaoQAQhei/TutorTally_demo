@@ -66,14 +66,14 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
         <View style={[styles.menuItem, Shadows.subtle]}>
           <View style={styles.menuText}>
             <Text style={styles.menuLabel}>状态变更前提醒</Text>
-            <Text style={styles.menuSub}>点击 badge 切换状态时弹窗确认</Text>
+            <Text style={styles.menuSub}>切换状态时是否需要弹窗确认</Text>
           </View>
           <Switch value={confirmBeforeChange} onValueChange={toggleConfirmBeforeChange} trackColor={{ false: Colors.divider, true: Colors.primary }} />
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
-          <Text style={styles.aboutApp}>家教账单 v2.0</Text>
+          <Text style={styles.aboutApp}>家教账单 v1.0</Text>
           <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>
           <View style={styles.aboutDivider} />
           <Text style={styles.aboutDesc}>数据安全：所有数据仅存储在您的设备上</Text>
