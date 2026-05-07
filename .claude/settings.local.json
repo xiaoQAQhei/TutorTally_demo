@@ -18,7 +18,8 @@
       "PowerShell(Split-Path *)",
       "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath_target_7252453\" | Select-Object Name, @{N='Type';E={if\\($_.PSIsContainer\\){'DIR'}else{'FILE'}}})",
       "PowerShell(Test-Path *)",
-      "PowerShell(Get-CimInstance *)"
+      "PowerShell(Get-CimInstance *)",
+      "Bash(adb devices *)"
     ]
   },
   "hooks": {

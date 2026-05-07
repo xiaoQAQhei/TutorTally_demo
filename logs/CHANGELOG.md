@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 17:20 | auto: 05-07 17:20 | .claude/settings.local.json 
+- .claude/settings.local.json
+
 ## 2026-05-07 17:05 | auto: 05-07 17:05 | .claude/settings.local.json android/.gradle/buildOutputCleanup/buildOutputCleanup.lock android/.gradle/buildOutputCleanup/cache.properties android/.gradle/8.2/ 
 - .claude/settings.local.json
 - android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
