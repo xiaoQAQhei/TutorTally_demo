@@ -75,7 +75,7 @@ const LessonScreen: React.FC = () => {
   const filteredLessons = (() => {
     let filtered: Lesson[];
     if (filterStatus === 'upcoming') {
-      filtered = lessons.filter((l) => l.status === 'scheduled');
+      filtered = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed');
       filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
     } else if (filterStatus === 'unpaid') {
       filtered = lessons.filter((l) => l.status === 'pendingPayment');
@@ -91,7 +91,7 @@ const LessonScreen: React.FC = () => {
   })();
 
   const counts = (() => {
-    const upcoming = lessons.filter((l) => l.status === 'scheduled').length;
+    const upcoming = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed').length;
     const paid = lessons.filter((l) => l.status === 'paid').length;
     const unpaid = lessons.filter((l) => l.status === 'pendingPayment').length;
     return { upcoming, paid, unpaid, all: lessons.length };
@@ -282,7 +282,7 @@ const LessonScreen: React.FC = () => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
 
-    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'pendingPayment' ? Colors.pending : item.status === 'completed' ? Colors.danger : item.status === 'cancelled' ? Colors.caption : Colors.primary;
+    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'pendingPayment' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
     const isCancelling = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;

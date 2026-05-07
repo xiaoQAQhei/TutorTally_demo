@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 19:59 | auto: 05-07 19:59 | src/screens/LessonScreen.tsx 
+- src/screens/LessonScreen.tsx
+
 ## 2026-05-07 19:34 | auto: 05-07 19:34 | src/components/StatusBadge.tsx src/database/index.ts src/models/index.ts src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/styles/theme.ts src/utils/notifications.ts 
 - src/components/StatusBadge.tsx
 - src/database/index.ts
