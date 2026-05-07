@@ -51,6 +51,7 @@ const LessonScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const itemHeightRef = useRef(180);
   const cardWidthRef = useRef<Map<number, number>>(new Map());
+  const cardHeightRef = useRef<Map<number, number>>(new Map());
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
@@ -227,7 +228,7 @@ const LessonScreen: React.FC = () => {
 
   const handleDelete = (id: number) => {
     const doDelete = () => {
-      shatterMgr.triggerShatter(id, () => {
+      shatterMgr.triggerShatter(id, cardHeightRef.current.get(id) || 200, () => {
         deleteLesson(id).then(loadLessons);
       });
     };
@@ -359,6 +360,7 @@ const LessonScreen: React.FC = () => {
           if (h > 0) itemHeightRef.current = h;
           if (w > 0) {
             cardWidthRef.current.set(lessonId, w);
+            cardHeightRef.current.set(lessonId, h);
             if (cancelAnims.current.has(lessonId)) {
               cancelAnims.current.get(lessonId)!.width = w;
             }
@@ -440,66 +442,76 @@ const LessonScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
-          <View style={styles.shatterOverlay} pointerEvents="none">
-            {shatterMgr.stripsRef.current.map((strip, i) => {
-              const cardW = cardWidthRef.current.get(lessonId) || 360;
-              return (
-                <Animated.View
-                  key={i}
-                  style={[styles.shredClip, {
-                    left: `${strip.left}%`,
-                    width: `${strip.width}%`,
-                    opacity: strip.opacity as any,
-                    transform: [
-                      { translateX: strip.dx as any },
-                      { translateY: strip.dy as any },
-                      { rotate: strip.rot as any },
-                    ] as any,
-                  }]}
-                >
-                  <View style={[styles.shredContent, { width: cardW, left: -(cardW * strip.left / 100) }]}>
-                    {/* Strip card content clone — matches card inner layout */}
-                    <View style={styles.cardHeader}>
-                      <View style={styles.cardHeaderLeft}>
-                        {student && <StudentAvatar name={student.name} size={40} />}
-                        <View>
-                          <Text style={styles.studentName}>{student?.name || '?'}</Text>
-                          <Text style={styles.subject}>{student?.phone || ''}</Text>
+        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (() => {
+          const cardW = cardWidthRef.current.get(lessonId) || 360;
+          const padding = Spacing.lg;
+          return (
+            <View style={[styles.shatterOverlay, { marginLeft: -padding, marginRight: -padding, marginTop: -padding, marginBottom: -padding }]} pointerEvents="none">
+              {shatterMgr.stripsRef.current.map((strip, i) => {
+                const stripW = (cardW + padding * 2) * strip.width / 100;
+                const offsetX = (cardW + padding * 2) * strip.left / 100;
+                return (
+                  <Animated.View
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: offsetX,
+                      width: stripW,
+                      height: '100%',
+                      overflow: 'hidden',
+                      opacity: strip.opacity as any,
+                      transform: [
+                        { translateX: strip.dx as any },
+                        { translateY: strip.dy as any },
+                        { rotate: strip.rot as any },
+                      ] as any,
+                    }}
+                  >
+                    <View style={{ position: 'absolute', top: 0, left: -offsetX, width: cardW + padding * 2 }}>
+                      <View style={[styles.card, Shadows.standard, { marginBottom: 0, borderLeftWidth: 4, borderLeftColor: borderColor, paddingBottom: 0 }]}>
+                        <View style={styles.cardHeader}>
+                          <View style={styles.cardHeaderLeft}>
+                            {student && <StudentAvatar name={student.name} size={40} />}
+                            <View>
+                              <Text style={styles.studentName}>{student?.name || '?'}</Text>
+                              <Text style={styles.subject}>{student?.phone || ''}</Text>
+                            </View>
+                          </View>
+                          <StatusBadge status={displayStatus} disabled={true} />
+                        </View>
+                        <View style={[styles.cardBody, { borderTopWidth: 0, paddingTop: 0 }]}>
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLeft}>
+                              <View style={styles.infoItem}>
+                                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                                <Text style={styles.infoText}>{item.date}</Text>
+                              </View>
+                              <View style={styles.infoItem}>
+                                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                                <Text style={styles.infoText}>{item.duration}h</Text>
+                              </View>
+                            </View>
+                            {item.timeSlot ? (
+                              <View style={styles.timeSlotBadge}>
+                                <Ionicons name="time-outline" size={25} color={Colors.primary} />
+                                <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                          <View style={styles.amountRow}>
+                            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
+                            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+                          </View>
                         </View>
                       </View>
-                      <StatusBadge status={displayStatus} disabled={true} />
                     </View>
-                    <View style={styles.cardBody}>
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLeft}>
-                          <View style={styles.infoItem}>
-                            <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                            <Text style={styles.infoText}>{item.date}</Text>
-                          </View>
-                          <View style={styles.infoItem}>
-                            <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                            <Text style={styles.infoText}>{item.duration}h</Text>
-                          </View>
-                        </View>
-                        {item.timeSlot ? (
-                          <View style={styles.timeSlotBadge}>
-                            <Ionicons name="time-outline" size={25} color={Colors.primary} />
-                            <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <View style={styles.amountRow}>
-                        <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-                        <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Animated.View>
-              );
-            })}
-          </View>
-        )}
+                  </Animated.View>
+                );
+              })}
+            </View>
+          );
+        })()}
       </Animated.View>
     );
   };
@@ -834,16 +846,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
-  shredClip: {
-    position: 'absolute', top: 0, height: '100%',
-    overflow: 'hidden', backgroundColor: Colors.card,
-  },
-  shredContent: {
-    position: 'absolute', top: 0,
-    backgroundColor: Colors.card,
-    padding: Spacing.lg,
-    paddingBottom: 0,
-  },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
     backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,

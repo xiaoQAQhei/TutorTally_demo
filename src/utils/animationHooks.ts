@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { Animated } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
 // ---- useSlideManager ----
 export function useSlideManager() {
@@ -29,9 +29,11 @@ export function useSlideManager() {
 
 // ---- useShatterManager ----
 const STRIP_COUNT = 8;
+const DURATION = 700;
+const EASE = Easing.bezier(0.32, 0, 0.67, 0.95);
 
 export interface StripData {
-  left: number; width: number;
+  left: number; width: number; offsetPx: number;
   dy: Animated.Value; dx: Animated.Value;
   rot: Animated.Value; opacity: Animated.Value;
   driftX: number; rotate: number; fallDist: number;
@@ -41,7 +43,7 @@ export function useShatterManager() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const stripsRef = useRef<StripData[]>([]);
 
-  const triggerShatter = useCallback((id: number, onComplete: () => void) => {
+  const triggerShatter = useCallback((id: number, cardHeight: number, onComplete: () => void) => {
     setActiveId(id);
     const strips: StripData[] = [];
     const widthPct = 100 / STRIP_COUNT;
@@ -50,27 +52,28 @@ export function useShatterManager() {
       strips.push({
         left: i * widthPct,
         width: widthPct,
+        offsetPx: i * widthPct, // percentage match
         dx: new Animated.Value(0),
         dy: new Animated.Value(0),
         rot: new Animated.Value(0),
         opacity: new Animated.Value(1),
-        driftX: (Math.random() - 0.5) * 50,
+        driftX: (Math.random() - 0.5) * 24,
         rotate: (Math.random() - 0.5) * 30,
-        fallDist: 200 + Math.random() * 200,
+        fallDist: cardHeight * (0.6 + Math.random() * 0.7),
       });
     }
 
     stripsRef.current = strips;
 
     const animations = strips.map((strip, i) => {
-      const delay = Math.random() * 60 + i * 18;
+      const delayMs = (Math.random() * 80 + i * 20);
       return Animated.sequence([
-        Animated.delay(delay),
+        Animated.delay(delayMs),
         Animated.parallel([
-          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: 650, useNativeDriver: false }),
-          Animated.timing(strip.dx, { toValue: strip.driftX, duration: 650, useNativeDriver: false }),
-          Animated.timing(strip.rot, { toValue: strip.rotate, duration: 650, useNativeDriver: false }),
-          Animated.timing(strip.opacity, { toValue: 0, duration: 650, useNativeDriver: false }),
+          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: DURATION, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.dx, { toValue: strip.driftX, duration: DURATION, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.rot, { toValue: strip.rotate, duration: DURATION, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.opacity, { toValue: 0, duration: DURATION, easing: EASE, useNativeDriver: false }),
         ]),
       ]);
     });
