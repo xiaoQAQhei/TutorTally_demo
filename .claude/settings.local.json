@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(cmd *)",
+      "Bash(scripts/start-server.sh *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(adb devices *)",
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices 2>&1)",
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {
@@ -10,13 +21,6 @@
           }
         ]
       }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(cmd *)",
-      "Bash(scripts/start-server.sh *)",
-      "PowerShell(Get-ChildItem *)"
     ]
   }
 }
