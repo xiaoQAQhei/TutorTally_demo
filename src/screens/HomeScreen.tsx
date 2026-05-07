@@ -105,7 +105,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.recentRight}>
             <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.miniBadge, { backgroundColor: '#FEE2E2' }]}>
-              <Text style={[styles.miniBadgeText, { color: Colors.danger }]}>待收款</Text>
+              <Text style={[styles.miniBadgeText, { color: Colors.danger }]}>确认下课</Text>
             </View>
           </View>
         </TouchableOpacity>
