@@ -50,6 +50,7 @@ const LessonScreen: React.FC = () => {
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   const itemHeightRef = useRef(180);
+  const cardWidthRef = useRef<Map<number, number>>(new Map());
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
@@ -356,8 +357,11 @@ const LessonScreen: React.FC = () => {
           const h = e.nativeEvent.layout.height;
           const w = e.nativeEvent.layout.width;
           if (h > 0) itemHeightRef.current = h;
-          if (w > 0 && cancelAnims.current.has(lessonId)) {
-            cancelAnims.current.get(lessonId)!.width = w;
+          if (w > 0) {
+            cardWidthRef.current.set(lessonId, w);
+            if (cancelAnims.current.has(lessonId)) {
+              cancelAnims.current.get(lessonId)!.width = w;
+            }
           }
         }}
       >
@@ -438,21 +442,62 @@ const LessonScreen: React.FC = () => {
 
         {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
           <View style={styles.shatterOverlay} pointerEvents="none">
-            {shatterMgr.stripsRef.current.map((strip, i) => (
-              <Animated.View
-                key={i}
-                style={[styles.shredStrip, {
-                  left: `${strip.left}%`,
-                  width: `${strip.width}%`,
-                  opacity: strip.opacity,
-                  transform: [
-                    { translateX: strip.dx },
-                    { translateY: strip.dy },
-                    { rotate: strip.rot },
-                  ],
-                }]}
-              />
-            ))}
+            {shatterMgr.stripsRef.current.map((strip, i) => {
+              const cardW = cardWidthRef.current.get(lessonId) || 360;
+              return (
+                <Animated.View
+                  key={i}
+                  style={[styles.shredClip, {
+                    left: `${strip.left}%`,
+                    width: `${strip.width}%`,
+                    opacity: strip.opacity as any,
+                    transform: [
+                      { translateX: strip.dx as any },
+                      { translateY: strip.dy as any },
+                      { rotate: strip.rot as any },
+                    ] as any,
+                  }]}
+                >
+                  <View style={[styles.shredContent, { width: cardW, left: -(cardW * strip.left / 100) }]}>
+                    {/* Strip card content clone — matches card inner layout */}
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderLeft}>
+                        {student && <StudentAvatar name={student.name} size={40} />}
+                        <View>
+                          <Text style={styles.studentName}>{student?.name || '?'}</Text>
+                          <Text style={styles.subject}>{student?.phone || ''}</Text>
+                        </View>
+                      </View>
+                      <StatusBadge status={displayStatus} disabled={true} />
+                    </View>
+                    <View style={styles.cardBody}>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLeft}>
+                          <View style={styles.infoItem}>
+                            <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                            <Text style={styles.infoText}>{item.date}</Text>
+                          </View>
+                          <View style={styles.infoItem}>
+                            <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                            <Text style={styles.infoText}>{item.duration}h</Text>
+                          </View>
+                        </View>
+                        {item.timeSlot ? (
+                          <View style={styles.timeSlotBadge}>
+                            <Ionicons name="time-outline" size={25} color={Colors.primary} />
+                            <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <View style={styles.amountRow}>
+                        <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
+                        <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+                      </View>
+                    </View>
+                  </View>
+                </Animated.View>
+              );
+            })}
           </View>
         )}
       </Animated.View>
@@ -789,11 +834,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
-  shredStrip: {
+  shredClip: {
     position: 'absolute', top: 0, height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderLeftWidth: 0.5, borderRightWidth: 0.5,
-    borderColor: '#E5E7EB',
+    overflow: 'hidden', backgroundColor: Colors.card,
+  },
+  shredContent: {
+    position: 'absolute', top: 0,
+    backgroundColor: Colors.card,
+    padding: Spacing.lg,
+    paddingBottom: 0,
   },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
