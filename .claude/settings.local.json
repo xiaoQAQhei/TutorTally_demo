@@ -8,7 +8,8 @@
       "PowerShell(adb devices *)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices 2>&1)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:blog.csdn.net)"
     ]
   },
   "hooks": {

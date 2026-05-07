@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 16:06 | auto: 05-07 16:06 | .claude/settings.local.json 
+- .claude/settings.local.json
+
 ## 2026-05-07 16:03 | auto: 05-07 16:03 | .claude/settings.local.json .idea/markdown.xml .idea/modules.xml .idea/vcs.xml ".idea/家教课程账单_demo.iml" 
 - .claude/settings.local.json
 - .idea/markdown.xml
