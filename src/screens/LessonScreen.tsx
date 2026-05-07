@@ -63,7 +63,19 @@ const LessonScreen: React.FC = () => {
     loadStudents();
   }, []));
 
-  const loadLessons = async () => { setLessons(await getAllLessons()); };
+  const loadLessons = async () => {
+    const all = await getAllLessons();
+    const now = new Date();
+    for (const l of all) {
+      if (l.status === 'scheduled' && l.timeSlot) {
+        const endTime = l.timeSlot.split('-')[1]?.trim();
+        if (endTime && now >= new Date(`${l.date}T${endTime}:00`)) {
+          await setLessonStatus(l.id, 'completed');
+        }
+      }
+    }
+    setLessons(await getAllLessons());
+  };
   const loadStudents = async () => {
     const data = await getAllStudents();
     setStudents(data);
@@ -341,7 +353,7 @@ const LessonScreen: React.FC = () => {
           </View>
           <StatusBadge
               status={item.status}
-              disabled={item.status === 'scheduled' && !isClassEnded(item)}
+              disabled={item.status === 'scheduled'}
               onToggle={(nextStatus) => handleStatusChange(item, nextStatus)}
             />
         </View>

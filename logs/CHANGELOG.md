@@ -1,4 +1,9 @@
 # 改动日志
+## 2026-05-07 20:16 | auto: 05-07 20:16 | src/components/StatusBadge.tsx src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx 
+- src/components/StatusBadge.tsx
+- src/screens/HomeScreen.tsx
+- src/screens/LessonScreen.tsx
+
 ## 2026-05-07 20:08 | auto: 05-07 20:08 | src/styles/theme.ts 
 - src/styles/theme.ts
 

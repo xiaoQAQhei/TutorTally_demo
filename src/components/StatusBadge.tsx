@@ -19,13 +19,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
 
-  // scheduled + class ended → show red "确认下课" CTA badge
-  const isConfirmMode = status === 'scheduled' && !disabled;
-  const colors = isConfirmMode
-    ? { bg: '#FEE2E2', text: '#EF4444' }
-    : LessonStatusColors[status];
-  const label = isConfirmMode ? '确认下课' : LessonStatusColors[status].label;
-  const icon = isConfirmMode ? 'checkmark-circle' as const : StatusIcons[status];
+  const colors = LessonStatusColors[status];
+  const label = LessonStatusColors[status].label;
+  const icon = StatusIcons[status];
 
   const handleTap = () => {
     if (!tappable || nextStatuses.length === 0) return;
