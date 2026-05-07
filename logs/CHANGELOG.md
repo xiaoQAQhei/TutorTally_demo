@@ -1,4 +1,29 @@
 # 改动日志
+## 2026-05-07 18:06 | auto: 05-07 18:06 | android/.gradle/8.2/checksums/checksums.lock android/.gradle/8.2/checksums/md5-checksums.bin android/.gradle/8.2/checksums/sha1-checksums.bin android/.gradle/8.2/fileHashes/fileHashes.bin android/.gradle/8.2/fileHashes/fileHashes.lock android/.gradle/buildOutputCleanup/buildOutputCleanup.lock android/.idea/gradle.xml android/.idea/misc.xml logs/CHANGELOG.md src/screens/LessonScreen.tsx android/.gradle/8.2/executionHistory/ android/.gradle/buildOutputCleanup/outputFiles.bin android/.idea/.name android/.idea/compiler.xml 
+- android/.gradle/8.2/checksums/checksums.lock
+- android/.gradle/8.2/checksums/md5-checksums.bin
+- android/.gradle/8.2/checksums/sha1-checksums.bin
+- android/.gradle/8.2/fileHashes/fileHashes.bin
+- android/.gradle/8.2/fileHashes/fileHashes.lock
+- android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+- android/.idea/gradle.xml
+- android/.idea/misc.xml
+- logs/CHANGELOG.md
+- src/screens/LessonScreen.tsx
+- android/.gradle/8.2/executionHistory/
+- android/.gradle/buildOutputCleanup/outputFiles.bin
+- android/.idea/.name
+- android/.idea/compiler.xml
+
+## 2026-05-07 17:53 | auto: 05-07 17:53 | android/.gradle/8.2/checksums/checksums.lock android/.gradle/8.2/checksums/md5-checksums.bin android/.gradle/8.2/checksums/sha1-checksums.bin android/.gradle/8.2/dependencies-accessors/dependencies-accessors.lock android/.gradle/8.2/fileHashes/fileHashes.lock android/.gradle/buildOutputCleanup/buildOutputCleanup.lock android/.gradle/8.2/executionHistory/ 
+- android/.gradle/8.2/checksums/checksums.lock
+- android/.gradle/8.2/checksums/md5-checksums.bin
+- android/.gradle/8.2/checksums/sha1-checksums.bin
+- android/.gradle/8.2/dependencies-accessors/dependencies-accessors.lock
+- android/.gradle/8.2/fileHashes/fileHashes.lock
+- android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+- android/.gradle/8.2/executionHistory/
+
 ## 2026-05-07 17:37 | auto: 05-07 17:37 | android/.gradle/8.2/checksums/checksums.lock android/.gradle/8.2/checksums/sha1-checksums.bin android/app/build.gradle android/.gradle/8.2/checksums/md5-checksums.bin 
 - android/.gradle/8.2/checksums/checksums.lock
 - android/.gradle/8.2/checksums/sha1-checksums.bin

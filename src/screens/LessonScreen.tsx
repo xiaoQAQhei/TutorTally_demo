@@ -53,7 +53,6 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const [slidingId, setSlidingId] = useState<number | null>(null);
   const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
@@ -153,11 +152,10 @@ const LessonScreen: React.FC = () => {
         }
         const a = slideTestAnims.current.get(lesson.id)!;
         a.setValue(0);
-        setSlidingId(lesson.id);
         Animated.sequence([
           Animated.timing(a, { toValue: 40, duration: 200, useNativeDriver: false }),
           Animated.timing(a, { toValue: 0, duration: 200, useNativeDriver: false }),
-        ]).start(() => setSlidingId(null));
+        ]).start();
         setLessonStatus(lesson.id, nextStatus);
         setTimeout(() => loadLessons(), 450);
       } else {
@@ -290,6 +288,10 @@ const LessonScreen: React.FC = () => {
     const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
+    if (!slideTestAnims.current.has(lessonId)) {
+      slideTestAnims.current.set(lessonId, new Animated.Value(0));
+    }
+
     // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
@@ -316,7 +318,7 @@ const LessonScreen: React.FC = () => {
           ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
           opacity: showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
-            ...(slidingId === lessonId ? [{ translateX: slideTestAnims.current.get(lessonId)! }] : []),
+            { translateX: slideTestAnims.current.get(lessonId)! },
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
           ],
         }]}
