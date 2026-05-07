@@ -457,11 +457,11 @@ function seedMockData() {
   for (let i = 0; i < 15; i++) {
     const student = [s1, s2, s3][i % 3];
     const subj = [sub1, sub2, sub3][i % 3];
-    const status: LessonStatus = i < 3 ? 'paid' : (i < 6 ? 'completed' : 'scheduled');
+    const status: LessonStatus = i < 3 ? 'paid' : (i < 6 ? 'pendingPayment' : (i < 9 ? 'completed' : 'scheduled'));
     mockLessons.push({
       id: mockIdCounter++, studentId: student.id, studentSubjectId: subj.id,
       date: dates[i % dates.length], timeSlot: '14:00-16:00', duration: 2,
-      amount: subj.hourlyRate * 2, status, confirmedAt: i < 6 ? now : null,
+      amount: subj.hourlyRate * 2, status, confirmedAt: i < 9 ? now : null,
       notes: '', createdAt: now, _uuid: uid(),
     });
   }

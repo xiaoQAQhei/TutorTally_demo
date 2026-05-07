@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 20:01 | auto: 05-07 20:01 | src/database/index.ts 
+- src/database/index.ts
+
 ## 2026-05-07 19:59 | auto: 05-07 19:59 | src/screens/LessonScreen.tsx 
 - src/screens/LessonScreen.tsx
 
