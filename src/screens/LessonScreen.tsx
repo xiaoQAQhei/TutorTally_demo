@@ -158,7 +158,7 @@ const LessonScreen: React.FC = () => {
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
-      if (nextStatus === 'completed') {
+      if (nextStatus === 'completed' || nextStatus === 'pendingPayment') {
         if (!slideTestAnims.current.has(lesson.id)) {
           slideTestAnims.current.set(lesson.id, new Animated.Value(0));
         }

@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 20:30 | auto: 05-07 20:30 | src/screens/LessonScreen.tsx 
+- src/screens/LessonScreen.tsx
+
 ## 2026-05-07 20:28 | auto: 05-07 20:28 | src/screens/HomeScreen.tsx 
 - src/screens/HomeScreen.tsx
 
