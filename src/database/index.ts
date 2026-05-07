@@ -331,7 +331,7 @@ export const updateLesson = (lesson: Lesson): Promise<void> => {
 
 export const setLessonStatus = (id: number, status: LessonStatus): Promise<void> => {
   const now = new Date().toISOString();
-  const confirmedAt = (status === 'completed' || status === 'paid') ? now : null;
+  const confirmedAt = (status === 'completed' || status === 'paid') ? now : undefined;
   if (useMock) {
     const l = mockLessons.find(x => x.id === id);
     if (l) { l.status = status; l.confirmedAt = confirmedAt || l.confirmedAt; l.updatedAt = now; }
@@ -339,8 +339,13 @@ export const setLessonStatus = (id: number, status: LessonStatus): Promise<void>
   }
   return new Promise((resolve, reject) => {
     db.transaction((tx: any) => {
-      tx.executeSql('UPDATE lessons SET status=?, confirmedAt=?, updatedAt=? WHERE id=?',
-        [status, confirmedAt || null, now, id], () => resolve());
+      if (confirmedAt !== undefined) {
+        tx.executeSql('UPDATE lessons SET status=?, confirmedAt=?, updatedAt=? WHERE id=?',
+          [status, confirmedAt, now, id], () => resolve());
+      } else {
+        tx.executeSql('UPDATE lessons SET status=?, updatedAt=? WHERE id=?',
+          [status, now, id], () => resolve());
+      }
     }, (e: any) => reject(e));
   });
 };

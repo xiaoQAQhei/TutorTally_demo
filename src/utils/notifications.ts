@@ -35,7 +35,7 @@ export async function scheduleAllReminders(): Promise<void> {
         }
       }
     }
-    if (l.status === 'completed' && l.timeSlot) {
+    if (l.status === 'pendingPayment' && l.timeSlot) {
       const parts = l.timeSlot.split('-')[1]?.trim()?.split(':');
       if (parts && parts.length >= 2) {
         const h = parseInt(parts[0]) || 0;

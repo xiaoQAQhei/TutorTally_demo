@@ -31,7 +31,7 @@ export interface RateHistory {
   changedAt: string;
 }
 
-export type LessonStatus = 'scheduled' | 'completed' | 'paid' | 'cancelled';
+export type LessonStatus = 'scheduled' | 'completed' | 'pendingPayment' | 'paid' | 'cancelled';
 
 export interface Lesson {
   id: number;

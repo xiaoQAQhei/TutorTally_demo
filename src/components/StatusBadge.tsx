@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LessonStatusColors, StatusTransitions, FontSize, FontWeight, BorderRadius, Spacing } from '../styles/theme';
 import { LessonStatus } from '../models';
 
-const StatusIcons: Record<string, 'book' | 'time' | 'checkmark-circle' | 'close-circle'> = {
-  scheduled: 'book', completed: 'time', paid: 'checkmark-circle', cancelled: 'close-circle',
+const StatusIcons: Record<string, 'book' | 'time' | 'checkmark-circle' | 'close-circle' | 'wallet'> = {
+  scheduled: 'book', completed: 'time', pendingPayment: 'wallet', paid: 'checkmark-circle', cancelled: 'close-circle',
 };
 
 interface StatusBadgeProps {

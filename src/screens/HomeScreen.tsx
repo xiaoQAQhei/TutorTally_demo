@@ -56,7 +56,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     const pending = lessons.filter((l) => {
       if (l.status === 'paid') return false;
-      if (l.status === 'completed') return true;
+      if (l.status === 'pendingPayment') return true;
       if (l.date < today) return l.status !== 'cancelled';
       return false;
     }).reduce((sum, l) => sum + l.amount, 0);
