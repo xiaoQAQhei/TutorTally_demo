@@ -436,20 +436,19 @@ const LessonScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {shatterMgr.activeId === lessonId && shatterMgr.fragDataRef.current.length > 0 && (
+        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
           <View style={styles.shatterOverlay} pointerEvents="none">
-            {shatterMgr.fragDataRef.current.map((f, i) => (
+            {shatterMgr.stripsRef.current.map((strip, i) => (
               <Animated.View
                 key={i}
-                style={[styles.shatterPiece, {
-                  left: `${f.x * 100}%`, top: `${f.y * 100}%`,
-                  width: `${f.w * 100}%`, height: `${f.h * 100}%`,
-                  backgroundColor: f.color,
-                  opacity: f.opacity,
+                style={[styles.shredStrip, {
+                  left: `${strip.left}%`,
+                  width: `${strip.width}%`,
+                  opacity: strip.opacity,
                   transform: [
-                    { translateX: f.dx },
-                    { translateY: f.dy },
-                    { rotate: f.rot },
+                    { translateX: strip.dx },
+                    { translateY: strip.dy },
+                    { rotate: strip.rot },
                   ],
                 }]}
               />
@@ -790,7 +789,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
-  shatterPiece: { position: 'absolute', borderRadius: 4 },
+  shredStrip: {
+    position: 'absolute', top: 0, height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 0.5, borderRightWidth: 0.5,
+    borderColor: '#E5E7EB',
+  },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
     backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,

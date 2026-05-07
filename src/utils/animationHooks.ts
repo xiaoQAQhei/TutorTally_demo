@@ -28,51 +28,59 @@ export function useSlideManager() {
 }
 
 // ---- useShatterManager ----
-const FRAG_COLORS = ['#6366F1', '#818CF8', '#4F46E5', '#A5B4FC'];
+const STRIP_COUNT = 8;
+
+export interface StripData {
+  left: number; width: number;
+  dy: Animated.Value; dx: Animated.Value;
+  rot: Animated.Value; opacity: Animated.Value;
+  driftX: number; rotate: number; fallDist: number;
+}
 
 export function useShatterManager() {
   const [activeId, setActiveId] = useState<number | null>(null);
-  const fragDataRef = useRef<Array<{
-    x: number; y: number; w: number; h: number;
-    color: string;
-    dx: Animated.Value; dy: Animated.Value;
-    rot: Animated.Value; opacity: Animated.Value;
-  }>>([]);
+  const stripsRef = useRef<StripData[]>([]);
 
   const triggerShatter = useCallback((id: number, onComplete: () => void) => {
     setActiveId(id);
-    const frags: typeof fragDataRef.current = [];
+    const strips: StripData[] = [];
+    const widthPct = 100 / STRIP_COUNT;
 
-    for (let i = 0; i < 8; i++) {
-      frags.push({
-        x: (i % 4) * 0.24, y: Math.floor(i / 4) * 0.45,
-        w: 0.2, h: 0.15,
-        color: FRAG_COLORS[i],
+    for (let i = 0; i < STRIP_COUNT; i++) {
+      strips.push({
+        left: i * widthPct,
+        width: widthPct,
         dx: new Animated.Value(0),
         dy: new Animated.Value(0),
         rot: new Animated.Value(0),
         opacity: new Animated.Value(1),
+        driftX: (Math.random() - 0.5) * 50,
+        rotate: (Math.random() - 0.5) * 30,
+        fallDist: 200 + Math.random() * 200,
       });
     }
 
-    fragDataRef.current = frags;
+    stripsRef.current = strips;
 
-    const animations = frags.map((f, i) => {
-      const delay = i * 50;
-      return Animated.parallel([
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.dx, { toValue: (i % 2 === 0 ? -1 : 1) * (60 + Math.random() * 100), duration: 350, useNativeDriver: false })]),
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.dy, { toValue: 100 + i * 30 + Math.random() * 100, duration: 350, useNativeDriver: false })]),
-        Animated.sequence([Animated.delay(delay), Animated.timing(f.rot, { toValue: (i % 2 === 0 ? -1 : 1) * (1 + Math.random() * 3), duration: 350, useNativeDriver: false })]),
-        Animated.sequence([Animated.delay(delay + 250), Animated.timing(f.opacity, { toValue: 0, duration: 150, useNativeDriver: false })]),
+    const animations = strips.map((strip, i) => {
+      const delay = Math.random() * 60 + i * 18;
+      return Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: 650, useNativeDriver: false }),
+          Animated.timing(strip.dx, { toValue: strip.driftX, duration: 650, useNativeDriver: false }),
+          Animated.timing(strip.rot, { toValue: strip.rotate, duration: 650, useNativeDriver: false }),
+          Animated.timing(strip.opacity, { toValue: 0, duration: 650, useNativeDriver: false }),
+        ]),
       ]);
     });
 
     Animated.parallel(animations).start(() => {
       setActiveId(null);
-      fragDataRef.current = [];
+      stripsRef.current = [];
       onComplete();
     });
   }, []);
 
-  return { activeId, fragDataRef, triggerShatter };
+  return { activeId, stripsRef, triggerShatter };
 }
