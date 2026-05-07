@@ -1,5 +1,10 @@
 apply plugin: "com.android.application"
 
+project.ext.react = [
+    enableHermes: true,
+]
+ext.hermesEnabled = true
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     ndkVersion rootProject.ext.ndkVersion

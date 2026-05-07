@@ -1,4 +1,10 @@
 # 改动日志
+## 2026-05-07 17:37 | auto: 05-07 17:37 | android/.gradle/8.2/checksums/checksums.lock android/.gradle/8.2/checksums/sha1-checksums.bin android/app/build.gradle android/.gradle/8.2/checksums/md5-checksums.bin 
+- android/.gradle/8.2/checksums/checksums.lock
+- android/.gradle/8.2/checksums/sha1-checksums.bin
+- android/app/build.gradle
+- android/.gradle/8.2/checksums/md5-checksums.bin
+
 ## 2026-05-07 17:25 | auto: 05-07 17:25 | android/.gradle/8.2/fileHashes/fileHashes.bin android/.gradle/8.2/fileHashes/fileHashes.lock android/.gradle/config.properties android/.idea/gradle.xml android/.idea/misc.xml android/.idea/deviceManager.xml android/gradle.properties 
 - android/.gradle/8.2/fileHashes/fileHashes.bin
 - android/.gradle/8.2/fileHashes/fileHashes.lock
