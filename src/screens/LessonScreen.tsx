@@ -155,9 +155,9 @@ const LessonScreen: React.FC = () => {
         Animated.sequence([
           Animated.timing(a, { toValue: 40, duration: 200, useNativeDriver: false }),
           Animated.timing(a, { toValue: 0, duration: 200, useNativeDriver: false }),
-        ]).start();
-        setLessonStatus(lesson.id, nextStatus);
-        setTimeout(() => loadLessons(), 450);
+        ]).start(() => {
+          setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+        });
       } else {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
