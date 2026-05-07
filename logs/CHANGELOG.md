@@ -1,4 +1,9 @@
 # 改动日志
+## 2026-05-07 15:49 | auto: 05-07 15:49 | .claude/settings.local.json logs/CHANGELOG.md .superpowers/ 
+- .claude/settings.local.json
+- logs/CHANGELOG.md
+- .superpowers/
+
 
 记录项目所有功能改动、UI 优化和 Bug 修复。
 
@@ -12,6 +17,17 @@
 - **备注** — 可选说明
 
 ---
+
+## 2026-05-07 01:31 更新 PROGRESS.md — v2.0 状态、动画问题、后续计划
+
+### 项目进度文档同步
+- **类型**: docs
+- **描述**:
+  1. 更新 PROGRESS.md 为 v2.0 状态，记录已完成功能和当前已知问题
+  2. 补充动画卡顿问题的排查记录和修复方案
+  3. 明确后续开发计划（稳定版发布、动画重写等）
+- **文件**:
+  - `PROGRESS.md`
 
 ## 2026-05-03 23:34 StatsScreen 图表自适应 + 月份切换修复
 
