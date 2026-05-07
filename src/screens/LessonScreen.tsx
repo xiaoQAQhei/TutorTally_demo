@@ -53,7 +53,7 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const [morphingId, setMorphingId] = useState<number | null>(null);
+  const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null);
   const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
   const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
@@ -160,7 +160,7 @@ const LessonScreen: React.FC = () => {
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
-      if (nextStatus === 'completed' || nextStatus === 'pendingPayment') {
+      if (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid') {
         if (!slideTestAnims.current.has(lesson.id)) {
           slideTestAnims.current.set(lesson.id, new Animated.Value(0));
         }
@@ -171,7 +171,7 @@ const LessonScreen: React.FC = () => {
         const slideOp = slideOpacityAnims.current.get(lesson.id)!;
         slideX.setValue(0);
         slideOp.setValue(1);
-        setMorphingId(lesson.id);
+        setMorphing({ id: lesson.id, targetStatus: nextStatus });
         setTimeout(() => {
           Animated.parallel([
             Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
@@ -179,7 +179,7 @@ const LessonScreen: React.FC = () => {
           ]).start(() => {
             slideX.setValue(0);
             slideOp.setValue(1);
-            setMorphingId(null);
+            setMorphing(null);
             setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
           });
         }, 300);
@@ -307,8 +307,9 @@ const LessonScreen: React.FC = () => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
 
-    const isMorphing = morphingId === lessonId;
-    const borderColor = isMorphing ? Colors.pending : (item.status === 'paid' ? Colors.paid : item.status === 'pendingPayment' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary);
+    const isMorphing = morphing?.id === lessonId;
+    const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
+    const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
     const isCancelling = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;
@@ -369,8 +370,8 @@ const LessonScreen: React.FC = () => {
             </View>
           </View>
           <StatusBadge
-              status={isMorphing ? 'pendingPayment' : item.status}
-              disabled={!isMorphing && item.status === 'scheduled'}
+              status={displayStatus}
+              disabled={isMorphing || item.status === 'scheduled'}
               onToggle={isMorphing ? undefined : (nextStatus) => handleStatusChange(item, nextStatus)}
             />
         </View>
