@@ -66,13 +66,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
-  const handleConfirmLesson = (id: number) => {
+  const handleConfirmLesson = (id: number, targetStatus: 'completed' | 'paid') => {
+    const label = targetStatus === 'completed' ? '已下课' : '已收款';
     const doConfirm = async () => {
-      await setLessonStatus(id, 'completed');
+      await setLessonStatus(id, targetStatus);
       loadData();
     };
     if (confirmBeforeChange) {
-      setConfirmDialog({ visible: true, title: '确认操作', message: '确定要标记为「已下课」吗？', onConfirm: doConfirm });
+      setConfirmDialog({ visible: true, title: '确认操作', message: `确定要标记为「${label}」吗？`, onConfirm: doConfirm });
     } else {
       doConfirm();
     }
@@ -103,11 +104,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmLesson(item.id)}>
+          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmLesson(item.id, 'paid')}>
             <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
-            <View style={styles.confirmBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={Colors.danger} />
-              <Text style={styles.confirmBadgeText}>确认下课</Text>
+            <View style={[styles.confirmBadge, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.pending} />
+              <Text style={[styles.confirmBadgeText, { color: Colors.pending }]}>确认收款</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -115,26 +116,25 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     return (
-      <TouchableOpacity
-        style={[styles.recentItem, !isLast && styles.recentItemBorder]}
-        activeOpacity={0.6}
-        onPress={navigateToLesson}
-      >
+      <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
         <View style={[styles.colorBar, { backgroundColor: Colors.primary }]} />
-        <View style={styles.recentLeft}>
-          <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-          <Text style={styles.recentDate}>{item.date}</Text>
-        </View>
-        <View style={styles.recentCenter}>
-          {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
-        </View>
-        <View style={styles.recentRight}>
-          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
-          <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
-            <Text style={[styles.miniBadgeText, { color: Colors.primary }]}>待上</Text>
+        <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
+          <View style={styles.recentLeft}>
+            <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+            <Text style={styles.recentDate}>{item.date}</Text>
           </View>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.recentCenter}>
+            {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmLesson(item.id, 'completed')}>
+          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+          <View style={styles.confirmBadge}>
+            <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
+            <Text style={styles.confirmBadgeText}>确认下课</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
