@@ -28,7 +28,7 @@ export function useSlideManager() {
 }
 
 // ---- useShatterManager ----
-const STRIP_COUNT = 8;
+export const STRIP_COUNT = 8;
 const DURATION = 700;
 const EASE = Easing.bezier(0.32, 0, 0.67, 0.95);
 

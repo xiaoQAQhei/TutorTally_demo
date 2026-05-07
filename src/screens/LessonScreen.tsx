@@ -18,7 +18,7 @@ import EmptyState from '../components/EmptyState';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
-import { useSlideManager, useShatterManager } from '../utils/animationHooks';
+import { useSlideManager, useShatterManager, STRIP_COUNT } from '../utils/animationHooks';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -348,7 +348,7 @@ const LessonScreen: React.FC = () => {
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
-          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
+          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
@@ -367,6 +367,7 @@ const LessonScreen: React.FC = () => {
           }
         }}
       >
+        <View style={shatterMgr.activeId === lessonId ? { opacity: 0 } : null}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             {student && <StudentAvatar name={student.name} size={40} />}
@@ -441,77 +442,67 @@ const LessonScreen: React.FC = () => {
             <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           </TouchableOpacity>
         </View>
+        </View>
 
-        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (() => {
-          const cardW = cardWidthRef.current.get(lessonId) || 360;
-          const padding = Spacing.lg;
-          return (
-            <View style={[styles.shatterOverlay, { marginLeft: -padding, marginRight: -padding, marginTop: -padding, marginBottom: -padding }]} pointerEvents="none">
-              {shatterMgr.stripsRef.current.map((strip, i) => {
-                const stripW = (cardW + padding * 2) * strip.width / 100;
-                const offsetX = (cardW + padding * 2) * strip.left / 100;
-                return (
-                  <Animated.View
-                    key={i}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: offsetX,
-                      width: stripW,
-                      height: '100%',
-                      overflow: 'hidden',
-                      opacity: strip.opacity as any,
-                      transform: [
-                        { translateX: strip.dx as any },
-                        { translateY: strip.dy as any },
-                        { rotate: strip.rot as any },
-                      ] as any,
-                    }}
-                  >
-                    <View style={{ position: 'absolute', top: 0, left: -offsetX, width: cardW + padding * 2 }}>
-                      <View style={[styles.card, Shadows.standard, { marginBottom: 0, borderLeftWidth: 4, borderLeftColor: borderColor, paddingBottom: 0 }]}>
-                        <View style={styles.cardHeader}>
-                          <View style={styles.cardHeaderLeft}>
-                            {student && <StudentAvatar name={student.name} size={40} />}
-                            <View>
-                              <Text style={styles.studentName}>{student?.name || '?'}</Text>
-                              <Text style={styles.subject}>{student?.phone || ''}</Text>
-                            </View>
-                          </View>
-                          <StatusBadge status={displayStatus} disabled={true} />
-                        </View>
-                        <View style={[styles.cardBody, { borderTopWidth: 0, paddingTop: 0 }]}>
-                          <View style={styles.infoRow}>
-                            <View style={styles.infoLeft}>
-                              <View style={styles.infoItem}>
-                                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                                <Text style={styles.infoText}>{item.date}</Text>
-                              </View>
-                              <View style={styles.infoItem}>
-                                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                                <Text style={styles.infoText}>{item.duration}h</Text>
-                              </View>
-                            </View>
-                            {item.timeSlot ? (
-                              <View style={styles.timeSlotBadge}>
-                                <Ionicons name="time-outline" size={25} color={Colors.primary} />
-                                <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
-                              </View>
-                            ) : null}
-                          </View>
-                          <View style={styles.amountRow}>
-                            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-                            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
-                          </View>
-                        </View>
+        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
+          <View style={styles.shatterOverlay} pointerEvents="none">
+            {shatterMgr.stripsRef.current.map((strip, i) => (
+              <Animated.View
+                key={i}
+                style={[styles.shredStrip, {
+                  left: `${strip.left}%`,
+                  width: `${strip.width}%`,
+                  opacity: strip.opacity as any,
+                  transform: [
+                    { translateX: strip.dx as any },
+                    { translateY: strip.dy as any },
+                    { rotate: strip.rot as any },
+                  ] as any,
+                }]}
+              >
+                <View style={[styles.shredInner, {
+                  width: `${100 * STRIP_COUNT}%`,
+                  left: `${-i * 100}%`,
+                }]}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardHeaderLeft}>
+                      {student && <StudentAvatar name={student.name} size={40} />}
+                      <View>
+                        <Text style={styles.studentName}>{student?.name || '?'}</Text>
+                        <Text style={styles.subject}>{student?.phone || ''}</Text>
                       </View>
                     </View>
-                  </Animated.View>
-                );
-              })}
-            </View>
-          );
-        })()}
+                    <StatusBadge status={displayStatus} disabled={true} />
+                  </View>
+                  <View style={styles.cardBody}>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLeft}>
+                        <View style={styles.infoItem}>
+                          <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                          <Text style={styles.infoText}>{item.date}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                          <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                          <Text style={styles.infoText}>{item.duration}h</Text>
+                        </View>
+                      </View>
+                      {item.timeSlot ? (
+                        <View style={styles.timeSlotBadge}>
+                          <Ionicons name="time-outline" size={25} color={Colors.primary} />
+                          <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.amountRow}>
+                      <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
+                      <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+                    </View>
+                  </View>
+                </View>
+              </Animated.View>
+            ))}
+          </View>
+        )}
       </Animated.View>
     );
   };
@@ -846,6 +837,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
+  shredStrip: {
+    position: 'absolute', top: 0, height: '100%',
+    overflow: 'hidden',
+  },
+  shredInner: {
+    position: 'absolute',
+    top: 0,
+    backgroundColor: Colors.card,
+    padding: Spacing.lg,
+    paddingBottom: 0,
+  },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
     backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
