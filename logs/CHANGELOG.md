@@ -1,4 +1,12 @@
 # 改动日志
+## 2026-05-07 16:49 | auto: 05-07 16:49 | .claude/settings.local.json android/.gradle/ android/.idea/ android/gradle/ android/local.properties android/settings.gradle 
+- .claude/settings.local.json
+- android/.gradle/
+- android/.idea/
+- android/gradle/
+- android/local.properties
+- android/settings.gradle
+
 ## 2026-05-07 16:41 | auto: 05-07 16:41 | .idea/misc.xml 
 - .idea/misc.xml
 

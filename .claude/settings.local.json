@@ -9,7 +9,9 @@
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices 2>&1)",
       "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)",
       "WebSearch",
-      "WebFetch(domain:blog.csdn.net)"
+      "WebFetch(domain:blog.csdn.net)",
+      "PowerShell(Get-ChildItem -Path \"android\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"$PWD\\\\\", \"\"\\) })",
+      "Bash(node *)"
     ]
   },
   "hooks": {
