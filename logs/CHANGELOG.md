@@ -1,4 +1,9 @@
 # 改动日志
+## 2026-05-08 00:37 | auto: 05-08 00:37 | src/screens/LessonScreen.tsx src/utils/animationHooks.ts "碎纸删除动画.html" 
+- src/screens/LessonScreen.tsx
+- src/utils/animationHooks.ts
+- "碎纸删除动画.html"
+
 ## 2026-05-07 21:22 | auto: 05-07 21:22 | src/screens/LessonScreen.tsx src/utils/animationHooks.ts 
 - src/screens/LessonScreen.tsx
 - src/utils/animationHooks.ts

@@ -453,6 +453,7 @@ const LessonScreen: React.FC = () => {
                   left: `${strip.left}%`,
                   width: `${strip.width}%`,
                   opacity: strip.opacity as any,
+                  ...Shadows.standard,
                   transform: [
                     { translateX: strip.dx as any },
                     { translateY: strip.dy as any },
@@ -461,8 +462,8 @@ const LessonScreen: React.FC = () => {
                 }]}
               >
                 <View style={[styles.shredInner, {
-                  width: `${100 * STRIP_COUNT}%`,
-                  left: `${-i * 100}%`,
+                  width: cardWidthRef.current.get(lessonId) || 400,
+                  left: -(strip.offsetPx / 100 * (cardWidthRef.current.get(lessonId) || 400)),
                 }]}>
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
@@ -496,6 +497,27 @@ const LessonScreen: React.FC = () => {
                     <View style={styles.amountRow}>
                       <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
                       <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+                    </View>
+                    {item.notes ? (
+                      <View style={styles.noteRow}>
+                        <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
+                        <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.actions}>
+                    {(item.status !== 'paid' && item.status !== 'cancelled') && (
+                      <View style={styles.actionButton}>
+                        <Ionicons name="pencil" size={18} color={Colors.primary} />
+                      </View>
+                    )}
+                    {item.status === 'scheduled' && !isClassEnded(item) && (
+                      <View style={styles.actionButton}>
+                        <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+                      </View>
+                    )}
+                    <View style={styles.actionButton}>
+                      <Ionicons name="trash-outline" size={18} color={Colors.danger} />
                     </View>
                   </View>
                 </View>
@@ -847,6 +869,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     padding: Spacing.lg,
     paddingBottom: 0,
+    borderRadius: BorderRadius.card,
   },
   strikethroughLabel: {
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,

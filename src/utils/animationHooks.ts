@@ -37,6 +37,7 @@ export interface StripData {
   dy: Animated.Value; dx: Animated.Value;
   rot: Animated.Value; opacity: Animated.Value;
   driftX: number; rotate: number; fallDist: number;
+  delay: number;
 }
 
 export function useShatterManager() {
@@ -52,28 +53,42 @@ export function useShatterManager() {
       strips.push({
         left: i * widthPct,
         width: widthPct,
-        offsetPx: i * widthPct, // percentage match
+        offsetPx: i * widthPct,
         dx: new Animated.Value(0),
         dy: new Animated.Value(0),
         rot: new Animated.Value(0),
         opacity: new Animated.Value(1),
-        driftX: (Math.random() - 0.5) * 24,
+        driftX: (Math.random() - 0.5) * 25,
         rotate: (Math.random() - 0.5) * 30,
         fallDist: cardHeight * (0.6 + Math.random() * 0.7),
+        delay: Math.random() * 80 + i * 20,
       });
     }
 
     stripsRef.current = strips;
 
-    const animations = strips.map((strip, i) => {
-      const delayMs = (Math.random() * 80 + i * 20);
+    const animations = strips.map((strip) => {
+      const midFallDist = strip.fallDist * 0.6;
+      const midDriftX = strip.driftX * 0.5;
+      const midRotate = strip.rotate * 0.5;
+      const midDuration = DURATION * 0.55;
+      const finalDuration = DURATION * 0.45;
+
       return Animated.sequence([
-        Animated.delay(delayMs),
-        Animated.parallel([
-          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: DURATION, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.dx, { toValue: strip.driftX, duration: DURATION, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.rot, { toValue: strip.rotate, duration: DURATION, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.opacity, { toValue: 0, duration: DURATION, easing: EASE, useNativeDriver: false }),
+        Animated.delay(strip.delay),
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(strip.dy, { toValue: midFallDist, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.dx, { toValue: midDriftX, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.rot, { toValue: midRotate, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.opacity, { toValue: 0.85, duration: midDuration, easing: EASE, useNativeDriver: false }),
+          ]),
+          Animated.parallel([
+            Animated.timing(strip.dy, { toValue: strip.fallDist, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.dx, { toValue: strip.driftX, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.rot, { toValue: strip.rotate, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.opacity, { toValue: 0, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+          ]),
         ]),
       ]);
     });
