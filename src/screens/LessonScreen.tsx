@@ -369,9 +369,9 @@ const LessonScreen: React.FC = () => {
             </View>
           </View>
           <StatusBadge
-              status={item.status}
-              disabled={item.status === 'scheduled'}
-              onToggle={(nextStatus) => handleStatusChange(item, nextStatus)}
+              status={isMorphing ? 'pendingPayment' : item.status}
+              disabled={!isMorphing && item.status === 'scheduled'}
+              onToggle={isMorphing ? undefined : (nextStatus) => handleStatusChange(item, nextStatus)}
             />
         </View>
 
