@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 18:24 | auto: 05-07 18:24 | src/screens/HomeScreen.tsx 
+- src/screens/HomeScreen.tsx
+
 ## 2026-05-07 18:13 | auto: 05-07 18:13 | android/.idea/compiler.xml android/.idea/misc.xml src/screens/LessonScreen.tsx android/.idea/deploymentTargetSelector.xml android/.idea/kotlinc.xml 
 - android/.idea/compiler.xml
 - android/.idea/misc.xml

@@ -25,11 +25,12 @@ const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: strin
 ];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const { setPendingAction, setPendingFilter, setHighlightLessonId } = useAction();
+  const { setPendingAction, setPendingFilter, setHighlightLessonId, confirmBeforeChange } = useAction();
   const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -65,9 +66,16 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
-  const handleConfirmLesson = async (id: number) => {
-    await setLessonStatus(id, 'completed');
-    loadData();
+  const handleConfirmLesson = (id: number) => {
+    const doConfirm = async () => {
+      await setLessonStatus(id, 'completed');
+      loadData();
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '确认操作', message: '确定要标记为「已下课」吗？', onConfirm: doConfirm });
+    } else {
+      doConfirm();
+    }
   };
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
@@ -217,6 +225,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Animated.View>
+
+      {confirmDialog && (
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmBox, Shadows.floating]}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -323,6 +348,15 @@ const styles = StyleSheet.create({
   },
   overviewLarge: { flex: 0.55 },
   overviewSmall: { flex: 0.45 },
+  confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%' },
+  confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
+  confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmCancelBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
+  confirmOkBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 });
 
 export default HomeScreen;
