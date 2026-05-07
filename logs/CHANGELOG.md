@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-07 16:01 | auto: 05-07 16:01 | .idea/ 
+- .idea/
+
 ## 2026-05-07 15:57 | auto: 05-07 15:57 | .claude/settings.local.json 
 - .claude/settings.local.json
 
