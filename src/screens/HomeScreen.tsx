@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,6 +31,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [morphingId, setMorphingId] = useState<number | null>(null);
+  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const slideOpAnims = useRef<Map<number, Animated.Value>>(new Map());
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -77,9 +80,28 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleConfirmPayment = (id: number) => {
-    const doConfirm = async () => {
-      await setLessonStatus(id, 'pendingPayment');
-      loadData();
+    const doConfirm = () => {
+      if (!slideAnims.current.has(id)) {
+        slideAnims.current.set(id, new Animated.Value(0));
+        slideOpAnims.current.set(id, new Animated.Value(1));
+      }
+      const sx = slideAnims.current.get(id)!;
+      const so = slideOpAnims.current.get(id)!;
+      sx.setValue(0);
+      so.setValue(1);
+      setMorphingId(id);
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(sx, { toValue: 400, duration: 350, useNativeDriver: false }),
+          Animated.timing(so, { toValue: 0, duration: 350, useNativeDriver: false }),
+        ]).start(async () => {
+          sx.setValue(0);
+          so.setValue(1);
+          setMorphingId(null);
+          await setLessonStatus(id, 'pendingPayment');
+          loadData();
+        });
+      }, 300);
     };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '确认操作', message: '确定要标记为「待收款」吗？', onConfirm: doConfirm });
@@ -101,9 +123,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     if (item.category === 'confirmable') {
+      const isMorphing = morphingId === item.id;
+      if (!slideAnims.current.has(item.id)) {
+        slideAnims.current.set(item.id, new Animated.Value(0));
+        slideOpAnims.current.set(item.id, new Animated.Value(1));
+      }
+      const sx = slideAnims.current.get(item.id)!;
+      const so = slideOpAnims.current.get(item.id)!;
+      const morphBorderColor = isMorphing ? Colors.pending : Colors.danger;
+      const morphBadgeBg = isMorphing ? '#FEF3C7' : '#FEE2E2';
+      const morphBadgeColor = isMorphing ? Colors.pending : Colors.danger;
+      const morphBadgeLabel = isMorphing ? '待收款' : '确认下课';
       return (
-        <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
-          <View style={[styles.colorBar, { backgroundColor: Colors.danger }]} />
+        <Animated.View style={[styles.recentItem, !isLast && styles.recentItemBorder, {
+          opacity: isMorphing ? so : 1,
+          transform: [{ translateX: sx }],
+        }]}>
+          <View style={[styles.colorBar, { backgroundColor: morphBorderColor }]} />
           <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
             <View style={styles.recentLeft}>
               <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
@@ -115,12 +151,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
             <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
-            <View style={styles.confirmBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={Colors.danger} />
-              <Text style={styles.confirmBadgeText}>确认下课</Text>
+            <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
+              <Ionicons name="checkmark-circle" size={14} color={morphBadgeColor} />
+              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       );
     }
 
