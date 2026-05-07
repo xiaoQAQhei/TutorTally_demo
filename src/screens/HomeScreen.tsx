@@ -25,11 +25,12 @@ const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: strin
 ];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const { setPendingAction, setPendingFilter, setHighlightLessonId } = useAction();
+  const { setPendingAction, setPendingFilter, setHighlightLessonId, confirmBeforeChange } = useAction();
   const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -75,6 +76,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
+  const handleConfirmPayment = (id: number) => {
+    const doConfirm = async () => {
+      await setLessonStatus(id, 'pendingPayment');
+      loadData();
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '确认操作', message: '确定要标记为「待收款」吗？', onConfirm: doConfirm });
+    } else {
+      doConfirm();
+    }
+  };
+
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
   const { opacity, translateY } = useFadeIn();
 
@@ -89,26 +102,25 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     if (item.category === 'confirmable') {
       return (
-        <TouchableOpacity
-          style={[styles.recentItem, !isLast && styles.recentItemBorder]}
-          activeOpacity={0.6}
-          onPress={navigateToLesson}
-        >
+        <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
           <View style={[styles.colorBar, { backgroundColor: Colors.danger }]} />
-          <View style={styles.recentLeft}>
-            <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-            <Text style={styles.recentDate}>{item.date}</Text>
-          </View>
-          <View style={styles.recentCenter}>
-            {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
-          </View>
-          <View style={styles.recentRight}>
-            <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
-            <View style={[styles.miniBadge, { backgroundColor: '#FEE2E2' }]}>
-              <Text style={[styles.miniBadgeText, { color: Colors.danger }]}>确认下课</Text>
+          <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
+            <View style={styles.recentLeft}>
+              <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+              <Text style={styles.recentDate}>{item.date}</Text>
             </View>
-          </View>
-        </TouchableOpacity>
+            <View style={styles.recentCenter}>
+              {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
+            <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+            <View style={styles.confirmBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.danger} />
+              <Text style={styles.confirmBadgeText}>确认下课</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       );
     }
 
@@ -224,6 +236,22 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Animated.View>
 
+      {confirmDialog && (
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmBox, Shadows.floating]}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
