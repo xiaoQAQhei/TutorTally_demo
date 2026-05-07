@@ -46,7 +46,7 @@ export const DefaultSubjectColors: Record<string, string> = {
 
 export const LessonStatusColors: Record<string, { bg: string; text: string; label: string }> = {
   scheduled: { bg: '#EEF2FF', text: '#6366F1', label: '待上课' },
-  completed: { bg: '#FEE2E2', text: '#EF4444', label: '确认下课' },
+  completed: { bg: '#FEE2E2', text: '#EF4444', label: '已下课' },
   pendingPayment: { bg: '#FFFBEB', text: '#F59E0B', label: '待收款' },
   paid: { bg: '#ECFDF5', text: '#10B981', label: '已收款' },
   cancelled: { bg: '#F3F4F6', text: '#8E8E93', label: '已取消' },
