@@ -1,4 +1,10 @@
 # 改动日志
+## 2026-05-07 17:05 | auto: 05-07 17:05 | .claude/settings.local.json android/.gradle/buildOutputCleanup/buildOutputCleanup.lock android/.gradle/buildOutputCleanup/cache.properties android/.gradle/8.2/ 
+- .claude/settings.local.json
+- android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+- android/.gradle/buildOutputCleanup/cache.properties
+- android/.gradle/8.2/
+
 ## 2026-05-07 16:53 | auto: 05-07 16:53 | android/.gradle/buildOutputCleanup/buildOutputCleanup.lock android/.gradle/buildOutputCleanup/cache.properties android/gradle/wrapper/gradle-wrapper.properties android/.gradle/8.4/ 
 - android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
 - android/.gradle/buildOutputCleanup/cache.properties

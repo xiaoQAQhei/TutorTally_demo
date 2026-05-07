@@ -11,7 +11,14 @@
       "WebSearch",
       "WebFetch(domain:blog.csdn.net)",
       "PowerShell(Get-ChildItem -Path \"android\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"$PWD\\\\\", \"\"\\) })",
-      "Bash(node *)"
+      "Bash(node *)",
+      "PowerShell(java *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(Split-Path *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath_target_7252453\" | Select-Object Name, @{N='Type';E={if\\($_.PSIsContainer\\){'DIR'}else{'FILE'}}})",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-CimInstance *)"
     ]
   },
   "hooks": {
