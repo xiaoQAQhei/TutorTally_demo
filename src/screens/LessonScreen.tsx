@@ -53,7 +53,9 @@ const LessonScreen: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [morphingId, setMorphingId] = useState<number | null>(null);
   const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
@@ -162,14 +164,25 @@ const LessonScreen: React.FC = () => {
         if (!slideTestAnims.current.has(lesson.id)) {
           slideTestAnims.current.set(lesson.id, new Animated.Value(0));
         }
-        const a = slideTestAnims.current.get(lesson.id)!;
-        a.setValue(0);
-        Animated.sequence([
-          Animated.timing(a, { toValue: 40, duration: 200, useNativeDriver: false }),
-          Animated.timing(a, { toValue: 0, duration: 200, useNativeDriver: false }),
-        ]).start(() => {
-          setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
-        });
+        if (!slideOpacityAnims.current.has(lesson.id)) {
+          slideOpacityAnims.current.set(lesson.id, new Animated.Value(1));
+        }
+        const slideX = slideTestAnims.current.get(lesson.id)!;
+        const slideOp = slideOpacityAnims.current.get(lesson.id)!;
+        slideX.setValue(0);
+        slideOp.setValue(1);
+        setMorphingId(lesson.id);
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
+            Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
+          ]).start(() => {
+            slideX.setValue(0);
+            slideOp.setValue(1);
+            setMorphingId(null);
+            setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+          });
+        }, 300);
       } else {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
@@ -294,7 +307,8 @@ const LessonScreen: React.FC = () => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
 
-    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'pendingPayment' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary;
+    const isMorphing = morphingId === lessonId;
+    const borderColor = isMorphing ? Colors.pending : (item.status === 'paid' ? Colors.paid : item.status === 'pendingPayment' ? Colors.pending : item.status === 'cancelled' ? Colors.caption : Colors.primary);
     const isCancelled = item.status === 'cancelled';
     const isCancelling = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;
@@ -302,6 +316,9 @@ const LessonScreen: React.FC = () => {
 
     if (!slideTestAnims.current.has(lessonId)) {
       slideTestAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    if (!slideOpacityAnims.current.has(lessonId)) {
+      slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
     }
 
     // Animated strikethrough line — left-to-right with overshoot
@@ -328,7 +345,7 @@ const LessonScreen: React.FC = () => {
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
-          opacity: showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
+          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : shatterMgr.activeId === lessonId ? 0.3 : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
             ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
