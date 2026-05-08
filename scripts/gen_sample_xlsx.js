@@ -28,16 +28,14 @@ function buildLessonRows(lessons, subjects) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
     totalHours += l.duration; totalAmount += l.amount;
     if (l.status === 'paid') paidAmount += l.amount;
-    const paid = l.status === 'paid';
-    const style = paid ? PAID_STYLE : undefined;
     rows.push([
-      cell(l.date, style),
-      cell(sub?.subject || '', style),
-      cell(l.timeSlot, style),
-      cell(l.duration + 'h', style),
-      cell(l.amount + '元', style),
-      cell(STATUS_LABEL[l.status] || l.status, style),
-      cell(l.notes || '', style),
+      cell(l.date),
+      cell(sub?.subject || ''),
+      cell(l.timeSlot),
+      cell(l.duration + 'h'),
+      cell(l.amount + '元'),
+      cell(STATUS_LABEL[l.status] || l.status),
+      cell(l.notes || ''),
     ]);
   }
   return { rows, totalHours, totalAmount, paidAmount };
@@ -48,7 +46,7 @@ function buildStudentSheet(student, subjects, lessons) {
   const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
   const sheet = [];
   sheet.push([cell('家教课程账单')]);
-  sheet.push([cell('学生: ' + student.name + '    ' + (student.phone ? '电话: ' + student.phone + '    ' : '') + subInfo)]);
+  sheet.push([cell('学生: ' + student.name + '    ' + (student.phone ? '电话: ' + student.phone + '    ' : '') + subInfo, BOLD14_STYLE)]);
   sheet.push([]);
   sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
   for (const row of rows) sheet.push(row);
@@ -59,12 +57,12 @@ function buildStudentSheet(student, subjects, lessons) {
     cell('待收款', PENDING_STYLE),
   ]);
   sheet.push([
-    cell('合计: ' + lessons.length + '节课'),
-    cell(''), cell(''),
-    cell(totalHours.toFixed(1) + 'h'),
-    cell(totalAmount + '元'),
-    cell(paidAmount + '元', PAID_STYLE),
-    cell((totalAmount - paidAmount) + '元', PENDING_STYLE),
+    cell('合计:', BOLD16_STYLE), cell(''),
+    cell(lessons.length + '节', BOLD16_STYLE),
+    cell(totalHours.toFixed(1) + 'h', BOLD16_STYLE),
+    cell(totalAmount + '元', BOLD16_STYLE),
+    cell(paidAmount + '元', { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
+    cell((totalAmount - paidAmount) + '元', { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
   ]);
   return sheet;
 }
