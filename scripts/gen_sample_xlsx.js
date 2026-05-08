@@ -51,12 +51,12 @@ function buildStudentSheet(student, subjects, lessons) {
   for (const row of rows) sheet.push(row);
   sheet.push([]);
   sheet.push([
-    cell('合计: ' + lessons.length + '节课', CENTER_STYLE),
-    cell('', CENTER_STYLE), cell('', CENTER_STYLE),
-    cell(totalHours.toFixed(1) + 'h', CENTER_STYLE),
-    cell(totalAmount + '元', CENTER_STYLE),
-    cell('已收 ' + paidAmount + '元 / 待收 ' + (totalAmount - paidAmount) + '元', CENTER_STYLE),
-    cell('', CENTER_STYLE),
+    cell('合计: ' + lessons.length + '节课'),
+    cell(''), cell(''),
+    cell(totalHours.toFixed(1) + 'h'),
+    cell(totalAmount + '元'),
+    cell('已收 ' + paidAmount + '元 / 待收 ' + (totalAmount - paidAmount) + '元'),
+    cell(''),
   ]);
   return sheet;
 }
@@ -113,15 +113,15 @@ for (const stu of students) {
   sh.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
   for (const row of data.rows) sh.push(row);
   sh.push([
-    cell('小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元', CENTER_STYLE),
-    cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
-    cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
+    cell('小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元'),
+    cell(''), cell(''), cell(''),
+    cell(''), cell(''), cell(''),
   ]);
   sh.push([]);
 }
 
 sh.push([
-  cell('总计: ' + mLessons + '节课 | ' + mHours.toFixed(1) + 'h | ' + mTotal + '元 | 已收 ' + mPaid + '元 | 待收 ' + (mTotal - mPaid) + '元', CENTER_STYLE),
+  cell('总计: ' + mLessons + '节课 | ' + mHours.toFixed(1) + 'h | ' + mTotal + '元 | 已收 ' + mPaid + '元 | 待收 ' + (mTotal - mPaid) + '元'),
 ]);
 
 const wsMonth = XLSX.utils.aoa_to_sheet(sh);
