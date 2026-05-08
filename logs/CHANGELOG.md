@@ -1,4 +1,9 @@
 # 改动日志
+## 2026-05-08 22:23 | auto: 05-08 22:23 | package-lock.json package.json "碎纸删除动画.html" 
+- package-lock.json
+- package.json
+- "碎纸删除动画.html"
+
 ## 2026-05-08 22:19 | auto: 05-08 22:19 | package-lock.json package.json 
 - package-lock.json
 - package.json
