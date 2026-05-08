@@ -123,6 +123,15 @@ sh.push([
 ]);
 
 const wsMonth = XLSX.utils.aoa_to_sheet(sh);
+wsMonth['!cols'] = [            // ← 加这里
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 8 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 18 },
+  ];
 XLSX.utils.book_append_sheet(wbMonth, wsMonth, safeSheetName('2026年5月 课程账单'));
 XLSX.writeFile(wbMonth, 'export_example_按月_2026-05.xlsx');
 console.log('OK: export_example_按月_2026-05.xlsx');
