@@ -1,14 +1,20 @@
-const ExcelJS = require('exceljs');
+const XLSX = require('xlsx-js-style');
 
 const STATUS_LABEL = {
   scheduled: '待上课', completed: '确认下课', pendingPayment: '待收款',
   paid: '✓ 已收款', cancelled: '已取消',
 };
 
-const PAID_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' } };
+const CENTER_STYLE = { alignment: { horizontal: 'center' } };
+const BOLD_STYLE = { font: { bold: true } };
 
 function safeSheetName(name) {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
+}
+
+function cell(v, s) {
+  return s ? { v, s } : { v };
 }
 
 function buildLessonRows(lessons, subjects) {
@@ -19,42 +25,40 @@ function buildLessonRows(lessons, subjects) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
     totalHours += l.duration; totalAmount += l.amount;
     if (l.status === 'paid') paidAmount += l.amount;
-    rows.push({
-      values: [l.date, sub?.subject || '', l.timeSlot, `${l.duration}h`, `${l.amount}元`, STATUS_LABEL[l.status] || l.status, l.notes || ''],
-      isPaid: l.status === 'paid',
-    });
+    const paid = l.status === 'paid';
+    const style = paid ? PAID_STYLE : undefined;
+    rows.push([
+      cell(l.date, style),
+      cell(sub?.subject || '', style),
+      cell(l.timeSlot, style),
+      cell(l.duration + 'h', style),
+      cell(l.amount + '元', style),
+      cell(STATUS_LABEL[l.status] || l.status, style),
+      cell(l.notes || '', style),
+    ]);
   }
   return { rows, totalHours, totalAmount, paidAmount };
 }
 
-function writeDataRow(sheet, rowIdx, row) {
-  row.values.forEach((v, i) => {
-    const cell = sheet.getRow(rowIdx).getCell(i + 1);
-    cell.value = v;
-    if (row.isPaid) cell.fill = PAID_FILL;
-  });
-}
-
-function addStudentSheet(wb, student, subjects, lessons) {
-  const sheet = wb.addWorksheet(safeSheetName(student.name));
-  const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-
-  sheet.getCell('A1').value = '家教课程账单';
-  sheet.getCell('A2').value = `学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subInfo}`;
-
-  ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].forEach((h, i) => {
-    sheet.getRow(4).getCell(i + 1).value = h;
-  });
-
+function buildStudentSheet(student, subjects, lessons) {
+  const subInfo = subjects.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');
   const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
-  rows.forEach((r, i) => writeDataRow(sheet, 5 + i, r));
-
-  const sr = 5 + rows.length + 1;
-  ['合计: ' + lessons.length + '节课', '', '', totalHours.toFixed(1) + 'h', totalAmount + '元', '已收 ' + paidAmount + '元 / 待收 ' + (totalAmount - paidAmount) + '元', ''].forEach((v, i) => {
-    const cell = sheet.getRow(sr).getCell(i + 1);
-    cell.value = v;
-    cell.alignment = { horizontal: 'center' };
-  });
+  const sheet = [];
+  sheet.push([cell('家教课程账单')]);
+  sheet.push([cell('学生: ' + student.name + '    ' + (student.phone ? '电话: ' + student.phone + '    ' : '') + subInfo)]);
+  sheet.push([]);
+  sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
+  for (const row of rows) sheet.push(row);
+  sheet.push([]);
+  sheet.push([
+    cell('合计: ' + lessons.length + '节课', CENTER_STYLE),
+    cell('', CENTER_STYLE), cell('', CENTER_STYLE),
+    cell(totalHours.toFixed(1) + 'h', CENTER_STYLE),
+    cell(totalAmount + '元', CENTER_STYLE),
+    cell('已收 ' + paidAmount + '元 / 待收 ' + (totalAmount - paidAmount) + '元', CENTER_STYLE),
+    cell('', CENTER_STYLE),
+  ]);
+  return sheet;
 }
 
 const students = [
@@ -80,19 +84,19 @@ const lessons = [
 ];
 
 // === 全量导出 ===
-const wbFull = new ExcelJS.Workbook();
+const wbFull = XLSX.utils.book_new();
 for (const stu of students) {
-  const ssubs = subjects.filter(s => s.studentId === stu.id);
-  const sless = lessons.filter(l => l.studentId === stu.id);
-  addStudentSheet(wbFull, stu, ssubs, sless);
+  const ws = XLSX.utils.aoa_to_sheet(buildStudentSheet(stu, subjects.filter(s => s.studentId === stu.id), lessons.filter(l => l.studentId === stu.id)));
+  XLSX.utils.book_append_sheet(wbFull, ws, safeSheetName(stu.name));
 }
+XLSX.writeFile(wbFull, 'export_example_全量.xlsx');
+console.log('OK: export_example_全量.xlsx');
 
 // === 按月导出 ===
-const wbMonth = new ExcelJS.Workbook();
-const sh = wbMonth.addWorksheet(safeSheetName('2026年5月 课程账单'));
-let r = 1;
-sh.getCell('A' + r).value = '2026年5月 课程账单';
-r += 2;
+const wbMonth = XLSX.utils.book_new();
+const sh = [];
+sh.push([cell('2026年5月 课程账单')]);
+sh.push([]);
 
 let mTotal = 0, mPaid = 0, mHours = 0, mLessons = 0;
 
@@ -104,39 +108,23 @@ for (const stu of students) {
   const data = buildLessonRows(sless, ssubs);
   mLessons += sless.length; mHours += data.totalHours; mTotal += data.totalAmount; mPaid += data.paidAmount;
 
-  // Student header - bold
   const subInfo = ssubs.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');
-  const nc = sh.getCell('A' + r);
-  nc.value = stu.name + '  ·  ' + subInfo;
-  nc.font = { bold: true, size: 11 };
-  r++;
-
-  // Table headers
-  ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].forEach((h, i) => {
-    sh.getRow(r).getCell(i + 1).value = h;
-  });
-  r++;
-
-  // Data rows
-  data.rows.forEach(row => { writeDataRow(sh, r, row); r++; });
-
-  // Subtotal - center-aligned
-  ['小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元', '', '', '', '', '', ''].forEach((v, i) => {
-    const cell = sh.getRow(r).getCell(i + 1);
-    cell.value = v;
-    cell.alignment = { horizontal: 'center' };
-  });
-  r += 2;
+  sh.push([cell(stu.name + '  ·  ' + subInfo, BOLD_STYLE)]);
+  sh.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
+  for (const row of data.rows) sh.push(row);
+  sh.push([
+    cell('小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元', CENTER_STYLE),
+    cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
+    cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
+  ]);
+  sh.push([]);
 }
 
-// Grand total - center-aligned
-['总计: ' + mLessons + '节课 | ' + mHours.toFixed(1) + 'h | ' + mTotal + '元 | 已收 ' + mPaid + '元 | 待收 ' + (mTotal - mPaid) + '元', '', '', '', '', '', ''].forEach((v, i) => {
-  const cell = sh.getRow(r).getCell(i + 1);
-  cell.value = v;
-  cell.alignment = { horizontal: 'center' };
-});
+sh.push([
+  cell('总计: ' + mLessons + '节课 | ' + mHours.toFixed(1) + 'h | ' + mTotal + '元 | 已收 ' + mPaid + '元 | 待收 ' + (mTotal - mPaid) + '元', CENTER_STYLE),
+]);
 
-Promise.all([
-  wbFull.xlsx.writeFile('export_example_全量.xlsx'),
-  wbMonth.xlsx.writeFile('export_example_按月_2026-05.xlsx'),
-]).then(() => console.log('OK: export_example_全量.xlsx, export_example_按月_2026-05.xlsx'));
+const wsMonth = XLSX.utils.aoa_to_sheet(sh);
+XLSX.utils.book_append_sheet(wbMonth, wsMonth, safeSheetName('2026年5月 课程账单'));
+XLSX.writeFile(wbMonth, 'export_example_按月_2026-05.xlsx');
+console.log('OK: export_example_按月_2026-05.xlsx');
