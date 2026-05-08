@@ -1,43 +1,12 @@
-const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
 
-const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-const PAID_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-const HEADERS = ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'];
-const STATUS_LABEL = { scheduled: '待上课', completed: '确认下课', pendingPayment: '待收款', paid: '已收款', cancelled: '已取消' };
+const STATUS_LABEL = {
+  scheduled: '待上课', completed: '确认下课', pendingPayment: '待收款',
+  paid: '✓ 已收款', cancelled: '已取消',
+};
 
 function safeSheetName(name) {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
-}
-
-function setRow(sheet, rowIdx, values, opts = {}) {
-  const row = sheet.getRow(rowIdx);
-  values.forEach((v, i) => {
-    const cell = row.getCell(i + 1);
-    cell.value = v;
-    cell.alignment = { horizontal: 'center' };
-    if (opts.bold) cell.font = { bold: true, size: 11 };
-    if (opts.fill) cell.fill = opts.fill;
-  });
-}
-
-function writeHeaderRow(sheet, rowIdx) {
-  const row = sheet.getRow(rowIdx);
-  HEADERS.forEach((h, i) => {
-    const cell = row.getCell(i + 1);
-    cell.value = h;
-    cell.font = { bold: true, size: 11 };
-    cell.alignment = { horizontal: 'center' };
-    cell.fill = HEADER_FILL;
-  });
-}
-
-function writeDataRow(sheet, rowIdx, dataRow) {
-  dataRow.values.forEach((v, i) => {
-    const cell = sheet.getRow(rowIdx).getCell(i + 1);
-    cell.value = v;
-    cell.alignment = { horizontal: 'center' };
-    if (dataRow.isPaid) cell.fill = PAID_FILL;
-  });
 }
 
 function buildLessonRows(lessons, subjects) {
@@ -48,37 +17,33 @@ function buildLessonRows(lessons, subjects) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
     totalHours += l.duration; totalAmount += l.amount;
     if (l.status === 'paid') paidAmount += l.amount;
-    rows.push({
-      values: [l.date, sub?.subject || '', l.timeSlot, `${l.duration}h`, `${l.amount}元`, STATUS_LABEL[l.status] || l.status, l.notes || ''],
-      isPaid: l.status === 'paid',
-    });
+    rows.push([
+      l.date, sub?.subject || '', l.timeSlot,
+      `${l.duration}h`, `${l.amount}元`,
+      STATUS_LABEL[l.status] || l.status, l.notes || '',
+    ]);
   }
   return { rows, totalHours, totalAmount, paidAmount };
 }
 
-function addStudentSheet(wb, student, subjects, lessons) {
-  const sheet = wb.addWorksheet(safeSheetName(student.name));
+function buildStudentSheet(student, subjects, lessons) {
   const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-
-  sheet.getCell('A1').value = '家教课程账单';
-  sheet.getCell('A1').font = { bold: true, size: 14 };
-
-  sheet.getCell('A2').value = `学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subInfo}`;
-
-  writeHeaderRow(sheet, 4);
-
   const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
-  rows.forEach((r, i) => writeDataRow(sheet, 5 + i, r));
-
-  const sr = 5 + rows.length + 1;
-  setRow(sheet, sr, [
+  const sheet = [];
+  sheet.push(['家教课程账单']);
+  sheet.push([`学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subInfo}`]);
+  sheet.push([]);
+  sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注']);
+  for (const row of rows) sheet.push(row);
+  sheet.push([]);
+  sheet.push([
     `合计: ${lessons.length}节课`, '', '',
     `${totalHours.toFixed(1)}h`, `${totalAmount}元`,
     `已收 ${paidAmount}元 / 待收 ${totalAmount - paidAmount}元`, '',
-  ], { bold: true });
+  ]);
+  return sheet;
 }
 
-// === 虚构数据 ===
 const students = [
   { id: 1, name: '李小明', phone: '13901012345' },
   { id: 2, name: '王雨涵', phone: '13801026789' },
@@ -102,18 +67,21 @@ const lessons = [
 ];
 
 // === 全量导出 ===
-const wbFull = new ExcelJS.Workbook();
+const wbFull = XLSX.utils.book_new();
 for (const stu of students) {
-  addStudentSheet(wbFull, stu, subjects.filter(s => s.studentId === stu.id), lessons.filter(l => l.studentId === stu.id));
+  const ssubs = subjects.filter(s => s.studentId === stu.id);
+  const sless = lessons.filter(l => l.studentId === stu.id);
+  const ws = XLSX.utils.aoa_to_sheet(buildStudentSheet(stu, ssubs, sless));
+  XLSX.utils.book_append_sheet(wbFull, ws, safeSheetName(stu.name));
 }
-wbFull.xlsx.writeFile('export_example_全量.xlsx').then(() => console.log('OK: export_example_全量.xlsx'));
+XLSX.writeFile(wbFull, 'export_example_全量.xlsx');
+console.log('OK: export_example_全量.xlsx');
 
 // === 按月导出 ===
-const wbMonth = new ExcelJS.Workbook();
-const sh = wbMonth.addWorksheet(safeSheetName('2026年5月 课程账单'));
-let r = 1;
-sh.getCell(`A${r}`).value = '2026年5月 课程账单'; sh.getCell(`A${r}`).font = { bold: true, size: 14 };
-r += 2;
+const wbMonth = XLSX.utils.book_new();
+const title = '2026年5月 课程账单';
+const sheet = [];
+sheet.push([title]); sheet.push([]);
 
 let mTotal = 0, mPaid = 0, mHours = 0, mLessons = 0;
 
@@ -126,22 +94,16 @@ for (const stu of students) {
   mLessons += sless.length; mHours += data.totalHours; mTotal += data.totalAmount; mPaid += data.paidAmount;
 
   const subInfo = ssubs.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-  sh.getCell(`A${r}`).value = `${stu.name}  ·  ${subInfo}`;
-  sh.getCell(`A${r}`).font = { bold: true, size: 11, color: { argb: 'FF6366F1' } };
-  r++;
-
-  writeHeaderRow(sh, r); r++;
-
-  data.rows.forEach(row => { writeDataRow(sh, r, row); r++; });
-
-  setRow(sh, r, [`小计: ${sless.length}节`, '', '', `${data.totalHours.toFixed(1)}h`, `${data.totalAmount}元`, '', ''], { bold: true });
-  r += 2;
+  sheet.push([`${stu.name}  ·  ${subInfo}`]);
+  sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注']);
+  for (const row of data.rows) sheet.push(row);
+  sheet.push([`小计: ${sless.length}节  ${data.totalHours.toFixed(1)}h  ${data.totalAmount}元`, '', '', '', '', '', '']);
+  sheet.push([]);
 }
 
-setRow(sh, r, [
-  `总计: ${mLessons}节课`, '', '',
-  `${mHours.toFixed(1)}h`, `${mTotal}元`,
-  `已收 ${mPaid}元`, `待收 ${mTotal - mPaid}元`,
-], { bold: true });
+sheet.push([`总计: ${mLessons}节课 | ${mHours.toFixed(1)}h | ${mTotal}元 | 已收 ${mPaid}元 | 待收 ${mTotal - mPaid}元`]);
 
-wbMonth.xlsx.writeFile('export_example_按月_2026-05.xlsx').then(() => console.log('OK: export_example_按月_2026-05.xlsx'));
+const wsMonth = XLSX.utils.aoa_to_sheet(sheet);
+XLSX.utils.book_append_sheet(wbMonth, wsMonth, safeSheetName(title));
+XLSX.writeFile(wbMonth, 'export_example_按月_2026-05.xlsx');
+console.log('OK: export_example_按月_2026-05.xlsx');
