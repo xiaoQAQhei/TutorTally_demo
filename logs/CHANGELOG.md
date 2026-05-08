@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-08 23:31 | auto: 05-08 23:31 | "~$export_example_按月_2026-05.xlsx" 
+- "~$export_example_按月_2026-05.xlsx"
+
 ## 2026-05-08 23:30 | auto: 05-08 23:30 | .claude/settings.local.json "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" package-lock.json package.json scripts/gen_sample_xlsx.js src/utils/export.ts 
 - .claude/settings.local.json
 - "export_example_全量.xlsx"
