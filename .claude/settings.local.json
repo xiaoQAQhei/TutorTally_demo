@@ -32,7 +32,9 @@
       "Bash(jobs -l)",
       "Bash(kill %1)",
       "PowerShell(node scripts/gen_sample_xlsx.js)",
-      "PowerShell(npm uninstall *)"
+      "PowerShell(npm uninstall *)",
+      "Bash(cp \"export_example_按月_2026-05.xlsx\" /tmp/month.zip)",
+      "Bash(unzip -o /tmp/month.zip xl/styles.xml xl/worksheets/sheet1.xml -d /tmp/xlsx_out)"
     ]
   },
   "hooks": {
