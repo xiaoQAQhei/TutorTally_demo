@@ -44,25 +44,16 @@ export function useShatterManager() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const stripsRef = useRef<StripData[]>([]);
 
-  const triggerShatter = useCallback((id: number, cardWidth: number, cardHeight: number, onComplete: () => void) => {
-    console.log('[DEBUG triggerShatter] cardWidth:', cardWidth, 'cardHeight:', cardHeight);
+  const triggerShatter = useCallback((id: number, cardHeight: number, onComplete: () => void) => {
     setActiveId(id);
     const strips: StripData[] = [];
     const widthPct = 100 / STRIP_COUNT;
 
     for (let i = 0; i < STRIP_COUNT; i++) {
-      const offsetPx = i * widthPct;
-      console.log(`[DEBUG strip ${i}]:`, {
-        leftPercent: i * widthPct,
-        widthPercent: widthPct,
-        offsetPx,
-        actualLeftPx: cardWidth * (i * widthPct) / 100,
-        actualWidthPx: cardWidth * widthPct / 100,
-      });
       strips.push({
         left: i * widthPct,
         width: widthPct,
-        offsetPx,
+        offsetPx: i * widthPct,
         dx: new Animated.Value(0),
         dy: new Animated.Value(0),
         rot: new Animated.Value(0),
