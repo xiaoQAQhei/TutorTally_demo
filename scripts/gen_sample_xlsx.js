@@ -87,6 +87,15 @@ const lessons = [
 const wbFull = XLSX.utils.book_new();
 for (const stu of students) {
   const ws = XLSX.utils.aoa_to_sheet(buildStudentSheet(stu, subjects.filter(s => s.studentId === stu.id), lessons.filter(l => l.studentId === stu.id)));
+  ws['!cols'] = [
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 8 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 18 },
+  ];
   XLSX.utils.book_append_sheet(wbFull, ws, safeSheetName(stu.name));
 }
 XLSX.writeFile(wbFull, 'export_example_全量.xlsx');
