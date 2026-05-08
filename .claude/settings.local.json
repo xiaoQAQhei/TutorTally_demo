@@ -30,7 +30,8 @@
       "PowerShell(npm install *)",
       "PowerShell(npx expo export --platform web 2>&1 | Select-Object -Last 30)",
       "Bash(jobs -l)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "PowerShell(node scripts/gen_sample_xlsx.js)"
     ]
   },
   "hooks": {
