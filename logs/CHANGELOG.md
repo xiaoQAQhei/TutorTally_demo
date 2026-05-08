@@ -1,4 +1,10 @@
 # 改动日志
+## 2026-05-08 22:45 | auto: 05-08 22:45 | .claude/settings.local.json package-lock.json package.json src/utils/export.ts 
+- .claude/settings.local.json
+- package-lock.json
+- package.json
+- src/utils/export.ts
+
 ## 2026-05-08 22:33 | auto: 05-08 22:33 | export_example.csv 
 - export_example.csv
 

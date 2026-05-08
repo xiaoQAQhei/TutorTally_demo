@@ -26,7 +26,11 @@
       "Bash(Select-String \"19006|19007|8081|8082\")",
       "PowerShell(Stop-Process *)",
       "PowerShell(Get-Process *)",
-      "Bash(Get-ChildItem C:\\\\Users\\\\xiaoQAQhei\\\\Desktop\\\\test *)"
+      "Bash(Get-ChildItem C:\\\\Users\\\\xiaoQAQhei\\\\Desktop\\\\test *)",
+      "PowerShell(npm install *)",
+      "PowerShell(npx expo export --platform web 2>&1 | Select-Object -Last 30)",
+      "Bash(jobs -l)",
+      "Bash(kill %1)"
     ]
   },
   "hooks": {
