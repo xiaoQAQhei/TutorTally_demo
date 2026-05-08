@@ -25,7 +25,8 @@
       "Bash(netstat -ano)",
       "Bash(Select-String \"19006|19007|8081|8082\")",
       "PowerShell(Stop-Process *)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "Bash(Get-ChildItem C:\\\\Users\\\\xiaoQAQhei\\\\Desktop\\\\test *)"
     ]
   },
   "hooks": {

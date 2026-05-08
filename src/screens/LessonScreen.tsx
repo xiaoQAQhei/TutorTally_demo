@@ -18,7 +18,8 @@ import EmptyState from '../components/EmptyState';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
-import { useSlideManager, useShatterManager, STRIP_COUNT } from '../utils/animationHooks';
+import { useSlideManager, useShatterManager } from '../utils/animationHooks';
+import { ShredderStrip } from '../components/ShredderStrip';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -473,40 +474,27 @@ const LessonScreen: React.FC = () => {
           {cardInner(true)}
         </View>
 
-        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
+        {shatterMgr.activeId === lessonId && shatterMgr.stripsData.length > 0 && (
           <>
-            {shatterMgr.stripsRef.current.map((strip, i) => {
+            {shatterMgr.stripsData.map((strip) => {
               const cardW = cardWidthRef.current.get(lessonId) || 400;
-              const stripW = cardW / STRIP_COUNT;
+              const cardH = cardHeightRef.current.get(lessonId) || 200;
               return (
-                <Animated.View
-                  key={`shred-${i}`}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: i * stripW,
-                    width: stripW,
-                    height: '100%',
-                    overflow: 'hidden',
-                    zIndex: 20,
-                    opacity: strip.opacity as any,
-                    ...Shadows.standard,
-                    transform: [
-                      { translateX: strip.dx as any },
-                      { translateY: strip.dy as any },
-                      { rotate: strip.rot as any },
-                    ] as any,
-                  }}
+                <ShredderStrip
+                  key={`shred-${strip.index}`}
+                  index={strip.index}
+                  cardWidth={cardW}
+                  cardHeight={cardH}
+                  fallDist={strip.fallDist}
+                  driftX={strip.driftX}
+                  rotateDeg={strip.rotateDeg}
+                  delay={strip.delay}
+                  onDone={shatterMgr.onStripDone}
                 >
-                  <View style={[styles.shredInner, {
-                    width: cardW,
-                    left: -(i * stripW),
-                    borderLeftWidth: 4,
-                    borderLeftColor: borderColor,
-                  }]}>
+                  <View style={[styles.shredInner, { width: cardW, borderLeftWidth: 4, borderLeftColor: borderColor }]}>
                     {cardInner(false)}
                   </View>
-                </Animated.View>
+                </ShredderStrip>
               );
             })}
           </>

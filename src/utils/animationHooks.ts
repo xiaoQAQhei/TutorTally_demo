@@ -29,61 +29,47 @@ export function useSlideManager() {
 
 // ---- useShatterManager ----
 export const STRIP_COUNT = 8;
-const DURATION = 700;
-const EASE = Easing.bezier(0.32, 0, 0.67, 0.95);
+export const DURATION = 700;
 
-export interface StripData {
-  left: number; width: number; offsetPx: number;
-  dy: Animated.Value; dx: Animated.Value;
-  rot: Animated.Value; opacity: Animated.Value;
-  driftX: number; rotate: number; fallDist: number;
+export interface ShatterStripConfig {
+  index: number;
+  fallDist: number;
+  driftX: number;
+  rotateDeg: number;
   delay: number;
 }
 
 export function useShatterManager() {
   const [activeId, setActiveId] = useState<number | null>(null);
-  const stripsRef = useRef<StripData[]>([]);
+  const [stripsData, setStripsData] = useState<ShatterStripConfig[]>([]);
+  const onCompleteRef = useRef<(() => void) | null>(null);
+  const doneCountRef = useRef(0);
 
   const triggerShatter = useCallback((id: number, cardHeight: number, onComplete: () => void) => {
-    setActiveId(id);
-    const strips: StripData[] = [];
-    const widthPct = 100 / STRIP_COUNT;
-
+    onCompleteRef.current = onComplete;
+    doneCountRef.current = 0;
+    const strips: ShatterStripConfig[] = [];
     for (let i = 0; i < STRIP_COUNT; i++) {
       strips.push({
-        left: i * widthPct,
-        width: widthPct,
-        offsetPx: i * widthPct,
-        dx: new Animated.Value(0),
-        dy: new Animated.Value(0),
-        rot: new Animated.Value(0),
-        opacity: new Animated.Value(1),
-        driftX: (Math.random() - 0.5) * 25,
-        rotate: (Math.random() - 0.5) * 30,
+        index: i,
         fallDist: cardHeight * (0.6 + Math.random() * 0.7),
+        driftX: (Math.random() - 0.5) * 25,
+        rotateDeg: (Math.random() - 0.5) * 30,
         delay: Math.random() * 80 + i * 20,
       });
     }
-
-    stripsRef.current = strips;
-
-    strips.forEach((strip) => {
-      setTimeout(() => {
-        Animated.timing(strip.dy, { toValue: strip.fallDist, duration: DURATION, easing: EASE, useNativeDriver: false }).start();
-        Animated.timing(strip.dx, { toValue: strip.driftX, duration: DURATION, easing: EASE, useNativeDriver: false }).start();
-        Animated.timing(strip.rot, { toValue: strip.rotate, duration: DURATION, easing: EASE, useNativeDriver: false }).start();
-        Animated.timing(strip.opacity, { toValue: 0, duration: DURATION, easing: EASE, useNativeDriver: false }).start();
-      }, strip.delay);
-    });
-
-    // Cleanup after all strips finish
-    const maxDelay = Math.max(...strips.map((s) => s.delay));
-    setTimeout(() => {
-      setActiveId(null);
-      stripsRef.current = [];
-      onComplete();
-    }, maxDelay + DURATION + 100);
+    setStripsData(strips);
+    setActiveId(id);
   }, []);
 
-  return { activeId, stripsRef, triggerShatter };
+  const onStripDone = useCallback(() => {
+    doneCountRef.current++;
+    if (doneCountRef.current >= STRIP_COUNT) {
+      setActiveId(null);
+      setStripsData([]);
+      onCompleteRef.current?.();
+    }
+  }, []);
+
+  return { activeId, stripsData, triggerShatter, onStripDone };
 }

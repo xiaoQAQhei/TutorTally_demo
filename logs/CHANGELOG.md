@@ -1,4 +1,10 @@
 # 改动日志
+## 2026-05-08 20:40 | auto: 05-08 20:40 | .claude/settings.local.json src/screens/LessonScreen.tsx src/utils/animationHooks.ts src/components/ShredderStrip.tsx 
+- .claude/settings.local.json
+- src/screens/LessonScreen.tsx
+- src/utils/animationHooks.ts
+- src/components/ShredderStrip.tsx
+
 ## 2026-05-08 18:52 | auto: 05-08 18:52 | src/screens/LessonScreen.tsx src/utils/animationHooks.ts 
 - src/screens/LessonScreen.tsx
 - src/utils/animationHooks.ts
