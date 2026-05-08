@@ -1,7 +1,11 @@
 # 改动日志
-## 2026-05-08 18:33 | auto: 05-08 18:33 | src/screens/LessonScreen.tsx src/utils/animationHooks.ts 
-- src/screens/LessonScreen.tsx
-- src/utils/animationHooks.ts
+## 2026-05-08 18:34 | auto: 05-08 18:34 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+## 2026-05-08 18:33 碎纸动画可见性修复 + 动画序列简化
+- LessonScreen: FlatList 在碎纸动画激活时设置 overflow: 'visible'，修复动画碎片被列表容器裁剪的问题
+- animationHooks: 简化动画序列嵌套，移除冗余的外层 Animated.sequence() 包裹，结构更清晰
+  - 文件: src/screens/LessonScreen.tsx, src/utils/animationHooks.ts
 
 ## 2026-05-08 18:18 | auto: 05-08 18:18 | src/screens/LessonScreen.tsx 
 - src/screens/LessonScreen.tsx
