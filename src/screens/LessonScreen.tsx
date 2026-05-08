@@ -228,7 +228,7 @@ const LessonScreen: React.FC = () => {
 
   const handleDelete = (id: number) => {
     const doDelete = () => {
-      shatterMgr.triggerShatter(id, cardHeightRef.current.get(id) || 200, () => {
+      shatterMgr.triggerShatter(id, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200, () => {
         deleteLesson(id).then(loadLessons);
       });
     };
@@ -474,33 +474,57 @@ const LessonScreen: React.FC = () => {
           {cardInner(true)}
         </View>
 
-        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
-          <View style={styles.shatterOverlay} pointerEvents="none">
-            {shatterMgr.stripsRef.current.map((strip, i) => (
-              <Animated.View
-                key={i}
-                style={[styles.shredStrip, {
-                  left: `${strip.left}%`,
-                  width: `${strip.width}%`,
-                  opacity: strip.opacity as any,
-                  ...Shadows.standard,
-                  transform: [
-                    { translateX: strip.dx as any },
-                    { translateY: strip.dy as any },
-                    { rotate: strip.rot as any },
-                  ] as any,
-                }]}
-              >
-                <View style={[styles.shredInner, {
-                  width: cardWidthRef.current.get(lessonId) || 400,
-                  left: -(strip.offsetPx / 100 * (cardWidthRef.current.get(lessonId) || 400)),
-                }]}>
-                  {cardInner(false)}
-                </View>
-              </Animated.View>
-            ))}
-          </View>
-        )}
+        {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (() => {
+          const cw = cardWidthRef.current.get(lessonId) || 400;
+          console.log('[DEBUG render] lessonId:', lessonId, 'cardWidth from ref:', cw);
+          return (
+            <View style={styles.shatterOverlay} pointerEvents="none">
+              {shatterMgr.stripsRef.current.map((strip, i) => {
+                const offsetPx = strip.offsetPx / 100 * cw;
+                if (i === 0) {
+                  console.log(`[DEBUG render strip 0]:`, {
+                    left: `${strip.left}%`,
+                    width: `${strip.width}%`,
+                    offsetPx,
+                    innerLeft: -offsetPx,
+                    innerWidth: cw,
+                    animValues: {
+                      translateY: (strip.dy as any)._value,
+                      translateX: (strip.dx as any)._value,
+                      rotate: (strip.rot as any)._value,
+                      opacity: (strip.opacity as any)._value,
+                    },
+                  });
+                }
+                return (
+                  <Animated.View
+                    key={i}
+                    style={[styles.shredStrip, {
+                      left: `${strip.left}%`,
+                      width: `${strip.width}%`,
+                      opacity: strip.opacity as any,
+                      ...Shadows.standard,
+                      transform: [
+                        { translateX: strip.dx as any },
+                        { translateY: strip.dy as any },
+                        { rotate: strip.rot as any },
+                      ] as any,
+                    }]}
+                  >
+                    <View style={[styles.shredInner, {
+                      width: cw,
+                      left: -offsetPx,
+                      borderWidth: 1,
+                      borderColor: 'red',
+                    }]}>
+                      {cardInner(false)}
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          );
+        })()}
       </Animated.View>
     );
   };

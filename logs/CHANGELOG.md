@@ -1,4 +1,9 @@
 # 改动日志
+## 2026-05-08 16:24 | auto: 05-08 16:24 | .claude/settings.local.json src/screens/LessonScreen.tsx src/utils/animationHooks.ts 
+- .claude/settings.local.json
+- src/screens/LessonScreen.tsx
+- src/utils/animationHooks.ts
+
 ## 2026-05-08 16:11 | auto: 05-08 16:11 | src/screens/LessonScreen.tsx 
 - src/screens/LessonScreen.tsx
 

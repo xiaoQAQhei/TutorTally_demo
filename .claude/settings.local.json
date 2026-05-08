@@ -19,7 +19,12 @@
       "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\Common Files\\\\Oracle\\\\Java\\\\javapath_target_7252453\" | Select-Object Name, @{N='Type';E={if\\($_.PSIsContainer\\){'DIR'}else{'FILE'}}})",
       "PowerShell(Test-Path *)",
       "PowerShell(Get-CimInstance *)",
-      "Bash(adb devices *)"
+      "Bash(adb devices *)",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Get-Content \"C:\\\\Users\\\\XIAOQA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-xiaoQAQhei-Desktop--------demo\\\\4d0cdde1-6cfd-4aad-8fd2-b3b1a34e776c\\\\tasks\\\\bwrsr63sn.output\" -Tail 20)",
+      "Bash(netstat -ano)",
+      "Bash(Select-String \"19006|19007|8081|8082\")",
+      "PowerShell(Stop-Process *)"
     ]
   },
   "hooks": {
