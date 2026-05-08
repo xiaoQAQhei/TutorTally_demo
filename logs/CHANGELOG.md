@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-08 22:19 | auto: 05-08 22:19 | package-lock.json package.json 
+- package-lock.json
+- package.json
+
 ## 2026-05-08 22:12 | auto: 05-08 22:12 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 
