@@ -76,19 +76,17 @@ export function useShatterManager() {
 
       return Animated.sequence([
         Animated.delay(strip.delay),
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(strip.dy, { toValue: midFallDist, duration: midDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.dx, { toValue: midDriftX, duration: midDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.rot, { toValue: midRotate, duration: midDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.opacity, { toValue: 0.85, duration: midDuration, easing: EASE, useNativeDriver: false }),
-          ]),
-          Animated.parallel([
-            Animated.timing(strip.dy, { toValue: strip.fallDist, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.dx, { toValue: strip.driftX, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.rot, { toValue: strip.rotate, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-            Animated.timing(strip.opacity, { toValue: 0, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-          ]),
+        Animated.parallel([
+          Animated.timing(strip.dy, { toValue: midFallDist, duration: midDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.dx, { toValue: midDriftX, duration: midDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.rot, { toValue: midRotate, duration: midDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.opacity, { toValue: 0.85, duration: midDuration, easing: EASE, useNativeDriver: false }),
+        ]),
+        Animated.parallel([
+          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.dx, { toValue: strip.driftX, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.rot, { toValue: strip.rotate, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+          Animated.timing(strip.opacity, { toValue: 0, duration: finalDuration, easing: EASE, useNativeDriver: false }),
         ]),
       ]);
     });

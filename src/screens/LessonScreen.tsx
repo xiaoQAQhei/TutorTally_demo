@@ -513,6 +513,7 @@ const LessonScreen: React.FC = () => {
         renderItem={renderLesson}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
+        style={shatterMgr.activeId !== null ? { overflow: 'visible' as any } : undefined}
         ref={flatListRef}
         onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
         scrollEventThrottle={16}
