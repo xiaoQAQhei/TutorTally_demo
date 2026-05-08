@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-08 23:08 | auto: 05-08 23:08 | "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" 
+- "export_example_全量.xlsx"
+- "export_example_按月_2026-05.xlsx"
+
 ## 2026-05-08 23:05 | auto: 05-08 23:05 | "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" scripts/gen_sample_xlsx.js src/utils/export.ts 
 - "export_example_全量.xlsx"
 - "export_example_按月_2026-05.xlsx"
