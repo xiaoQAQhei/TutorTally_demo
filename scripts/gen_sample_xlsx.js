@@ -20,7 +20,7 @@ function cell(v, s) {
   return s ? { v, s } : { v };
 }
 
-function buildLessonRows(lessons, subjects) {
+function buildLessonRows(lessons, subjects, paidStyle) {
   const sorted = [...lessons].sort((a, b) => a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot));
   let totalHours = 0, totalAmount = 0, paidAmount = 0;
   const rows = [];
@@ -28,14 +28,16 @@ function buildLessonRows(lessons, subjects) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
     totalHours += l.duration; totalAmount += l.amount;
     if (l.status === 'paid') paidAmount += l.amount;
+    const paid = l.status === 'paid';
+    const style = paid && paidStyle ? paidStyle : undefined;
     rows.push([
-      cell(l.date),
-      cell(sub?.subject || ''),
-      cell(l.timeSlot),
-      cell(l.duration + 'h'),
-      cell(l.amount + '元'),
-      cell(STATUS_LABEL[l.status] || l.status),
-      cell(l.notes || ''),
+      cell(l.date, style),
+      cell(sub?.subject || '', style),
+      cell(l.timeSlot, style),
+      cell(l.duration + 'h', style),
+      cell(l.amount + '元', style),
+      cell(STATUS_LABEL[l.status] || l.status, style),
+      cell(l.notes || '', style),
     ]);
   }
   return { rows, totalHours, totalAmount, paidAmount };
@@ -43,7 +45,7 @@ function buildLessonRows(lessons, subjects) {
 
 function buildStudentSheet(student, subjects, lessons) {
   const subInfo = subjects.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');
-  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
+  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects, PAID_STYLE);
   const sheet = [];
   sheet.push([cell('家教课程账单')]);
   sheet.push([cell('学生: ' + student.name + '    ' + (student.phone ? '电话: ' + student.phone + '    ' : '') + subInfo, BOLD14_STYLE)]);

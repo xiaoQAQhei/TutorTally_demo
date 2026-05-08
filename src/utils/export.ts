@@ -27,7 +27,7 @@ function cell(v: string, s?: object) {
   return s ? { v, s } : { v };
 }
 
-function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]) {
+function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[], paidStyle?: object) {
   const sorted = [...lessons].sort((a, b) =>
     a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot)
   );
@@ -41,14 +41,15 @@ function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]) {
     totalAmount += l.amount;
     if (l.status === 'paid') paidAmount += l.amount;
 
+    const style = l.status === 'paid' && paidStyle ? paidStyle : undefined;
     rows.push([
-      cell(l.date),
-      cell(sub?.subject || ''),
-      cell(l.timeSlot),
-      cell(`${l.duration}h`),
-      cell(`${l.amount}元`),
-      cell(STATUS_LABEL[l.status] || l.status),
-      cell(l.notes || ''),
+      cell(l.date, style),
+      cell(sub?.subject || '', style),
+      cell(l.timeSlot, style),
+      cell(`${l.duration}h`, style),
+      cell(`${l.amount}元`, style),
+      cell(STATUS_LABEL[l.status] || l.status, style),
+      cell(l.notes || '', style),
     ]);
   }
 
@@ -57,7 +58,7 @@ function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]) {
 
 function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons: Lesson[]) {
   const subjectInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
+  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects, PAID_STYLE);
 
   const sheet: any[][] = [];
 
