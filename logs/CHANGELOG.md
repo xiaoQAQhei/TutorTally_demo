@@ -1,4 +1,12 @@
 # 改动日志
+## 2026-05-08 22:12 | auto: 05-08 22:12 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+
+## [2026-05-08 22:11] 学生账单卡片小字改为「本月上了X节课，课时为Y小时」
+- 修改 StatsScreen 中学生账单卡片的描述文字，改为显示本月上课节数和课时总数
+  - 文件: src/screens/StatsScreen.tsx
+
 ## 2026-05-08 21:54 | auto: 05-08 21:54 | src/screens/LessonScreen.tsx 
 - src/screens/LessonScreen.tsx
 
