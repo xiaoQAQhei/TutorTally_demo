@@ -306,7 +306,7 @@ const StatsScreen: React.FC = () => {
                 )}
               </View>
               <View style={styles.studentStats}>
-                <Text style={styles.studentStatText}>{item.totalLessons}节 · {item.totalHours.toFixed(1)}h</Text>
+                <Text style={styles.studentStatText}>本月上了{item.totalLessons}节课，课时为{item.totalHours.toFixed(1)}小时</Text>
               </View>
               <View style={styles.studentAmounts}>
                 <View style={styles.amountCol}>
