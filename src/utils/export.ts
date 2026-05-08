@@ -5,7 +5,6 @@ import * as Sharing from 'expo-sharing';
 import { getAllStudents, getSubjectsByStudentId, getAllLessons } from '../database';
 import { Student, StudentSubject, Lesson } from '../models';
 
-// Buffer polyfill for ExcelJS in React Native
 if (typeof global !== 'undefined') {
   (global as any).Buffer = (global as any).Buffer || Buffer;
 }
@@ -18,35 +17,47 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: '已取消',
 };
 
-const COL_WIDTHS = [14, 10, 16, 10, 12, 16, 18];
+const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF8FAFC' } };
+const PAID_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFD1FAE5' } };
+const HEADERS = ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'];
 
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
 }
 
-interface LessonRowData {
-  date: string;
-  subject: string;
-  timeSlot: string;
-  duration: string;
-  amount: string;
-  status: string;
-  notes: string;
+function setCell(cell: ExcelJS.Cell, value: string, opts?: { bold?: boolean; fill?: typeof PAID_FILL; color?: string }) {
+  cell.value = value;
+  cell.alignment = { horizontal: 'center' };
+  if (opts?.bold) cell.font = { bold: true, size: 11 };
+  if (opts?.fill) cell.fill = opts.fill;
+  if (opts?.color) cell.font = { color: { argb: opts.color }, size: 11 };
+}
+
+function setRow(sheet: ExcelJS.Worksheet, rowIdx: number, values: string[], opts?: { bold?: boolean; fill?: typeof PAID_FILL }) {
+  const row = sheet.getRow(rowIdx);
+  values.forEach((v, i) => {
+    const cell = row.getCell(i + 1);
+    cell.value = v;
+    cell.alignment = { horizontal: 'center' };
+    if (opts?.bold) cell.font = { bold: true, size: 11 };
+    if (opts?.fill) cell.fill = opts.fill;
+  });
+}
+
+interface LessonRow {
+  values: string[];
   isPaid: boolean;
 }
 
 function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]): {
-  rows: LessonRowData[];
+  rows: LessonRow[];
   totalHours: number;
   totalAmount: number;
   paidAmount: number;
 } {
-  const sorted = [...lessons].sort((a, b) =>
-    a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot)
-  );
-
+  const sorted = [...lessons].sort((a, b) => a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot));
   let totalHours = 0, totalAmount = 0, paidAmount = 0;
-  const rows: LessonRowData[] = [];
+  const rows: LessonRow[] = [];
 
   for (const l of sorted) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
@@ -55,13 +66,7 @@ function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]): {
     if (l.status === 'paid') paidAmount += l.amount;
 
     rows.push({
-      date: l.date,
-      subject: sub?.subject || '',
-      timeSlot: l.timeSlot,
-      duration: `${l.duration}h`,
-      amount: `${l.amount}元`,
-      status: STATUS_LABEL[l.status] || l.status,
-      notes: l.notes || '',
+      values: [l.date, sub?.subject || '', l.timeSlot, `${l.duration}h`, `${l.amount}元`, STATUS_LABEL[l.status] || l.status, l.notes || ''],
       isPaid: l.status === 'paid',
     });
   }
@@ -69,74 +74,68 @@ function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[]): {
   return { rows, totalHours, totalAmount, paidAmount };
 }
 
-function addStudentSheet(
-  workbook: ExcelJS.Workbook,
-  student: Student,
-  subjects: StudentSubject[],
-  lessons: Lesson[]
-) {
-  const sheet = workbook.addWorksheet(safeSheetName(student.name));
-  sheet.columns = COL_WIDTHS.map(w => ({ width: w }));
-
-  const subjectInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-
-  // Title row
-  const titleCell = sheet.getCell('A1');
-  titleCell.value = '家教课程账单';
-  titleCell.font = { bold: true, size: 14 };
-
-  // Info row
-  const infoCell = sheet.getCell('A2');
-  infoCell.value = `学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subjectInfo}`;
-  infoCell.font = { size: 11, color: { argb: 'FF4A4A6A' } };
-
-  // Header row (row 4)
-  const headers = ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'];
-  const headerRow = sheet.getRow(4);
-  headers.forEach((h, i) => {
-    const cell = headerRow.getCell(i + 1);
+function writeHeaderRow(sheet: ExcelJS.Worksheet, rowIdx: number) {
+  const row = sheet.getRow(rowIdx);
+  HEADERS.forEach((h, i) => {
+    const cell = row.getCell(i + 1);
     cell.value = h;
     cell.font = { bold: true, size: 11 };
     cell.alignment = { horizontal: 'center' };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+    cell.fill = HEADER_FILL;
   });
+}
 
-  // Lesson rows (starting row 5)
-  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
-  rows.forEach((r, ri) => {
-    const excelRow = sheet.getRow(5 + ri);
-    const values = [r.date, r.subject, r.timeSlot, r.duration, r.amount, r.status, r.notes];
-    values.forEach((v, ci) => {
-      const cell = excelRow.getCell(ci + 1);
-      cell.value = v;
-      cell.alignment = { horizontal: 'center' };
-      if (r.isPaid) {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-      }
-    });
+function writeDataRow(sheet: ExcelJS.Worksheet, rowIdx: number, row: LessonRow) {
+  row.values.forEach((v, i) => {
+    const cell = sheet.getRow(rowIdx).getCell(i + 1);
+    cell.value = v;
+    cell.alignment = { horizontal: 'center' };
+    if (row.isPaid) cell.fill = PAID_FILL;
   });
+}
+
+function writeSummaryRow(sheet: ExcelJS.Worksheet, rowIdx: number, lessons: number, hours: number, amount: number, paid: number) {
+  setRow(sheet, rowIdx, [
+    `合计: ${lessons}节课`, '', '',
+    `${hours.toFixed(1)}h`, `${amount}元`,
+    `已收 ${paid}元 / 待收 ${amount - paid}元`, '',
+  ], { bold: true });
+}
+
+function addStudentSheet(wb: ExcelJS.Workbook, student: Student, subjects: StudentSubject[], lessons: Lesson[]) {
+  const sheet = wb.addWorksheet(safeSheetName(student.name));
+  const subjectInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
+
+  // Row 1-2: title & info
+  setCell(sheet.getCell('A1'), '家教课程账单', { bold: true });
+  sheet.getCell('A1').font = { bold: true, size: 14 };
+  setCell(sheet.getCell('A2'), `学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subjectInfo}`);
+
+  // Row 3: blank
+  // Row 4: header
+  writeHeaderRow(sheet, 4);
+
+  // Data rows (starting row 5)
+  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects);
+  rows.forEach((r, i) => writeDataRow(sheet, 5 + i, r));
 
   // Summary row
-  const summaryRowIdx = 5 + rows.length + 1;
-  const summaryCell = sheet.getCell(`A${summaryRowIdx}`);
-  summaryCell.value = `合计: ${lessons.length}节课    ${totalHours.toFixed(1)}h    ${totalAmount}元    已收 ${paidAmount}元 / 待收 ${totalAmount - paidAmount}元`;
-  summaryCell.font = { bold: true, size: 11 };
-  sheet.mergeCells(`A${summaryRowIdx}:G${summaryRowIdx}`);
+  const sr = 5 + rows.length + 1;
+  writeSummaryRow(sheet, sr, lessons.length, totalHours, totalAmount, paidAmount);
 }
 
 export async function exportAllToExcel(): Promise<string> {
   const students = await getAllStudents();
   const allLessons = await getAllLessons();
-
-  const workbook = new ExcelJS.Workbook();
+  const wb = new ExcelJS.Workbook();
 
   for (const student of students) {
     const subjects = await getSubjectsByStudentId(student.id);
     const sLessons = allLessons.filter(l => l.studentId === student.id);
-    addStudentSheet(workbook, student, subjects, sLessons);
+    addStudentSheet(wb, student, subjects, sLessons);
   }
 
-  const buf = await workbook.xlsx.writeBuffer();
+  const buf = await wb.xlsx.writeBuffer();
   const b64 = Buffer.from(buf).toString('base64');
   const path = FileSystem.documentDirectory + `家教账单_全部_${new Date().toISOString().split('T')[0]}.xlsx`;
   await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
@@ -156,81 +155,50 @@ export async function exportByMonth(month: string): Promise<string> {
 
   const [y, m] = month.split('-');
   const title = `${y}年${parseInt(m, 10)}月 课程账单`;
+  const wb = new ExcelJS.Workbook();
+  const sheet = wb.addWorksheet(safeSheetName(title));
 
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(safeSheetName(title));
-  sheet.columns = COL_WIDTHS.map(w => ({ width: w }));
+  let r = 1;
+  const titleCell = sheet.getCell(`A${r}`); titleCell.value = title; titleCell.font = { bold: true, size: 14 };
+  r += 2;
 
-  let rowIdx = 1;
-
-  // Title
-  const titleCell = sheet.getCell(`A${rowIdx}`);
-  titleCell.value = title;
-  titleCell.font = { bold: true, size: 14 };
-  rowIdx += 2;
-
-  let monthTotal = 0, monthPaid = 0, monthHours = 0, monthLessonsCount = 0;
+  let mTotal = 0, mPaid = 0, mHours = 0, mLessons = 0;
 
   for (const student of students) {
     const subjects = await getSubjectsByStudentId(student.id);
     const sLessons = monthLessons.filter(l => l.studentId === student.id);
     const data = buildLessonRows(sLessons, subjects);
 
-    monthLessonsCount += sLessons.length;
-    monthHours += data.totalHours;
-    monthTotal += data.totalAmount;
-    monthPaid += data.paidAmount;
+    mLessons += sLessons.length; mHours += data.totalHours; mTotal += data.totalAmount; mPaid += data.paidAmount;
 
     // Student header
     const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-    const stuCell = sheet.getCell(`A${rowIdx}`);
-    stuCell.value = `${student.name}  ·  ${subInfo}`;
-    stuCell.font = { bold: true, size: 11, color: { argb: 'FF6366F1' } };
-    rowIdx++;
+    setCell(sheet.getCell(`A${r}`), `${student.name}  ·  ${subInfo}`, { bold: true, color: 'FF6366F1' });
+    r++;
 
-    // Table headers
-    const headers = ['日期', '学科', '时间段', '时长', '金额', '状态', '备注'];
-    const headerRow = sheet.getRow(rowIdx);
-    headers.forEach((h, i) => {
-      const cell = headerRow.getCell(i + 1);
-      cell.value = h;
-      cell.font = { bold: true, size: 11 };
-      cell.alignment = { horizontal: 'center' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-    });
-    rowIdx++;
+    // Table header
+    writeHeaderRow(sheet, r);
+    r++;
 
-    // Data rows
-    for (const r of data.rows) {
-      const excelRow = sheet.getRow(rowIdx);
-      const values = [r.date, r.subject, r.timeSlot, r.duration, r.amount, r.status, r.notes];
-      values.forEach((v, ci) => {
-        const cell = excelRow.getCell(ci + 1);
-        cell.value = v;
-        cell.alignment = { horizontal: 'center' };
-        if (r.isPaid) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-        }
-      });
-      rowIdx++;
-    }
+    // Data
+    data.rows.forEach(row => { writeDataRow(sheet, r, row); r++; });
 
     // Subtotal
-    const subtotalCell = sheet.getCell(`A${rowIdx}`);
-    subtotalCell.value = `小计: ${sLessons.length}节  ${data.totalHours.toFixed(1)}h  ${data.totalAmount}元`;
-    subtotalCell.font = { bold: true, size: 11 };
-    sheet.mergeCells(`A${rowIdx}:G${rowIdx}`);
-    rowIdx++;
-    rowIdx++; // blank row
+    setRow(sheet, r, [
+      `小计: ${sLessons.length}节`, '', '',
+      `${data.totalHours.toFixed(1)}h`, `${data.totalAmount}元`, '', '',
+    ], { bold: true });
+    r += 2;
   }
 
   // Grand total
-  const totalCell = sheet.getCell(`A${rowIdx}`);
-  totalCell.value = `总计: ${monthLessonsCount}节课 | ${monthHours.toFixed(1)}h | ${monthTotal}元 | 已收 ${monthPaid}元 | 待收 ${monthTotal - monthPaid}元`;
-  totalCell.font = { bold: true, size: 12 };
-  sheet.mergeCells(`A${rowIdx}:G${rowIdx}`);
+  setRow(sheet, r, [
+    `总计: ${mLessons}节课`, '', '',
+    `${mHours.toFixed(1)}h`, `${mTotal}元`,
+    `已收 ${mPaid}元`, `待收 ${mTotal - mPaid}元`,
+  ], { bold: true });
 
-  const buf = await workbook.xlsx.writeBuffer();
+  const buf = await wb.xlsx.writeBuffer();
   const b64 = Buffer.from(buf).toString('base64');
   const path = FileSystem.documentDirectory + `家教账单_${month}.xlsx`;
   await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
@@ -250,10 +218,10 @@ export async function exportByStudent(studentId: number): Promise<string> {
   const allLessons = await getAllLessons();
   const sLessons = allLessons.filter(l => l.studentId === studentId);
 
-  const workbook = new ExcelJS.Workbook();
-  addStudentSheet(workbook, student, subjects, sLessons);
+  const wb = new ExcelJS.Workbook();
+  addStudentSheet(wb, student, subjects, sLessons);
 
-  const buf = await workbook.xlsx.writeBuffer();
+  const buf = await wb.xlsx.writeBuffer();
   const b64 = Buffer.from(buf).toString('base64');
   const path = FileSystem.documentDirectory + `家教账单_${student.name}.xlsx`;
   await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
