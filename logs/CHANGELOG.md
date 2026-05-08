@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-08 18:18 | auto: 05-08 18:18 | src/screens/LessonScreen.tsx 
+- src/screens/LessonScreen.tsx
+
 ## 2026-05-08 16:36 | auto: 05-08 16:36 | .claude/settings.local.json 
 - .claude/settings.local.json
 

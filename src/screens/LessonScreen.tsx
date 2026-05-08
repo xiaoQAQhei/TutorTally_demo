@@ -454,7 +454,6 @@ const LessonScreen: React.FC = () => {
           opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
-            ...(shatterMgr.activeId === lessonId ? [{ scale: 0.92 as any }] : []),
           ],
         }]}
         onLayout={(e) => {
@@ -494,6 +493,8 @@ const LessonScreen: React.FC = () => {
                 <View style={[styles.shredInner, {
                   width: cardWidthRef.current.get(lessonId) || 400,
                   left: -(strip.offsetPx / 100 * (cardWidthRef.current.get(lessonId) || 400)),
+                  borderLeftWidth: 4,
+                  borderLeftColor: borderColor,
                 }]}>
                   {cardInner(false)}
                 </View>
