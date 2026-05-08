@@ -24,7 +24,8 @@
       "Bash(Get-Content \"C:\\\\Users\\\\XIAOQA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-xiaoQAQhei-Desktop--------demo\\\\4d0cdde1-6cfd-4aad-8fd2-b3b1a34e776c\\\\tasks\\\\bwrsr63sn.output\" -Tail 20)",
       "Bash(netstat -ano)",
       "Bash(Select-String \"19006|19007|8081|8082\")",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Get-Process *)"
     ]
   },
   "hooks": {
