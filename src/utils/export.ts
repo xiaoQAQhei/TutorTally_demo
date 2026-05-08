@@ -18,6 +18,7 @@ const CENTER_STYLE = { alignment: { horizontal: 'center' as const } };
 const BOLD_STYLE = { font: { bold: true } };
 const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
 const BOLD16_STYLE = { font: { bold: true, sz: 16 } };
+const TITLE_STYLE = { font: { bold: true, sz: 18, color: { rgb: '0070C0' } } };
 
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
@@ -62,7 +63,7 @@ function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons
 
   const sheet: any[][] = [];
 
-  sheet.push([cell('家教课程账单')]);
+  sheet.push([cell('家教课程总账单', TITLE_STYLE)]);
   sheet.push([cell(`学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subjectInfo}`, BOLD14_STYLE)]);
   sheet.push([]);
   sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
@@ -127,7 +128,7 @@ export async function exportByMonth(month: string): Promise<string> {
   let monthTotal = 0, monthPaid = 0, monthHours = 0, monthLessonsCount = 0;
 
   const sheet: any[][] = [];
-  sheet.push([cell(title)]);
+  sheet.push([cell(title, TITLE_STYLE)]);
   sheet.push([]);
 
   for (const student of students) {

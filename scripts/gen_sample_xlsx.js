@@ -11,6 +11,7 @@ const CENTER_STYLE = { alignment: { horizontal: 'center' } };
 const BOLD_STYLE = { font: { bold: true } };
 const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
 const BOLD16_STYLE = { font: { bold: true, sz: 16 } };
+const TITLE_STYLE = { font: { bold: true, sz: 18, color: { rgb: '0070C0' } } };
 
 function safeSheetName(name) {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
@@ -47,7 +48,7 @@ function buildStudentSheet(student, subjects, lessons) {
   const subInfo = subjects.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');
   const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects, PAID_STYLE);
   const sheet = [];
-  sheet.push([cell('家教课程账单')]);
+  sheet.push([cell('家教课程总账单', TITLE_STYLE)]);
   sheet.push([cell('学生: ' + student.name + '    ' + (student.phone ? '电话: ' + student.phone + '    ' : '') + subInfo, BOLD14_STYLE)]);
   sheet.push([]);
   sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
@@ -112,7 +113,7 @@ console.log('OK: export_example_全量.xlsx');
 // === 按月导出 ===
 const wbMonth = XLSX.utils.book_new();
 const sh = [];
-sh.push([cell('2026年5月 课程账单')]);
+sh.push([cell('2026年5月 课程账单', TITLE_STYLE)]);
 sh.push([]);
 
 let mTotal = 0, mPaid = 0, mHours = 0, mLessons = 0;
