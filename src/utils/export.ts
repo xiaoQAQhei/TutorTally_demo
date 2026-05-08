@@ -16,6 +16,8 @@ const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' as
 const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' as const } };
 const CENTER_STYLE = { alignment: { horizontal: 'center' as const } };
 const BOLD_STYLE = { font: { bold: true } };
+const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
+const BOLD16_STYLE = { font: { bold: true, sz: 16 } };
 
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
@@ -141,9 +143,9 @@ export async function exportByMonth(month: string): Promise<string> {
     monthTotal += data.totalAmount;
     monthPaid += data.paidAmount;
 
-    // Student header — bold
+    // Student header — bold 14pt
     const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-    sheet.push([cell(`${student.name}  ·  ${subInfo}`, BOLD_STYLE)]);
+    sheet.push([cell(`${student.name}  ·  ${subInfo}`, BOLD14_STYLE)]);
 
     // Table headers
     sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
@@ -153,18 +155,31 @@ export async function exportByMonth(month: string): Promise<string> {
       sheet.push(row);
     }
 
-    // Subtotal — center-aligned
+    // Subtotal — bold 14pt, values in A/C/D/E
     sheet.push([
-      cell(`小计: ${sLessons.length}节  ${data.totalHours.toFixed(1)}h  ${data.totalAmount}元`, CENTER_STYLE),
-      cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
-      cell('', CENTER_STYLE), cell('', CENTER_STYLE), cell('', CENTER_STYLE),
+      cell('小计:', BOLD14_STYLE), cell(''),
+      cell(`${sLessons.length}节`, BOLD14_STYLE),
+      cell(`${data.totalHours.toFixed(1)}h`, BOLD14_STYLE),
+      cell(`${data.totalAmount}元`, BOLD14_STYLE),
+      cell(''), cell(''),
     ]);
     sheet.push([]);
   }
 
-  // Grand total — center-aligned
+  // Legend row
   sheet.push([
-    cell(`总计: ${monthLessonsCount}节课 | ${monthHours.toFixed(1)}h | ${monthTotal}元 | 已收 ${monthPaid}元 | 待收 ${monthTotal - monthPaid}元`, CENTER_STYLE),
+    cell(''), cell(''), cell(''), cell(''), cell(''),
+    cell('✓ 已收款', PAID_STYLE),
+    cell('待收款', PENDING_STYLE),
+  ]);
+  // Grand total — bold 16pt, values in A/C/D/E/F/G
+  sheet.push([
+    cell('总计:', BOLD16_STYLE), cell(''),
+    cell(`${monthLessonsCount}节`, BOLD16_STYLE),
+    cell(`${monthHours.toFixed(1)}h`, BOLD16_STYLE),
+    cell(`${monthTotal}元`, BOLD16_STYLE),
+    cell(`${monthPaid}元`, { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
+    cell(`${monthTotal - monthPaid}元`, { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
   ]);
 
   const wb = XLSX.utils.book_new();

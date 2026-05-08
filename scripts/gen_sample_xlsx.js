@@ -9,6 +9,8 @@ const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' } 
 const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' } };
 const CENTER_STYLE = { alignment: { horizontal: 'center' } };
 const BOLD_STYLE = { font: { bold: true } };
+const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
+const BOLD16_STYLE = { font: { bold: true, sz: 16 } };
 
 function safeSheetName(name) {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
@@ -124,17 +126,26 @@ for (const stu of students) {
   mLessons += sless.length; mHours += data.totalHours; mTotal += data.totalAmount; mPaid += data.paidAmount;
 
   const subInfo = ssubs.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');
-  sh.push([cell(stu.name + '  ·  ' + subInfo, BOLD_STYLE)]);
+  sh.push([cell(stu.name + '  ·  ' + subInfo, BOLD14_STYLE)]);
   sh.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
   for (const row of data.rows) sh.push(row);
   sh.push([
-    cell('小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元'),
+    cell('小计:', BOLD14_STYLE), cell(''), cell(sless.length + '节', BOLD14_STYLE),
+    cell(data.totalHours.toFixed(1) + 'h', BOLD14_STYLE), cell(data.totalAmount + '元', BOLD14_STYLE),
+    cell(''), cell(''),
   ]);
   sh.push([]);
 }
 
 sh.push([
-  cell('总计: ' + mLessons + '节课 | ' + mHours.toFixed(1) + 'h | ' + mTotal + '元 | 已收 ' + mPaid + '元 | 待收 ' + (mTotal - mPaid) + '元'),
+  cell(''), cell(''), cell(''), cell(''), cell(''),
+  cell('✓ 已收款', PAID_STYLE), cell('待收款', PENDING_STYLE),
+]);
+sh.push([
+  cell('总计:', BOLD16_STYLE), cell(''), cell(mLessons + '节', BOLD16_STYLE),
+  cell(mHours.toFixed(1) + 'h', BOLD16_STYLE), cell(mTotal + '元', BOLD16_STYLE),
+  cell(mPaid + '元', { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
+  cell((mTotal - mPaid) + '元', { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
 ]);
 
 const wsMonth = XLSX.utils.aoa_to_sheet(sh);
