@@ -6,6 +6,7 @@ const STATUS_LABEL = {
 };
 
 const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' } };
+const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' } };
 const CENTER_STYLE = { alignment: { horizontal: 'center' } };
 const BOLD_STYLE = { font: { bold: true } };
 
@@ -51,12 +52,17 @@ function buildStudentSheet(student, subjects, lessons) {
   for (const row of rows) sheet.push(row);
   sheet.push([]);
   sheet.push([
+    cell(''), cell(''), cell(''), cell(''), cell(''),
+    cell('✓ 已收款', PAID_STYLE),
+    cell('待收款', PENDING_STYLE),
+  ]);
+  sheet.push([
     cell('合计: ' + lessons.length + '节课'),
     cell(''), cell(''),
     cell(totalHours.toFixed(1) + 'h'),
     cell(totalAmount + '元'),
-    cell('已收 ' + paidAmount + '元 / 待收 ' + (totalAmount - paidAmount) + '元'),
-    cell(''),
+    cell(paidAmount + '元', PAID_STYLE),
+    cell((totalAmount - paidAmount) + '元', PENDING_STYLE),
   ]);
   return sheet;
 }

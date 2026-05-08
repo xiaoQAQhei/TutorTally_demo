@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' as const } };
+const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' as const } };
 const CENTER_STYLE = { alignment: { horizontal: 'center' as const } };
 const BOLD_STYLE = { font: { bold: true } };
 
@@ -71,13 +72,17 @@ function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons
 
   sheet.push([]);
   sheet.push([
-    cell(`合计: ${lessons.length}节课`, CENTER_STYLE),
-    cell('', CENTER_STYLE),
-    cell('', CENTER_STYLE),
-    cell(`${totalHours.toFixed(1)}h`, CENTER_STYLE),
-    cell(`${totalAmount}元`, CENTER_STYLE),
-    cell(`已收 ${paidAmount}元 / 待收 ${totalAmount - paidAmount}元`, CENTER_STYLE),
-    cell('', CENTER_STYLE),
+    cell(''), cell(''), cell(''), cell(''), cell(''),
+    cell('✓ 已收款', PAID_STYLE),
+    cell('待收款', PENDING_STYLE),
+  ]);
+  sheet.push([
+    cell(`合计: ${lessons.length}节课`),
+    cell(''), cell(''),
+    cell(`${totalHours.toFixed(1)}h`),
+    cell(`${totalAmount}元`),
+    cell(`${paidAmount}元`, PAID_STYLE),
+    cell(`${totalAmount - paidAmount}元`, PENDING_STYLE),
   ]);
 
   return sheet;
