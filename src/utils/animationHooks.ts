@@ -67,34 +67,39 @@ export function useShatterManager() {
 
     stripsRef.current = strips;
 
-    const animations = strips.map((strip) => {
+    let completed = 0;
+    const total = strips.length;
+
+    strips.forEach((strip) => {
       const midFallDist = strip.fallDist * 0.6;
       const midDriftX = strip.driftX * 0.5;
       const midRotate = strip.rotate * 0.5;
       const midDuration = DURATION * 0.55;
       const finalDuration = DURATION * 0.45;
 
-      return Animated.sequence([
-        Animated.delay(strip.delay),
-        Animated.parallel([
-          Animated.timing(strip.dy, { toValue: midFallDist, duration: midDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.dx, { toValue: midDriftX, duration: midDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.rot, { toValue: midRotate, duration: midDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.opacity, { toValue: 0.85, duration: midDuration, easing: EASE, useNativeDriver: false }),
-        ]),
-        Animated.parallel([
-          Animated.timing(strip.dy, { toValue: strip.fallDist, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.dx, { toValue: strip.driftX, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.rot, { toValue: strip.rotate, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-          Animated.timing(strip.opacity, { toValue: 0, duration: finalDuration, easing: EASE, useNativeDriver: false }),
-        ]),
-      ]);
-    });
-
-    Animated.parallel(animations).start(() => {
-      setActiveId(null);
-      stripsRef.current = [];
-      onComplete();
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(strip.dy, { toValue: midFallDist, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.dx, { toValue: midDriftX, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.rot, { toValue: midRotate, duration: midDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.opacity, { toValue: 0.85, duration: midDuration, easing: EASE, useNativeDriver: false }),
+          ]),
+          Animated.parallel([
+            Animated.timing(strip.dy, { toValue: strip.fallDist, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.dx, { toValue: strip.driftX, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.rot, { toValue: strip.rotate, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+            Animated.timing(strip.opacity, { toValue: 0, duration: finalDuration, easing: EASE, useNativeDriver: false }),
+          ]),
+        ]).start(() => {
+          completed++;
+          if (completed >= total) {
+            setActiveId(null);
+            stripsRef.current = [];
+            onComplete();
+          }
+        });
+      }, strip.delay);
     });
   }, []);
 

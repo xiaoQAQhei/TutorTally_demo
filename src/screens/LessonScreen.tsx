@@ -474,7 +474,7 @@ const LessonScreen: React.FC = () => {
         </View>
 
         {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
-          <View style={styles.shatterOverlay} pointerEvents="none">
+          <View style={[styles.shatterOverlay, { marginLeft: -Spacing.lg, marginRight: -Spacing.lg }]} pointerEvents="none">
             {shatterMgr.stripsRef.current.map((strip, i) => (
               <Animated.View
                 key={i}

@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-08 18:42 | auto: 05-08 18:42 | src/screens/LessonScreen.tsx src/utils/animationHooks.ts 
+- src/screens/LessonScreen.tsx
+- src/utils/animationHooks.ts
+
 ## 2026-05-08 18:34 | auto: 05-08 18:34 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 
