@@ -122,7 +122,7 @@ for (const stu of students) {
   const sless = lessons.filter(l => l.studentId === stu.id && l.date.startsWith('2026-05'));
   if (sless.length === 0) continue;
 
-  const data = buildLessonRows(sless, ssubs);
+  const data = buildLessonRows(sless, ssubs, PAID_STYLE);
   mLessons += sless.length; mHours += data.totalHours; mTotal += data.totalAmount; mPaid += data.paidAmount;
 
   const subInfo = ssubs.map(s => s.subject + ' ' + s.hourlyRate + '元/h').join(' · ');

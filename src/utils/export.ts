@@ -135,7 +135,7 @@ export async function exportByMonth(month: string): Promise<string> {
     const sLessons = monthLessons.filter(l => l.studentId === student.id);
     if (sLessons.length === 0) continue;
 
-    const data = buildLessonRows(sLessons, subjects);
+    const data = buildLessonRows(sLessons, subjects, PAID_STYLE);
 
     monthLessonsCount += sLessons.length;
     monthHours += data.totalHours;
