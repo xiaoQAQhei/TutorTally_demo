@@ -114,8 +114,6 @@ for (const stu of students) {
   for (const row of data.rows) sh.push(row);
   sh.push([
     cell('小计: ' + sless.length + '节  ' + data.totalHours.toFixed(1) + 'h  ' + data.totalAmount + '元'),
-    cell(''), cell(''), cell(''),
-    cell(''), cell(''), cell(''),
   ]);
   sh.push([]);
 }
