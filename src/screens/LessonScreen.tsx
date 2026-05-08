@@ -474,33 +474,42 @@ const LessonScreen: React.FC = () => {
         </View>
 
         {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
-          <View style={[styles.shatterOverlay, { marginLeft: -Spacing.lg, marginRight: -Spacing.lg }]} pointerEvents="none">
-            {shatterMgr.stripsRef.current.map((strip, i) => (
-              <Animated.View
-                key={i}
-                style={[styles.shredStrip, {
-                  left: `${strip.left}%`,
-                  width: `${strip.width}%`,
-                  opacity: strip.opacity as any,
-                  ...Shadows.standard,
-                  transform: [
-                    { translateX: strip.dx as any },
-                    { translateY: strip.dy as any },
-                    { rotate: strip.rot as any },
-                  ] as any,
-                }]}
-              >
-                <View style={[styles.shredInner, {
-                  width: cardWidthRef.current.get(lessonId) || 400,
-                  left: -(strip.offsetPx / 100 * (cardWidthRef.current.get(lessonId) || 400)),
-                  borderLeftWidth: 4,
-                  borderLeftColor: borderColor,
-                }]}>
-                  {cardInner(false)}
-                </View>
-              </Animated.View>
-            ))}
-          </View>
+          <>
+            {shatterMgr.stripsRef.current.map((strip, i) => {
+              const cardW = cardWidthRef.current.get(lessonId) || 400;
+              const stripW = cardW / STRIP_COUNT;
+              return (
+                <Animated.View
+                  key={`shred-${i}`}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: i * stripW,
+                    width: stripW,
+                    height: '100%',
+                    overflow: 'hidden',
+                    zIndex: 20,
+                    opacity: strip.opacity as any,
+                    ...Shadows.standard,
+                    transform: [
+                      { translateX: strip.dx as any },
+                      { translateY: strip.dy as any },
+                      { rotate: strip.rot as any },
+                    ] as any,
+                  }}
+                >
+                  <View style={[styles.shredInner, {
+                    width: cardW,
+                    left: -(i * stripW),
+                    borderLeftWidth: 4,
+                    borderLeftColor: borderColor,
+                  }]}>
+                    {cardInner(false)}
+                  </View>
+                </Animated.View>
+              );
+            })}
+          </>
         )}
       </Animated.View>
     );
