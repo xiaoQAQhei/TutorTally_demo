@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Student, StudentSubject, Lesson } from '../models';
 import { getLessonsByStudentId, getSubjectsByStudentId } from '../database';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
+  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
 
 interface Props {
@@ -129,9 +129,9 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
                   <View style={styles.lessonRight}>
                     <Text style={styles.lessonDuration}>{l.duration.toFixed(1)}h</Text>
                     <Text style={styles.lessonAmount}>{l.amount.toFixed(0)}元</Text>
-                    <View style={[l.status === 'paid' ? styles.inlineBadgePaid : styles.inlineBadgePending]}>
-                      <Text style={[styles.inlineBadgeText, { color: l.status === 'paid' ? Colors.paid : Colors.pending }]}>
-                        {l.status === 'paid' ? '已收' : '待收'}
+                    <View style={[styles.inlineBadgeBase, { backgroundColor: LessonStatusColors[l.status]?.bg || Colors.card }]}>
+                      <Text style={[styles.inlineBadgeText, { color: LessonStatusColors[l.status]?.text || Colors.caption }]}>
+                        {LessonStatusColors[l.status]?.label || l.status}
                       </Text>
                     </View>
                   </View>
@@ -201,12 +201,8 @@ const styles = StyleSheet.create({
   lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   lessonDuration: { fontSize: FontSize.small, color: Colors.caption },
   lessonAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
-  inlineBadgePaid: {
-    backgroundColor: Colors.paidBg, paddingHorizontal: Spacing.sm, paddingVertical: 2,
-    borderRadius: BorderRadius.pill,
-  },
-  inlineBadgePending: {
-    backgroundColor: Colors.pendingBg, paddingHorizontal: Spacing.sm, paddingVertical: 2,
+  inlineBadgeBase: {
+    paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: BorderRadius.pill,
   },
   inlineBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },

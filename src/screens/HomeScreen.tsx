@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,16 +25,30 @@ const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: strin
 ];
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const { setPendingAction, setPendingFilter, setHighlightLessonId } = useAction();
+  const { setPendingAction, setPendingFilter, setHighlightLessonId, confirmBeforeChange } = useAction();
   const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState(0);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [morphingId, setMorphingId] = useState<number | null>(null);
+  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const slideOpAnims = useRef<Map<number, Animated.Value>>(new Map());
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
   const loadData = async () => {
-    const lessons = await getAllLessons();
+    let lessons = await getAllLessons();
+    const now = new Date();
+    for (const l of lessons) {
+      if (l.status === 'scheduled' && l.timeSlot) {
+        const endTime = l.timeSlot.split('-')[1]?.trim();
+        if (endTime && now >= new Date(`${l.date}T${endTime}:00`)) {
+          await setLessonStatus(l.id, 'completed');
+        }
+      }
+    }
+    lessons = await getAllLessons();
     const studentsData = await getAllStudents();
     setStudents(studentsData);
     const today = new Date().toISOString().split('T')[0];
@@ -55,7 +69,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
     const pending = lessons.filter((l) => {
       if (l.status === 'paid') return false;
-      if (l.status === 'completed') return true;
+      if (l.status === 'pendingPayment') return true;
       if (l.date < today) return l.status !== 'cancelled';
       return false;
     }).reduce((sum, l) => sum + l.amount, 0);
@@ -65,9 +79,35 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
-  const handleConfirmLesson = async (id: number) => {
-    await setLessonStatus(id, 'completed');
-    loadData();
+  const handleConfirmPayment = (id: number) => {
+    const doConfirm = () => {
+      if (!slideAnims.current.has(id)) {
+        slideAnims.current.set(id, new Animated.Value(0));
+        slideOpAnims.current.set(id, new Animated.Value(1));
+      }
+      const sx = slideAnims.current.get(id)!;
+      const so = slideOpAnims.current.get(id)!;
+      sx.setValue(0);
+      so.setValue(1);
+      setMorphingId(id);
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(sx, { toValue: 400, duration: 350, useNativeDriver: false }),
+          Animated.timing(so, { toValue: 0, duration: 350, useNativeDriver: false }),
+        ]).start(async () => {
+          sx.setValue(0);
+          so.setValue(1);
+          setMorphingId(null);
+          await setLessonStatus(id, 'pendingPayment');
+          loadData();
+        });
+      }, 300);
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '确认操作', message: '确定要标记为「待收款」吗？', onConfirm: doConfirm });
+    } else {
+      doConfirm();
+    }
   };
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
@@ -83,9 +123,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     if (item.category === 'confirmable') {
+      const isMorphing = morphingId === item.id;
+      if (!slideAnims.current.has(item.id)) {
+        slideAnims.current.set(item.id, new Animated.Value(0));
+        slideOpAnims.current.set(item.id, new Animated.Value(1));
+      }
+      const sx = slideAnims.current.get(item.id)!;
+      const so = slideOpAnims.current.get(item.id)!;
+      const morphBorderColor = isMorphing ? Colors.pending : Colors.danger;
+      const morphBadgeBg = isMorphing ? '#FEF3C7' : '#FEE2E2';
+      const morphBadgeColor = isMorphing ? Colors.pending : Colors.danger;
+      const morphBadgeLabel = isMorphing ? '待收款' : '确认下课';
       return (
-        <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
-          <View style={[styles.colorBar, { backgroundColor: Colors.danger }]} />
+        <Animated.View style={[styles.recentItem, !isLast && styles.recentItemBorder, {
+          opacity: isMorphing ? so : 1,
+          transform: [{ translateX: sx }],
+        }]}>
+          <View style={[styles.colorBar, { backgroundColor: morphBorderColor }]} />
           <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
             <View style={styles.recentLeft}>
               <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
@@ -95,14 +149,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmLesson(item.id)}>
+          <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
             <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
-            <View style={styles.confirmBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={Colors.danger} />
-              <Text style={styles.confirmBadgeText}>确认下课</Text>
+            <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
+              <Ionicons name="checkmark-circle" size={14} color={morphBadgeColor} />
+              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       );
     }
 
@@ -185,10 +239,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           ListEmptyComponent={
             <EmptyState
               icon="book-outline"
-              title="没有待上课程"
+              title="今天没有待上课程"
               subtitle="去课程记录添加未来的课程安排"
               buttonLabel="添加课程"
-              onButtonPress={() => navigation.navigate('Lessons')}
+              onButtonPress={() => { setPendingAction('addLesson'); navigation.navigate('Lessons'); }}
             />
           }
         />
@@ -217,6 +271,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Animated.View>
+
+      {confirmDialog && (
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmBox, Shadows.floating]}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -323,6 +394,15 @@ const styles = StyleSheet.create({
   },
   overviewLarge: { flex: 0.55 },
   overviewSmall: { flex: 0.45 },
+  confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%' },
+  confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
+  confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmCancelBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
+  confirmOkBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 });
 
 export default HomeScreen;

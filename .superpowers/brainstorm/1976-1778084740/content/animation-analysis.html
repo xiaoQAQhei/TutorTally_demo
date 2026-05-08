@@ -1,0 +1,110 @@
+<h2>动画优化分析</h2>
+<p class="subtitle">滑动动画 + 粉碎动画 — 问题与改进方案</p>
+
+<div class="section">
+  <h3>动画一：确认下课 → 待收款 滑动动画</h3>
+  <div class="pros-cons">
+    <div class="cons"><h4>当前问题</h4><ul>
+      <li>Animated.Value 停在 1，第二次点击无动画</li>
+      <li>setTimeout 50ms 不可靠</li>
+      <li>动画逻辑散落在 handleStatusChange 里</li>
+    </ul></div>
+    <div class="pros"><h4>改进方案</h4><ul>
+      <li>动画结束后 reset 到 0</li>
+      <li>用 InteractionManager.runAfterInteractions 替代 setTimeout</li>
+      <li>抽取 useSlideAnimation hook</li>
+    </ul></div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">滑动动画时间线</div>
+    <div class="mockup-body">
+      <div style="font-family: monospace; font-size: 13px; line-height: 2; padding: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <div style="width: 60px; height: 24px; background: #6366F1; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">DB 写入</div>
+          <span>→</span>
+          <div style="width: 60px; height: 24px; background: #F59E0B; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">刷新列表</div>
+          <span>→</span>
+          <div style="width: 60px; height: 24px; background: #10B981; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">渲染完成</div>
+          <span>→</span>
+          <div style="width: 100px; height: 24px; background: #EF4444; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">translateX 40→0</div>
+        </div>
+        <div style="border-left: 3px solid #6366F1; padding-left: 12px; color: #6B7280;">
+          transform: [{ translateX: anim(0 → 0.5 → 1 → 0) }]<br>
+          效果: 卡片先右滑 40px，再弹回原位，400ms
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>动画二：删除 碎片粉碎</h3>
+  <div class="pros-cons">
+    <div class="cons"><h4>当前问题</h4><ul>
+      <li>碎片颜色随机调色板，非卡片本身配色</li>
+      <li>12 个碎片同时开始同时结束，无错落感</li>
+      <li>卡片在动画结束时瞬间消失</li>
+    </ul></div>
+    <div class="pros"><h4>改进方案</h4><ul>
+      <li>碎片取卡片主色调 + 相近色</li>
+      <li>每碎片加随机 stagger 延迟 (0-80ms)</li>
+      <li>删除前卡片先轻微缩小 + 淡出 100ms</li>
+      <li>碎片 dy 用 ease-in 模拟重力加速度</li>
+    </ul></div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">碎片动画时间线 (600ms)</div>
+    <div class="mockup-body">
+      <div style="font-family: monospace; font-size: 12px; line-height: 2.4; padding: 16px; background: #1A1A2E; color: #E5E7EB; border-radius: 12px;">
+        <div>0ms    <span style="color: #6366F1;">|</span> 卡片 scale(1 → 0.95) 轻缩</div>
+        <div>50ms   <span style="color: #EF4444;">|</span> 碎片 1-3 开始掉落 (delay: 0ms)</div>
+        <div>80ms   <span style="color: #F59E0B;">|</span> 碎片 4-6 开始掉落 (delay: 30ms)</div>
+        <div>120ms  <span style="color: #10B981;">|</span> 碎片 7-9 开始掉落 (delay: 70ms)</div>
+        <div>160ms  <span style="color: #8B5CF6;">|</span> 碎片 10-12 开始掉落 (delay: 110ms)</div>
+        <div>300ms  碎片扩散到最大范围，开始渐隐</div>
+        <div>500ms  碎片 opacity → 0，卡片完全透明</div>
+        <div>600ms  动画结束，执行 deleteLesson + loadLessons</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>代码结构优化</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-body">
+        <h3>现状</h3>
+        <p>LessonScreen.tsx 750+ 行<br>动画、业务、UI 全部混在一起</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3>建议</h3>
+        <p>抽取独立动画 hook 文件<br><code>src/utils/animations.ts</code><br>导出 useSlideAnim、useShatterAnim</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>选择方向</h3>
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>修复 Bug + 参数调优</h3>
+        <p>重置 Animated.Value、加入 stagger 延迟、换 ease-in 曲线、修复颜色。不改架构。</p>
+      </div>
+    </div>
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Reanimated 重写 + 独立 hook</h3>
+        <p>用 withSpring/withSequence 替代 Animated.timing，抽取独立动画 hook 文件。更自然的物理感。</p>
+      </div>
+    </div>
+  </div>
+</div>

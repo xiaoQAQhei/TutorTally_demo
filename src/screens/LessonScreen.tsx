@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, Alert, Switch,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
-import { addLesson, getAllLessons, updateLesson, deleteLesson, setLessonStatus, addPayment, getPaymentsByLessonId, deletePayment, getSubjectsByStudentId, getAllStudents } from '../database';
+import { addLesson, getAllLessons, updateLesson, deleteLesson, setLessonStatus, getAllStudents, getSubjectsByStudentId, addPayment, getPaymentsByLessonId } from '../database';
 import { useAction } from '../contexts/ActionContext';
 import GradientFAB from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
@@ -16,8 +16,10 @@ import StatusBadge from '../components/StatusBadge';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
+  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
+import { useSlideManager, useShatterManager } from '../utils/animationHooks';
+import { ShredderStrip } from '../components/ShredderStrip';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -44,24 +46,50 @@ const LessonScreen: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
-  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
-  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
-  const [useManualAmount, setUseManualAmount] = useState(false);
-  const [manualAmount, setManualAmount] = useState('');
-  const [paymentsMap, setPaymentsMap] = useState<Record<number, Payment[]>>({});
-  const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight } = useAction();
+  const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   const itemHeightRef = useRef(180);
+  const cardWidthRef = useRef<Map<number, number>>(new Map());
+  const cardHeightRef = useRef<Map<number, number>>(new Map());
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null);
+  const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
+  const collapseAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const collapseStarted = useRef<Set<number>>(new Set());
+  const slideMgr = useSlideManager();
+  const shatterMgr = useShatterManager();
+  const containerRef = useRef<View>(null);
+  const cardRefs = useRef<Map<number, any>>(new Map());
+  const [shredPortal, setShredPortal] = useState<{
+    pageX: number; pageY: number; cardW: number; cardH: number;
+    strips: import('../utils/animationHooks').ShatterStripConfig[];
+    lessonId: number;
+  } | null>(null);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
     loadStudents();
   }, []));
 
-  const loadLessons = async () => { setLessons(await getAllLessons()); };
+  const loadLessons = async () => {
+    const all = await getAllLessons();
+    const now = new Date();
+    for (const l of all) {
+      if (l.status === 'scheduled' && l.timeSlot) {
+        const endTime = l.timeSlot.split('-')[1]?.trim();
+        if (endTime && now >= new Date(`${l.date}T${endTime}:00`)) {
+          await setLessonStatus(l.id, 'completed');
+        }
+      }
+    }
+    setLessons(await getAllLessons());
+  };
   const loadStudents = async () => {
     const data = await getAllStudents();
     setStudents(data);
@@ -70,37 +98,16 @@ const LessonScreen: React.FC = () => {
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
 
-  const loadSubjects = async (studentId: number) => {
-    const subs = await getSubjectsByStudentId(studentId);
-    setSubjects(subs);
-    if (subs.length > 0 && !selectedSubjectId) setSelectedSubjectId(subs[0].id);
-  };
-
-  // Load subjects when the selected student changes
-  useEffect(() => {
-    if (selectedStudentId) {
-      loadSubjects(selectedStudentId);
-    }
-  }, [selectedStudentId]);
-
-  // Auto-fill lessonRate when subject changes
-  useEffect(() => {
-    if (selectedSubjectId) {
-      const sub = subjects.find(s => s.id === selectedSubjectId);
-      if (sub) setLessonRate(sub.hourlyRate.toString());
-    }
-  }, [selectedSubjectId]);
-
   const filteredLessons = (() => {
     let filtered: Lesson[];
     if (filterStatus === 'upcoming') {
-      filtered = lessons.filter(l => l.status === 'scheduled');
+      filtered = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed');
       filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
     } else if (filterStatus === 'unpaid') {
-      filtered = lessons.filter(l => l.status === 'completed');
+      filtered = lessons.filter((l) => l.status === 'pendingPayment');
       filtered.sort((a, b) => a.date.localeCompare(b.date));
     } else if (filterStatus === 'paid') {
-      filtered = lessons.filter(l => l.status === 'paid');
+      filtered = lessons.filter((l) => l.status === 'paid');
       filtered.sort((a, b) => b.date.localeCompare(a.date));
     } else {
       filtered = [...lessons];
@@ -110,9 +117,9 @@ const LessonScreen: React.FC = () => {
   })();
 
   const counts = (() => {
-    const upcoming = lessons.filter(l => l.status === 'scheduled').length;
-    const paid = lessons.filter(l => l.status === 'paid').length;
-    const unpaid = lessons.filter(l => l.status === 'completed').length;
+    const upcoming = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed').length;
+    const paid = lessons.filter((l) => l.status === 'paid').length;
+    const unpaid = lessons.filter((l) => l.status === 'pendingPayment').length;
     return { upcoming, paid, unpaid, all: lessons.length };
   })();
 
@@ -122,15 +129,11 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedStudentId || !date || !timeSlot || !duration) {
-      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时', type: 'error' });
+    if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
+      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时和课时费', type: 'error' });
       return;
     }
-    if (!useManualAmount && !lessonRate) {
-      setToast({ visible: true, message: '请填写课时费', type: 'error' });
-      return;
-    }
-    const amount = useManualAmount ? parseFloat(manualAmount) : calculateAmount();
+    const amount = calculateAmount();
 
     // 校验时段与课时是否一致
     const parts = timeSlot.split('-');
@@ -146,9 +149,15 @@ const LessonScreen: React.FC = () => {
     }
 
     if (editingLesson) {
-      await updateLesson({ ...editingLesson, studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined, date, timeSlot, duration: parseFloat(duration), amount, manualAmount: useManualAmount ? parseFloat(manualAmount) : undefined, notes });
+      await updateLesson({
+        ...editingLesson, studentId: selectedStudentId, date, timeSlot,
+        duration: parseFloat(duration), amount, notes,
+      });
     } else {
-      await addLesson({ studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined, date, timeSlot, duration: parseFloat(duration), amount, manualAmount: useManualAmount ? parseFloat(manualAmount) : undefined, status: 'scheduled', confirmedAt: null, notes, createdAt: new Date().toISOString() });
+      await addLesson({
+        studentId: selectedStudentId, date, timeSlot, duration: parseFloat(duration),
+        amount, status: 'scheduled', confirmedAt: null, notes, createdAt: new Date().toISOString(),
+      });
     }
     setModalVisible(false);
     setEditingLesson(null);
@@ -157,44 +166,118 @@ const LessonScreen: React.FC = () => {
     setDuration('2');
     setLessonRate('');
     setNotes('');
-    setSelectedSubjectId(null);
-    setUseManualAmount(false);
-    setManualAmount('');
     loadLessons();
     setToast({ visible: true, message: editingLesson ? '课程已更新' : '课程已添加', type: 'success' });
   };
 
-  const handleDelete = async (id: number) => { await deleteLesson(id); loadLessons(); };
+  const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
+    const doChange = () => {
+      if (filterStatus !== 'all' && (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid')) {
+        if (!slideTestAnims.current.has(lesson.id)) {
+          slideTestAnims.current.set(lesson.id, new Animated.Value(0));
+        }
+        if (!slideOpacityAnims.current.has(lesson.id)) {
+          slideOpacityAnims.current.set(lesson.id, new Animated.Value(1));
+        }
+        const slideX = slideTestAnims.current.get(lesson.id)!;
+        const slideOp = slideOpacityAnims.current.get(lesson.id)!;
+        slideX.setValue(0);
+        slideOp.setValue(1);
+        setMorphing({ id: lesson.id, targetStatus: nextStatus });
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
+            Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
+          ]).start(() => {
+            slideX.setValue(0);
+            slideOp.setValue(1);
+            setMorphing(null);
+            setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+          });
+        }, 300);
+      } else {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+      }
+    };
+    if (confirmBeforeChange) {
+      const nextLabel = LessonStatusColors[nextStatus]?.label || nextStatus;
+      setConfirmDialog({ visible: true, title: '确认操作', message: `确定要标记为「${nextLabel}」吗？`, onConfirm: doChange });
+    } else {
+      doChange();
+    }
+  };
 
-  const handleEdit = async (lesson: Lesson) => {
+  const handleCancelLesson = (lesson: Lesson) => {
+    const doCancel = () => {
+      setCancellingId(lesson.id);
+      if (!cancelAnims.current.has(lesson.id)) {
+        cancelAnims.current.set(lesson.id, { anim: new Animated.Value(0), width: 0 });
+      }
+      const cd = cancelAnims.current.get(lesson.id)!;
+      Animated.timing(cd.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
+        // Keep cancelled visual for 800ms before reloading
+        setTimeout(() => {
+          setCancellingId(null);
+          setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+        }, 800);
+      });
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '取消课程', message: '确定要取消这个课程吗？', onConfirm: doCancel });
+    } else {
+      doCancel();
+    }
+  };
+
+  const isClassEnded = (lesson: Lesson): boolean => {
+    const endTime = lesson.timeSlot?.split('-')[1]?.trim();
+    if (!endTime) return true;
+    return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
+  };
+
+  const handleDelete = (id: number) => {
+    if (shatterMgr.activeId !== null) return;
+    const doDelete = () => {
+      const cardView = cardRefs.current.get(id);
+      const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
+        const strips = shatterMgr.triggerShatter(id, cardH, () => {
+          setShredPortal(null);
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          deleteLesson(id).then(loadLessons);
+        });
+        setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id });
+      };
+      if (cardView && containerRef.current) {
+        (containerRef.current as any).measure((_cx: number, _cy: number, _cw: number, _ch: number, cPageX: number, cPageY: number) => {
+          (cardView as any).measure((_x: number, _y: number, _w: number, _h: number, cardPageX: number, cardPageY: number) => {
+            doShatter(cardPageX - cPageX, cardPageY - cPageY, _w, _h);
+          });
+        });
+      } else {
+        doShatter(0, 0, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
+      }
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '删除课程', message: '确定要删除这个课程吗？删除后无法恢复。', onConfirm: doDelete });
+    } else {
+      doDelete();
+    }
+  };
+
+  const handleEdit = (lesson: Lesson) => {
     setEditingLesson(lesson);
     setSelectedStudentId(lesson.studentId);
-    setSelectedSubjectId(lesson.studentSubjectId || null);
     setDate(lesson.date);
     setTimeSlot(lesson.timeSlot || '');
     setDuration(lesson.duration.toString());
+    const student = getStudent(lesson.studentId);
+    setLessonRate('75');
     setNotes(lesson.notes || '');
-    setUseManualAmount(!!lesson.manualAmount);
-    setManualAmount(lesson.manualAmount?.toString() || '');
-
-    // Load subjects for this student and set rate
-    const subs = await getSubjectsByStudentId(lesson.studentId);
-    setSubjects(subs);
-    if (lesson.studentSubjectId) {
-      const sub = subs.find(s => s.id === lesson.studentSubjectId);
-      if (sub) setLessonRate(sub.hourlyRate.toString());
-      else setLessonRate('75');
-    } else if (subs.length > 0) {
-      setSelectedSubjectId(subs[0].id);
-      setLessonRate(subs[0].hourlyRate.toString());
-    } else {
-      setLessonRate('75');
-    }
-
     setModalVisible(true);
   };
 
-  const openAddModal = async () => {
+  const openAddModal = () => {
     setEditingLesson(null);
     const firstStudent = students[0];
     setSelectedStudentId(firstStudent?.id || null);
@@ -202,25 +285,8 @@ const LessonScreen: React.FC = () => {
     setDate(tomorrow);
     setTimeSlot('');
     setDuration('2');
-    setUseManualAmount(false);
-    setManualAmount('');
-    setSelectedSubjectId(null);
+    setLessonRate('75');
     setNotes('');
-
-    if (firstStudent) {
-      const subs = await getSubjectsByStudentId(firstStudent.id);
-      setSubjects(subs);
-      if (subs.length > 0) {
-        setSelectedSubjectId(subs[0].id);
-        setLessonRate(subs[0].hourlyRate.toString());
-      } else {
-        setLessonRate('75');
-      }
-    } else {
-      setSubjects([]);
-      setLessonRate('75');
-    }
-
     setModalVisible(true);
   };
 
@@ -249,11 +315,11 @@ const LessonScreen: React.FC = () => {
       highlightAnim.stopAnimation();
       highlightAnim.setValue(0);
       setHighlightedId(highlightLessonId);
-
+      
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
       });
-
+      
       Animated.sequence([
         Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
         Animated.delay(2000),
@@ -265,14 +331,171 @@ const LessonScreen: React.FC = () => {
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
+  const renderCardContent = (lesson: Lesson, interactive: boolean) => {
+    const student = getStudent(lesson.studentId);
+    const lessonId = lesson.id;
+    const isMorphingCard = morphing?.id === lessonId;
+    const displayStatus = isMorphingCard ? morphing!.targetStatus : lesson.status;
+    const isCancelled = lesson.status === 'cancelled';
+    const isCancellingCard = cancellingId === lessonId;
+    const showCancelAnim = isCancelled || isCancellingCard;
+
+    if (!cancelAnims.current.has(lessonId)) {
+      cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
+    }
+    const cancelData = cancelAnims.current.get(lessonId)!;
+    if (isCancelled && !isCancellingCard) {
+      cancelData.anim.setValue(1);
+    }
+
+    return (
+      <>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            {student && <StudentAvatar name={student.name} size={40} />}
+            <View>
+              <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
+              <Text style={styles.subject}>{student?.phone || ''}</Text>
+            </View>
+          </View>
+          <StatusBadge
+            status={displayStatus}
+            disabled={!interactive || isMorphingCard || lesson.status === 'scheduled'}
+            onToggle={!interactive || isMorphingCard ? undefined : (nextStatus: LessonStatus) => handleStatusChange(lesson, nextStatus)}
+          />
+        </View>
+        <View style={styles.cardBody}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <View style={styles.infoItem}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{lesson.date}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{lesson.duration}h</Text>
+              </View>
+            </View>
+            {lesson.timeSlot ? (
+              <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
+                <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
+                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.amountRow}>
+            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
+            <Text style={styles.amountText}>{lesson.amount.toFixed(0)}元</Text>
+          </View>
+          {lesson.notes ? (
+            <View style={styles.noteRow}>
+              <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
+              <Text style={styles.noteText} numberOfLines={2}>{lesson.notes}</Text>
+            </View>
+          ) : null}
+          {showCancelAnim && interactive && (
+            <View style={styles.strikethroughOverlay} pointerEvents="none">
+              <Animated.View style={[styles.strikethroughLine, {
+                width: cancelData.anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
+                }),
+              }]} />
+              <Animated.Text style={[styles.strikethroughLabel, {
+                opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
+              }]}>已取消</Animated.Text>
+            </View>
+          )}
+          {showCancelAnim && !interactive && isCancelled && (
+            <View style={styles.strikethroughOverlay} pointerEvents="none">
+              <View style={[styles.strikethroughLine, { width: cancelData.width > 0 ? cancelData.width + 20 : 400 }]} />
+              <Text style={styles.strikethroughLabel}>已取消</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.actions}>
+          {(lesson.status !== 'paid' && lesson.status !== 'cancelled') && (
+            interactive ? (
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(lesson)}>
+                <Ionicons name="pencil" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="pencil" size={18} color={Colors.primary} />
+              </View>
+            )
+          )}
+          {lesson.status === 'scheduled' && !isClassEnded(lesson) && (
+            interactive ? (
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(lesson)}>
+                <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+              </View>
+            )
+          )}
+          {interactive && shatterMgr.activeId === null ? (
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(lesson.id)}>
+              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.actionButton}>
+              <Ionicons name="trash-outline" size={18} color={interactive ? Colors.caption : Colors.danger} />
+            </View>
+          )}
+        </View>
+      </>
+    );
+  };
+
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
-    const subject = item.studentSubjectId ? subjects.find(s => s.id === item.studentSubjectId) : null;
+    const lessonId = item.id;
 
-    const borderColor = item.status === 'paid' ? Colors.paid : item.status === 'scheduled' ? Colors.primary : Colors.pending;
+    const isMorphing = morphing?.id === lessonId;
+    const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
+    const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
+    const isCancelled = item.status === 'cancelled';
+    const isCancelling = cancellingId === lessonId;
+    const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
-    const cardBg = isHighlighted
+    if (!slideTestAnims.current.has(lessonId)) {
+      slideTestAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    if (!slideOpacityAnims.current.has(lessonId)) {
+      slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
+    }
+
+    // Keep cancelAnims width updated for strikethrough
+    if (cancelAnims.current.has(lessonId)) {
+      cancelAnims.current.get(lessonId)!.width = cardWidthRef.current.get(lessonId) || 400;
+    }
+
+    // Collapse animation when shredding
+    const cardH = cardHeightRef.current.get(lessonId) || 200;
+    if (!collapseAnims.current.has(lessonId)) {
+      collapseAnims.current.set(lessonId, new Animated.Value(cardH));
+    }
+    const collapseAnim = collapseAnims.current.get(lessonId)!;
+    if (shatterMgr.activeId === lessonId && !collapseStarted.current.has(lessonId)) {
+      collapseStarted.current.add(lessonId);
+      collapseAnim.setValue(cardH);
+      Animated.timing(collapseAnim, {
+        toValue: 0, duration: 350, useNativeDriver: false, easing: Easing.out(Easing.cubic),
+      }).start();
+    }
+    if (shatterMgr.activeId !== lessonId) {
+      collapseStarted.current.delete(lessonId);
+    }
+
+    const cardInner = (interactive: boolean) => renderCardContent(item, interactive);
+
+    const cardBg = showCancelAnim
+      ? '#F3F4F6'
+      : isHighlighted
       ? highlightAnim.interpolate({
           inputRange: [0, 1],
           outputRange: [Colors.card, Colors.primary + '18'],
@@ -281,90 +504,51 @@ const LessonScreen: React.FC = () => {
 
     return (
       <Animated.View
-        style={[styles.card, Shadows.standard, { borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg }]}
+        style={[styles.card, Shadows.standard, {
+          borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
+          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
+          transform: [
+            { translateX: slideTestAnims.current.get(lessonId)! },
+          ],
+        }, shatterMgr.activeId === lessonId ? {
+          backgroundColor: 'transparent',
+          borderLeftWidth: 0,
+          height: collapseAnim,
+          padding: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.lg], extrapolate: 'clamp' }),
+          marginBottom: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.md], extrapolate: 'clamp' }),
+          overflow: 'hidden',
+        } : null]}
+        ref={(el) => { if (el) cardRefs.current.set(lessonId, el); }}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
+          const w = e.nativeEvent.layout.width;
           if (h > 0) itemHeightRef.current = h;
+          if (w > 0) {
+            cardWidthRef.current.set(lessonId, w);
+            cardHeightRef.current.set(lessonId, h);
+            if (cancelAnims.current.has(lessonId)) {
+              cancelAnims.current.get(lessonId)!.width = w;
+            }
+          }
         }}
       >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            {student && <StudentAvatar name={student.name} subject={subject?.subject || ''} size={40} />}
-            <View>
-              <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.subject}>{subject?.subject || ''}</Text>
-            </View>
-          </View>
-          <StatusBadge
-            status={item.status}
-            showNextAction={true}
-            onToggle={(nextStatus) => {
-              if (nextStatus === 'cancelled') {
-                Alert.alert('取消课程', '确定要取消这个课程吗？', [
-                  { text: '返回', style: 'cancel' },
-                  { text: '确定取消', onPress: () => setLessonStatus(item.id, 'cancelled').then(loadLessons) },
-                ]);
-              } else if (nextStatus === 'paid') {
-                setLessonStatus(item.id, 'paid').then(loadLessons);
-              } else {
-                setLessonStatus(item.id, nextStatus).then(loadLessons);
-              }
-            }}
-            allowPaid={true}
-          />
-        </View>
-
-        <View style={styles.cardBody}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoLeft}>
-              <View style={styles.infoItem}>
-                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.date}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.duration}h</Text>
-              </View>
-            </View>
-            {item.timeSlot ? (
-              <View style={styles.timeSlotBadge}>
-                <Ionicons name="time-outline" size={25} color={Colors.primary} />
-                <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.amountRow}>
-            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
-          </View>
-          {item.notes ? (
-            <View style={styles.noteRow}>
-              <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
-              <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
-            <Ionicons name="pencil" size={18} color={Colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
-            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-          </TouchableOpacity>
+        <View style={shatterMgr.activeId === lessonId ? { opacity: 0 } : null}>
+          {cardInner(true)}
         </View>
       </Animated.View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={containerRef}>
       <FlatList
         data={filteredLessons}
         renderItem={renderLesson}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
         ref={flatListRef}
+        onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
+        scrollEventThrottle={16}
         initialNumToRender={filteredLessons.length}
         windowSize={50}
         getItemLayout={(_, index) => {
@@ -475,30 +659,56 @@ const LessonScreen: React.FC = () => {
         }
       />
 
+      {showScrollTop && (
+        <TouchableOpacity
+          style={styles.scrollTopBtn}
+          activeOpacity={0.7}
+          onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+        >
+          <Ionicons name="arrow-up" size={22} color={Colors.primary} />
+        </TouchableOpacity>
+      )}
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.primary} />
+
+      {shredPortal && (() => {
+        const portalLesson = filteredLessons.find(l => l.id === shredPortal.lessonId);
+        if (!portalLesson) return null;
+        const pBorderColor = portalLesson.status === 'paid' ? Colors.paid : portalLesson.status === 'pendingPayment' ? Colors.pending : portalLesson.status === 'cancelled' ? Colors.caption : Colors.primary;
+        return (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, pointerEvents: 'none' }}>
+            <View style={{ position: 'absolute', top: shredPortal.pageY, left: shredPortal.pageX }}>
+              {shredPortal.strips.map((strip) => (
+                <ShredderStrip
+                  key={`portal-shred-${strip.index}`}
+                  index={strip.index}
+                  cardWidth={shredPortal.cardW}
+                  cardHeight={shredPortal.cardH}
+                  fallDist={strip.fallDist}
+                  driftX={strip.driftX}
+                  rotateDeg={strip.rotateDeg}
+                  delay={strip.delay}
+                  onDone={shatterMgr.onStripDone}
+                >
+                  <View style={[styles.shredInner, { width: shredPortal.cardW, borderLeftWidth: 4, borderLeftColor: pBorderColor }]}>
+                    {renderCardContent(portalLesson, false)}
+                  </View>
+                </ShredderStrip>
+              ))}
+            </View>
+          </View>
+        );
+      })()}
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
         <Text style={styles.formLabel}>选择学生</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
-              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} subject={subjects.find(s => s.id === selectedSubjectId)?.subject || ''} size={28} />
+              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={28} />
               <Text style={styles.pickerText}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
             <Text style={styles.pickerPlaceholder}>请选择学生</Text>
-          )}
-          <Ionicons name="chevron-down" size={20} color={Colors.caption} />
-        </TouchableOpacity>
-
-        <Text style={styles.formLabel}>科目（可选）</Text>
-        <TouchableOpacity style={styles.pickerButton} onPress={() => setShowSubjectPicker(true)}>
-          {selectedSubjectId ? (
-            <View style={styles.pickerSelected}>
-              <Text style={styles.pickerText}>{subjects.find(s => s.id === selectedSubjectId)?.subject || '选择科目'}</Text>
-            </View>
-          ) : (
-            <Text style={styles.pickerPlaceholder}>选择科目（自动计算课时费）</Text>
           )}
           <Ionicons name="chevron-down" size={20} color={Colors.caption} />
         </TouchableOpacity>
@@ -521,40 +731,28 @@ const LessonScreen: React.FC = () => {
           <Ionicons name="chevron-down" size={16} color={Colors.caption} />
         </TouchableOpacity>
 
-        {!useManualAmount && (
-          <>
-            <View style={styles.formRow}>
-              <View style={styles.formHalf}>
-                <Text style={styles.formLabel}>课时（小时）</Text>
-                <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
-              </View>
-              <View style={styles.formHalf}>
-                <Text style={styles.formLabel}>课时费（元/小时）</Text>
-                <TextInput
-                  style={[styles.input, styles.rateInput]}
-                  placeholder="如 75"
-                  value={lessonRate}
-                  onChangeText={setLessonRate}
-                  keyboardType="numeric"
-                  placeholderTextColor={Colors.caption}
-                />
-              </View>
-            </View>
-
-            <View style={styles.amountPreview}>
-              <Text style={styles.amountPreviewLabel}>预计课时费</Text>
-              <Text style={styles.amountPreviewValue}>{calculateAmount().toFixed(0)}元</Text>
-            </View>
-          </>
-        )}
-
-        <View style={styles.toggleRow}>
-          <Text style={styles.formLabel}>手动金额</Text>
-          <Switch value={useManualAmount} onValueChange={setUseManualAmount} trackColor={{ false: Colors.divider, true: Colors.primary }} />
+        <View style={styles.formRow}>
+          <View style={styles.formHalf}>
+            <Text style={styles.formLabel}>课时（小时）</Text>
+            <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
+          </View>
+          <View style={styles.formHalf}>
+            <Text style={styles.formLabel}>课时费（元/小时）</Text>
+            <TextInput
+              style={[styles.input, styles.rateInput]}
+              placeholder="如 75"
+              value={lessonRate}
+              onChangeText={setLessonRate}
+              keyboardType="numeric"
+              placeholderTextColor={Colors.caption}
+            />
+          </View>
         </View>
-        {useManualAmount && (
-          <TextInput style={styles.input} placeholder="输入实际金额" value={manualAmount} onChangeText={setManualAmount} keyboardType="numeric" placeholderTextColor={Colors.caption} />
-        )}
+
+        <View style={styles.amountPreview}>
+          <Text style={styles.amountPreviewLabel}>预计课时费</Text>
+          <Text style={styles.amountPreviewValue}>{calculateAmount().toFixed(0)}元</Text>
+        </View>
 
         <Text style={styles.formLabel}>备注（可选）</Text>
         <TextInput style={[styles.input, styles.textArea]} placeholder="添加备注..." value={notes} onChangeText={setNotes} multiline placeholderTextColor={Colors.caption} />
@@ -588,29 +786,12 @@ const LessonScreen: React.FC = () => {
               style={[styles.studentItem, selectedStudentId === s.id && styles.studentItemActive]}
               onPress={() => { setSelectedStudentId(s.id); setShowStudentPicker(false); }}
             >
-              <StudentAvatar name={s.name} subject="" size={40} />
+              <StudentAvatar name={s.name} size={40} />
               <View style={styles.studentItemInfo}>
                 <Text style={[styles.studentItemName, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
+                <Text style={styles.studentItemSubject}>{s.phone || ''}</Text>
               </View>
               {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
-            </TouchableOpacity>
-          ))}
-        </BottomSheet>
-      )}
-
-      {showSubjectPicker && (
-        <BottomSheet visible={showSubjectPicker} onClose={() => setShowSubjectPicker(false)} title="选择科目">
-          {subjects.map((sub) => (
-            <TouchableOpacity
-              key={sub.id}
-              style={[styles.studentItem, selectedSubjectId === sub.id && styles.studentItemActive]}
-              onPress={() => { setSelectedSubjectId(sub.id); setShowSubjectPicker(false); }}
-            >
-              <View style={styles.studentItemInfo}>
-                <Text style={[styles.studentItemName, selectedSubjectId === sub.id && { color: Colors.primary }]}>{sub.subject}</Text>
-                <Text style={styles.studentItemSubject}>{sub.hourlyRate}元/h</Text>
-              </View>
-              {selectedSubjectId === sub.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
             </TouchableOpacity>
           ))}
         </BottomSheet>
@@ -622,12 +803,29 @@ const LessonScreen: React.FC = () => {
         type={toast.type}
         onDismiss={() => setToast({ ...toast, visible: false })}
       />
+
+      {confirmDialog && (
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmBox, Shadows.floating]}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   filterRow: {
     flexDirection: 'row', gap: Spacing.sm,
@@ -664,6 +862,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
+    position: 'relative' as const,
   },
   cardHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
@@ -689,6 +888,33 @@ const styles = StyleSheet.create({
   timeSlotBadgeText: {
     fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
+  timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },
+  strikethroughOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center', alignItems: 'center', zIndex: 10,
+    overflow: 'visible',
+  },
+  strikethroughLine: {
+    position: 'absolute', left: -30, height: 2,
+    backgroundColor: '#9CA3AF',
+  },
+  shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
+  shredStrip: {
+    position: 'absolute', top: 0, height: '100%',
+    overflow: 'hidden',
+  },
+  shredInner: {
+    position: 'absolute',
+    top: 0,
+    backgroundColor: Colors.card,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.card,
+  },
+  strikethroughLabel: {
+    fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
+    backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
+    borderRadius: BorderRadius.pill, overflow: 'hidden',
+  },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
   amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
   noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
@@ -698,6 +924,22 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
   actionButton: { padding: Spacing.sm },
+  scrollTopBtn: {
+    position: 'absolute', bottom: 100, right: 30,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
+    justifyContent: 'center', alignItems: 'center',
+    ...Shadows.standard,
+  },
+  confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%' },
+  confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
+  confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmCancelBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
+  confirmOkBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
   datePickerButton: {
     flexDirection: 'row', alignItems: 'center',
     height: 50, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
@@ -731,7 +973,6 @@ const styles = StyleSheet.create({
   },
   amountPreviewLabel: { fontSize: FontSize.body, color: Colors.body, fontWeight: FontWeight.medium },
   amountPreviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md },
   saveButton: {
     backgroundColor: Colors.primary, height: 52, borderRadius: BorderRadius.button,
     justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
