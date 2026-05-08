@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -60,8 +60,17 @@ const LessonScreen: React.FC = () => {
   const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
   const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());
   const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
+  const collapseAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const collapseStarted = useRef<Set<number>>(new Set());
   const slideMgr = useSlideManager();
   const shatterMgr = useShatterManager();
+  const containerRef = useRef<View>(null);
+  const cardRefs = useRef<Map<number, any>>(new Map());
+  const [shredPortal, setShredPortal] = useState<{
+    pageX: number; pageY: number; cardW: number; cardH: number;
+    strips: import('../utils/animationHooks').ShatterStripConfig[];
+    lessonId: number;
+  } | null>(null);
 
   useFocusEffect(useCallback(() => {
     loadLessons();
@@ -163,7 +172,7 @@ const LessonScreen: React.FC = () => {
 
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
-      if (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid') {
+      if (filterStatus !== 'all' && (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid')) {
         if (!slideTestAnims.current.has(lesson.id)) {
           slideTestAnims.current.set(lesson.id, new Animated.Value(0));
         }
@@ -228,10 +237,26 @@ const LessonScreen: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
+    if (shatterMgr.activeId !== null) return;
     const doDelete = () => {
-      shatterMgr.triggerShatter(id, cardHeightRef.current.get(id) || 200, () => {
-        deleteLesson(id).then(loadLessons);
-      });
+      const cardView = cardRefs.current.get(id);
+      const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
+        const strips = shatterMgr.triggerShatter(id, cardH, () => {
+          setShredPortal(null);
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          deleteLesson(id).then(loadLessons);
+        });
+        setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id });
+      };
+      if (cardView && containerRef.current) {
+        (containerRef.current as any).measure((_cx: number, _cy: number, _cw: number, _ch: number, cPageX: number, cPageY: number) => {
+          (cardView as any).measure((_x: number, _y: number, _w: number, _h: number, cardPageX: number, cardPageY: number) => {
+            doShatter(cardPageX - cPageX, cardPageY - cPageY, _w, _h);
+          });
+        });
+      } else {
+        doShatter(0, 0, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
+      }
     };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '删除课程', message: '确定要删除这个课程吗？删除后无法恢复。', onConfirm: doDelete });
@@ -306,36 +331,24 @@ const LessonScreen: React.FC = () => {
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
-  const renderLesson = ({ item }: { item: Lesson }) => {
-    const student = getStudent(item.studentId);
-    const lessonId = item.id;
+  const renderCardContent = (lesson: Lesson, interactive: boolean) => {
+    const student = getStudent(lesson.studentId);
+    const lessonId = lesson.id;
+    const isMorphingCard = morphing?.id === lessonId;
+    const displayStatus = isMorphingCard ? morphing!.targetStatus : lesson.status;
+    const isCancelled = lesson.status === 'cancelled';
+    const isCancellingCard = cancellingId === lessonId;
+    const showCancelAnim = isCancelled || isCancellingCard;
 
-    const isMorphing = morphing?.id === lessonId;
-    const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
-    const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
-    const isCancelled = item.status === 'cancelled';
-    const isCancelling = cancellingId === lessonId;
-    const showCancelAnim = isCancelled || isCancelling;
-    const isHighlighted = item.id === highlightedId;
-
-    if (!slideTestAnims.current.has(lessonId)) {
-      slideTestAnims.current.set(lessonId, new Animated.Value(0));
-    }
-    if (!slideOpacityAnims.current.has(lessonId)) {
-      slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
-    }
-
-    // Animated strikethrough line — left-to-right with overshoot
     if (!cancelAnims.current.has(lessonId)) {
       cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
     }
     const cancelData = cancelAnims.current.get(lessonId)!;
-    if (isCancelled && !isCancelling) {
-      // Already cancelled (from DB reload) — set to final state instantly
+    if (isCancelled && !isCancellingCard) {
       cancelData.anim.setValue(1);
     }
 
-    const cardInner = (interactive: boolean) => (
+    return (
       <>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
@@ -347,38 +360,37 @@ const LessonScreen: React.FC = () => {
           </View>
           <StatusBadge
             status={displayStatus}
-            disabled={!interactive || isMorphing || item.status === 'scheduled'}
-            onToggle={!interactive || isMorphing ? undefined : (nextStatus: LessonStatus) => handleStatusChange(item, nextStatus)}
+            disabled={!interactive || isMorphingCard || lesson.status === 'scheduled'}
+            onToggle={!interactive || isMorphingCard ? undefined : (nextStatus: LessonStatus) => handleStatusChange(lesson, nextStatus)}
           />
         </View>
-
         <View style={styles.cardBody}>
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
               <View style={styles.infoItem}>
                 <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.date}</Text>
+                <Text style={styles.infoText}>{lesson.date}</Text>
               </View>
               <View style={styles.infoItem}>
                 <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.duration}h</Text>
+                <Text style={styles.infoText}>{lesson.duration}h</Text>
               </View>
             </View>
-            {item.timeSlot ? (
+            {lesson.timeSlot ? (
               <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
                 <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
-                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{item.timeSlot}</Text>
+                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
               </View>
             ) : null}
           </View>
           <View style={styles.amountRow}>
             <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+            <Text style={styles.amountText}>{lesson.amount.toFixed(0)}元</Text>
           </View>
-          {item.notes ? (
+          {lesson.notes ? (
             <View style={styles.noteRow}>
               <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
-              <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
+              <Text style={styles.noteText} numberOfLines={2}>{lesson.notes}</Text>
             </View>
           ) : null}
           {showCancelAnim && interactive && (
@@ -401,11 +413,10 @@ const LessonScreen: React.FC = () => {
             </View>
           )}
         </View>
-
         <View style={styles.actions}>
-          {(item.status !== 'paid' && item.status !== 'cancelled') && (
+          {(lesson.status !== 'paid' && lesson.status !== 'cancelled') && (
             interactive ? (
-              <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(lesson)}>
                 <Ionicons name="pencil" size={18} color={Colors.primary} />
               </TouchableOpacity>
             ) : (
@@ -414,9 +425,9 @@ const LessonScreen: React.FC = () => {
               </View>
             )
           )}
-          {item.status === 'scheduled' && !isClassEnded(item) && (
+          {lesson.status === 'scheduled' && !isClassEnded(lesson) && (
             interactive ? (
-              <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(item)}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(lesson)}>
                 <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
               </TouchableOpacity>
             ) : (
@@ -425,18 +436,62 @@ const LessonScreen: React.FC = () => {
               </View>
             )
           )}
-          {interactive ? (
-            <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
+          {interactive && shatterMgr.activeId === null ? (
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(lesson.id)}>
               <Ionicons name="trash-outline" size={18} color={Colors.danger} />
             </TouchableOpacity>
           ) : (
             <View style={styles.actionButton}>
-              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+              <Ionicons name="trash-outline" size={18} color={interactive ? Colors.caption : Colors.danger} />
             </View>
           )}
         </View>
       </>
     );
+  };
+
+  const renderLesson = ({ item }: { item: Lesson }) => {
+    const student = getStudent(item.studentId);
+    const lessonId = item.id;
+
+    const isMorphing = morphing?.id === lessonId;
+    const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
+    const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
+    const isCancelled = item.status === 'cancelled';
+    const isCancelling = cancellingId === lessonId;
+    const showCancelAnim = isCancelled || isCancelling;
+    const isHighlighted = item.id === highlightedId;
+
+    if (!slideTestAnims.current.has(lessonId)) {
+      slideTestAnims.current.set(lessonId, new Animated.Value(0));
+    }
+    if (!slideOpacityAnims.current.has(lessonId)) {
+      slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
+    }
+
+    // Keep cancelAnims width updated for strikethrough
+    if (cancelAnims.current.has(lessonId)) {
+      cancelAnims.current.get(lessonId)!.width = cardWidthRef.current.get(lessonId) || 400;
+    }
+
+    // Collapse animation when shredding
+    const cardH = cardHeightRef.current.get(lessonId) || 200;
+    if (!collapseAnims.current.has(lessonId)) {
+      collapseAnims.current.set(lessonId, new Animated.Value(cardH));
+    }
+    const collapseAnim = collapseAnims.current.get(lessonId)!;
+    if (shatterMgr.activeId === lessonId && !collapseStarted.current.has(lessonId)) {
+      collapseStarted.current.add(lessonId);
+      collapseAnim.setValue(cardH);
+      Animated.timing(collapseAnim, {
+        toValue: 0, duration: 350, useNativeDriver: false, easing: Easing.out(Easing.cubic),
+      }).start();
+    }
+    if (shatterMgr.activeId !== lessonId) {
+      collapseStarted.current.delete(lessonId);
+    }
+
+    const cardInner = (interactive: boolean) => renderCardContent(item, interactive);
 
     const cardBg = showCancelAnim
       ? '#F3F4F6'
@@ -451,12 +506,19 @@ const LessonScreen: React.FC = () => {
       <Animated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          ...(shatterMgr.activeId === lessonId ? { overflow: 'visible' as const } : {}),
           opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
           ],
-        }]}
+        }, shatterMgr.activeId === lessonId ? {
+          backgroundColor: 'transparent',
+          borderLeftWidth: 0,
+          height: collapseAnim,
+          padding: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.lg], extrapolate: 'clamp' }),
+          marginBottom: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.md], extrapolate: 'clamp' }),
+          overflow: 'hidden',
+        } : null]}
+        ref={(el) => { if (el) cardRefs.current.set(lessonId, el); }}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           const w = e.nativeEvent.layout.width;
@@ -473,44 +535,17 @@ const LessonScreen: React.FC = () => {
         <View style={shatterMgr.activeId === lessonId ? { opacity: 0 } : null}>
           {cardInner(true)}
         </View>
-
-        {shatterMgr.activeId === lessonId && shatterMgr.stripsData.length > 0 && (
-          <>
-            {shatterMgr.stripsData.map((strip) => {
-              const cardW = cardWidthRef.current.get(lessonId) || 400;
-              const cardH = cardHeightRef.current.get(lessonId) || 200;
-              return (
-                <ShredderStrip
-                  key={`shred-${strip.index}`}
-                  index={strip.index}
-                  cardWidth={cardW}
-                  cardHeight={cardH}
-                  fallDist={strip.fallDist}
-                  driftX={strip.driftX}
-                  rotateDeg={strip.rotateDeg}
-                  delay={strip.delay}
-                  onDone={shatterMgr.onStripDone}
-                >
-                  <View style={[styles.shredInner, { width: cardW, borderLeftWidth: 4, borderLeftColor: borderColor }]}>
-                    {cardInner(false)}
-                  </View>
-                </ShredderStrip>
-              );
-            })}
-          </>
-        )}
       </Animated.View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} ref={containerRef}>
       <FlatList
         data={filteredLessons}
         renderItem={renderLesson}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
-        style={shatterMgr.activeId !== null ? { overflow: 'visible' as any } : undefined}
         ref={flatListRef}
         onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
         scrollEventThrottle={16}
@@ -634,6 +669,35 @@ const LessonScreen: React.FC = () => {
         </TouchableOpacity>
       )}
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.primary} />
+
+      {shredPortal && (() => {
+        const portalLesson = filteredLessons.find(l => l.id === shredPortal.lessonId);
+        if (!portalLesson) return null;
+        const pBorderColor = portalLesson.status === 'paid' ? Colors.paid : portalLesson.status === 'pendingPayment' ? Colors.pending : portalLesson.status === 'cancelled' ? Colors.caption : Colors.primary;
+        return (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, pointerEvents: 'none' }}>
+            <View style={{ position: 'absolute', top: shredPortal.pageY, left: shredPortal.pageX }}>
+              {shredPortal.strips.map((strip) => (
+                <ShredderStrip
+                  key={`portal-shred-${strip.index}`}
+                  index={strip.index}
+                  cardWidth={shredPortal.cardW}
+                  cardHeight={shredPortal.cardH}
+                  fallDist={strip.fallDist}
+                  driftX={strip.driftX}
+                  rotateDeg={strip.rotateDeg}
+                  delay={strip.delay}
+                  onDone={shatterMgr.onStripDone}
+                >
+                  <View style={[styles.shredInner, { width: shredPortal.cardW, borderLeftWidth: 4, borderLeftColor: pBorderColor }]}>
+                    {renderCardContent(portalLesson, false)}
+                  </View>
+                </ShredderStrip>
+              ))}
+            </View>
+          </View>
+        );
+      })()}
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
         <Text style={styles.formLabel}>选择学生</Text>
@@ -761,7 +825,7 @@ const LessonScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   filterRow: {
     flexDirection: 'row', gap: Spacing.sm,

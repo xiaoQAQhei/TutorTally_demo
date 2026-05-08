@@ -44,10 +44,22 @@ export function useShatterManager() {
   const [stripsData, setStripsData] = useState<ShatterStripConfig[]>([]);
   const onCompleteRef = useRef<(() => void) | null>(null);
   const doneCountRef = useRef(0);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolvedRef = useRef(false);
 
-  const triggerShatter = useCallback((id: number, cardHeight: number, onComplete: () => void) => {
+  const finish = useCallback(() => {
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
+    if (fallbackTimerRef.current) { clearTimeout(fallbackTimerRef.current); fallbackTimerRef.current = null; }
+    setActiveId(null);
+    setStripsData([]);
+    onCompleteRef.current?.();
+  }, []);
+
+  const triggerShatter = useCallback((id: number, cardHeight: number, onComplete: () => void): ShatterStripConfig[] => {
     onCompleteRef.current = onComplete;
     doneCountRef.current = 0;
+    resolvedRef.current = false;
     const strips: ShatterStripConfig[] = [];
     for (let i = 0; i < STRIP_COUNT; i++) {
       strips.push({
@@ -60,16 +72,20 @@ export function useShatterManager() {
     }
     setStripsData(strips);
     setActiveId(id);
-  }, []);
+    // Failsafe: force cleanup after max possible duration + buffer
+    const maxDelay = Math.max(...strips.map(s => s.delay));
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    fallbackTimerRef.current = setTimeout(finish, maxDelay + DURATION + 300);
+    return strips;
+  }, [finish]);
 
   const onStripDone = useCallback(() => {
+    if (resolvedRef.current) return;
     doneCountRef.current++;
     if (doneCountRef.current >= STRIP_COUNT) {
-      setActiveId(null);
-      setStripsData([]);
-      onCompleteRef.current?.();
+      finish();
     }
-  }, []);
+  }, [finish]);
 
   return { activeId, stripsData, triggerShatter, onStripDone };
 }
