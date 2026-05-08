@@ -334,6 +334,109 @@ const LessonScreen: React.FC = () => {
       cancelData.anim.setValue(1);
     }
 
+    const cardInner = (interactive: boolean) => (
+      <>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            {student && <StudentAvatar name={student.name} size={40} />}
+            <View>
+              <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
+              <Text style={styles.subject}>{student?.phone || ''}</Text>
+            </View>
+          </View>
+          <StatusBadge
+            status={displayStatus}
+            disabled={!interactive || isMorphing || item.status === 'scheduled'}
+            onToggle={!interactive || isMorphing ? undefined : (nextStatus: LessonStatus) => handleStatusChange(item, nextStatus)}
+          />
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <View style={styles.infoItem}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{item.date}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
+                <Text style={styles.infoText}>{item.duration}h</Text>
+              </View>
+            </View>
+            {item.timeSlot ? (
+              <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
+                <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
+                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{item.timeSlot}</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.amountRow}>
+            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
+            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
+          </View>
+          {item.notes ? (
+            <View style={styles.noteRow}>
+              <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
+              <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
+            </View>
+          ) : null}
+          {showCancelAnim && interactive && (
+            <View style={styles.strikethroughOverlay} pointerEvents="none">
+              <Animated.View style={[styles.strikethroughLine, {
+                width: cancelData.anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
+                }),
+              }]} />
+              <Animated.Text style={[styles.strikethroughLabel, {
+                opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
+              }]}>已取消</Animated.Text>
+            </View>
+          )}
+          {showCancelAnim && !interactive && isCancelled && (
+            <View style={styles.strikethroughOverlay} pointerEvents="none">
+              <View style={[styles.strikethroughLine, { width: cancelData.width > 0 ? cancelData.width + 20 : 400 }]} />
+              <Text style={styles.strikethroughLabel}>已取消</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.actions}>
+          {(item.status !== 'paid' && item.status !== 'cancelled') && (
+            interactive ? (
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
+                <Ionicons name="pencil" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="pencil" size={18} color={Colors.primary} />
+              </View>
+            )
+          )}
+          {item.status === 'scheduled' && !isClassEnded(item) && (
+            interactive ? (
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(item)}>
+                <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.actionButton}>
+                <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
+              </View>
+            )
+          )}
+          {interactive ? (
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
+              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.actionButton}>
+              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            </View>
+          )}
+        </View>
+      </>
+    );
+
     const cardBg = showCancelAnim
       ? '#F3F4F6'
       : isHighlighted
@@ -368,80 +471,7 @@ const LessonScreen: React.FC = () => {
         }}
       >
         <View style={shatterMgr.activeId === lessonId ? { opacity: 0 } : null}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            {student && <StudentAvatar name={student.name} size={40} />}
-            <View>
-              <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.subject}>{student?.phone || ''}</Text>
-            </View>
-          </View>
-          <StatusBadge
-              status={displayStatus}
-              disabled={isMorphing || item.status === 'scheduled'}
-              onToggle={isMorphing ? undefined : (nextStatus) => handleStatusChange(item, nextStatus)}
-            />
-        </View>
-
-        <View style={styles.cardBody}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoLeft}>
-              <View style={styles.infoItem}>
-                <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.date}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{item.duration}h</Text>
-              </View>
-            </View>
-            {item.timeSlot ? (
-              <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
-                <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
-                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{item.timeSlot}</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.amountRow}>
-            <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-            <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
-          </View>
-          {item.notes ? (
-            <View style={styles.noteRow}>
-              <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
-              <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
-            </View>
-          ) : null}
-          {showCancelAnim && (
-            <View style={styles.strikethroughOverlay} pointerEvents="none">
-              <Animated.View style={[styles.strikethroughLine, {
-                width: cancelData.anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
-                }),
-              }]} />
-              <Animated.Text style={[styles.strikethroughLabel, {
-                opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
-              }]}>已取消</Animated.Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.actions}>
-          {(item.status !== 'paid' && item.status !== 'cancelled') && (
-            <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
-              <Ionicons name="pencil" size={18} color={Colors.primary} />
-            </TouchableOpacity>
-          )}
-          {item.status === 'scheduled' && !isClassEnded(item) && (
-            <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(item)}>
-              <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
-            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-          </TouchableOpacity>
-        </View>
+          {cardInner(true)}
         </View>
 
         {shatterMgr.activeId === lessonId && shatterMgr.stripsRef.current.length > 0 && (
@@ -465,61 +495,7 @@ const LessonScreen: React.FC = () => {
                   width: cardWidthRef.current.get(lessonId) || 400,
                   left: -(strip.offsetPx / 100 * (cardWidthRef.current.get(lessonId) || 400)),
                 }]}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardHeaderLeft}>
-                      {student && <StudentAvatar name={student.name} size={40} />}
-                      <View>
-                        <Text style={styles.studentName}>{student?.name || '?'}</Text>
-                        <Text style={styles.subject}>{student?.phone || ''}</Text>
-                      </View>
-                    </View>
-                    <StatusBadge status={displayStatus} disabled={true} />
-                  </View>
-                  <View style={styles.cardBody}>
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLeft}>
-                        <View style={styles.infoItem}>
-                          <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                          <Text style={styles.infoText}>{item.date}</Text>
-                        </View>
-                        <View style={styles.infoItem}>
-                          <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                          <Text style={styles.infoText}>{item.duration}h</Text>
-                        </View>
-                      </View>
-                      {item.timeSlot ? (
-                        <View style={styles.timeSlotBadge}>
-                          <Ionicons name="time-outline" size={25} color={Colors.primary} />
-                          <Text style={styles.timeSlotBadgeText}>{item.timeSlot}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.amountRow}>
-                      <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-                      <Text style={styles.amountText}>{item.amount.toFixed(0)}元</Text>
-                    </View>
-                    {item.notes ? (
-                      <View style={styles.noteRow}>
-                        <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
-                        <Text style={styles.noteText} numberOfLines={2}>{item.notes}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.actions}>
-                    {(item.status !== 'paid' && item.status !== 'cancelled') && (
-                      <View style={styles.actionButton}>
-                        <Ionicons name="pencil" size={18} color={Colors.primary} />
-                      </View>
-                    )}
-                    {item.status === 'scheduled' && !isClassEnded(item) && (
-                      <View style={styles.actionButton}>
-                        <Ionicons name="close-circle-outline" size={18} color={Colors.pending} />
-                      </View>
-                    )}
-                    <View style={styles.actionButton}>
-                      <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-                    </View>
-                  </View>
+                  {cardInner(false)}
                 </View>
               </Animated.View>
             ))}
@@ -823,6 +799,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
+    position: 'relative' as const,
   },
   cardHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
@@ -868,7 +845,6 @@ const styles = StyleSheet.create({
     top: 0,
     backgroundColor: Colors.card,
     padding: Spacing.lg,
-    paddingBottom: 0,
     borderRadius: BorderRadius.card,
   },
   strikethroughLabel: {
