@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-09 14:56 | auto: 05-09 14:56 | package-lock.json 
+- package-lock.json
+
 ## 2026-05-09 14:09 | auto: 05-09 14:09 | .claude/settings.local.json android/ 
 - .claude/settings.local.json
 - android/
