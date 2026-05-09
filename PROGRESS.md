@@ -1,7 +1,7 @@
 # 项目进程记录
 
 > 家教课程账单应用 (React Native / Expo)
-> 最后更新：2026-05-09
+> 最后更新：2026-05-09 19:50
 
 ## 当前状态
 
@@ -19,11 +19,19 @@
 
 ### 下次计划
 
-1. 转变动画 root cause 排查
-2. 删除动画优化
-3. Android 模拟器安装 + 原生功能测试
+1. 继续调试 EAS Android 构建 — 验证 `sdk-49` 镜像是否能解决 Gradle 失败
+2. 转变动画 root cause 排查
+3. 删除动画优化
+4. Android 模拟器安装 + 原生功能测试
 
 ## 已完成功能
+
+### 2026-05-09 会话
+- [x] EAS 构建失败排查：7 次 Android 构建全部 Gradle 错误，定位为 SDK 49 镜像不匹配（需 Java 11，默认选 Java 17）
+- [x] 创建 .easignore 排除 android/ ios/ node_modules/.cache/
+- [x] eas.json preview profile 指定 `"image": "sdk-49"`
+- [x] 清理多个残留 EAS 构建进程
+- [ ] EAS 构建验证（用户自行测试中）
 
 ### v2.0 核心
 - [x] 数据模型 v2：StudentSubject / RateHistory / RecurringRule / LessonStatus 四态
