@@ -21,3 +21,6 @@
     at async refreshConfig (http://127.0.0.1:6099/webui/assets/use-config-Bk4JqfTs.js:1:540)
 [    4808ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_CLOSED @ https://hitokoto.152710.xyz/:0
 [   91655ms] [ERROR] ne @ http://127.0.0.1:6099/webui/assets/react-dom-CwaHFgt6.js:236
+[  501913ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[  602604ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:6099/api/QQLogin/GetQQLoginInfo:0
+[  602624ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60

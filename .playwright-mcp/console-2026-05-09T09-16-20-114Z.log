@@ -1,0 +1,22 @@
+[     127ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+    at fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:2094)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+[     165ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[     184ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[     185ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+    at fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:2094)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+[     567ms] [ERROR] SSE连接出错: I @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50
+[     567ms] [ERROR] EventSource's response has a Content-Type specifying an unsupported type: application/json; charset=utf-8. Aborting the connection. @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:43
+[     590ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async d.getOB11Config (http://127.0.0.1:6099/webui/assets/qq_manager-8s2H0Sdl.js:1:85)
+    at async refreshConfig (http://127.0.0.1:6099/webui/assets/use-config-Bk4JqfTs.js:1:540)
+[   35011ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_CLOSED @ https://hitokoto.152710.xyz/:0
