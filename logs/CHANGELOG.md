@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-09 14:09 | auto: 05-09 14:09 | .claude/settings.local.json android/ 
+- .claude/settings.local.json
+- android/
+
 ## 2026-05-09 13:17 | auto: 05-09 13:17 | app.json eas.json "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" 
 - app.json
 - eas.json
