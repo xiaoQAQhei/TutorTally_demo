@@ -1,4 +1,13 @@
 # 改动日志
+
+## [2026-05-09 19:42] EAS 构建配置和项目清理
+- 新增 .easignore 文件，忽略 android/、ios/ 和 node_modules/.cache/，加速 EAS 构建上传
+- eas.json preview 配置指定 Android SDK 49 镜像
+- package.json start 脚本改为 `expo run:android/ios`，新增 expo-splash-screen 依赖
+- 删除 android/.idea/workspace.xml（IDE 本地配置，无需入库）
+- .claude/settings.local.json 添加 storage.googleapis.com 的 WebFetch 权限
+  - 文件: .easignore, eas.json, package.json, package-lock.json, android/.idea/workspace.xml, .claude/settings.local.json, .playwright-mcp/console-2026-05-09T09-16-20-114Z.log
+
 ## 2026-05-09 17:17 | auto: 05-09 17:17 | .playwright-mcp/console-2026-05-09T09-05-40-267Z.log .playwright-mcp/console-2026-05-09T09-16-20-114Z.log .playwright-mcp/page-2026-05-09T09-16-21-310Z.yml 
 - .playwright-mcp/console-2026-05-09T09-05-40-267Z.log
 - .playwright-mcp/console-2026-05-09T09-16-20-114Z.log
