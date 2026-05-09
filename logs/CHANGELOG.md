@@ -1,4 +1,7 @@
 # 改动日志
+## 2026-05-09 16:52 | auto: 05-09 16:52 | .playwright-mcp/ 
+- .playwright-mcp/
+
 ## 2026-05-09 15:00 | auto: 05-09 15:00 | package-lock.json package.json 
 - package-lock.json
 - package.json
