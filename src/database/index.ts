@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+import { nanoid } from 'nanoid/non-secure';
 import { Student, StudentSubject, RateHistory, Lesson, LessonStatus, Payment, RecurringRule } from '../models';
 
 let db: any = null;

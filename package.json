@@ -26,7 +26,7 @@
     "nanoid": "^3.3.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.72.0",
+    "react-native": "0.72.10",
     "react-native-gesture-handler": "~2.12.0",
     "react-native-gifted-charts": "^1.4.76",
     "react-native-linear-gradient": "^2.8.3",
@@ -37,8 +37,11 @@
     "react-native-web": "~0.19.6",
     "xlsx-js-style": "^1.2.0"
   },
+  "overrides": {
+    "@babel/traverse": "7.25.9"
+  },
   "devDependencies": {
-    "@babel/core": "~7.22.0",
+    "@babel/core": "7.25.9",
     "@types/react": "~18.2.0",
     "typescript": "^5.1.0"
   },
