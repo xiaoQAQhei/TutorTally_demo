@@ -1,3 +1,13 @@
+## [2026-05-11 16:04] 子元素硬编码尺寸改用响应式单位
+## 2026-05-11 16:05 | auto: 05-11 16:05 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+- HomeScreen: recentTimeSlot 的 padding/borderRadius 改用 Spacing/BorderRadius，miniBadge/confirmBadge 的 fontSize 改用 FontSize.small，gap 改用 Spacing.xs
+- LessonScreen: filterCount 尺寸改用 scale()，timeSlotBadge 的 gap 改用 Spacing
+- TimeRangePicker: colGap 改用 Spacing.sm，confirmBtn 高度改用 scale(50) 内联样式
+- Toast: paddingBottom 改用 verticalScale(70)
+  - 文件: src/components/TimeRangePicker.tsx, src/components/Toast.tsx, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx
+
 ## [2026-05-11 15:45] HomeScreen 和 LessonScreen 统一响应式 maxContentWidth 模式
 ## 2026-05-11 15:45 | auto: 05-11 15:45 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
