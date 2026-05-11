@@ -7,6 +7,7 @@ import { useAction } from '../contexts/ActionContext';
 import { exportAllToExcel } from '../utils/export';
 import { pickAndImportCsv } from '../utils/import';
 import { generateStudentPdf } from '../utils/pdf';
+import { useResponsive } from '../utils/responsive';
 
 type ExportMode = 'all' | 'month' | 'student' | null;
 
@@ -19,6 +20,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
   const [exportMode, setExportMode] = useState<ExportMode>(null);
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const { maxContentWidth } = useResponsive();
 
   const handleExport = async (mode: ExportMode) => {
     setExportMode(null);
@@ -46,7 +48,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>数据管理</Text>
         {menuItems.map((item, i) => (
@@ -107,7 +109,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
   list: { padding: Spacing.xl },
   sectionTitle: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.caption, marginBottom: Spacing.md, textTransform: 'uppercase' },
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md, gap: Spacing.md },
@@ -120,7 +122,7 @@ const styles = StyleSheet.create({
   aboutDesc: { fontSize: FontSize.small, color: Colors.caption, marginTop: Spacing.xs },
   aboutDivider: { width: 40, height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.md },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center' },
-  exportModal: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, width: '80%' },
+  exportModal: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, width: '80%', maxWidth: 400 },
   modalTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.lg, textAlign: 'center' },
   exportOption: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   exportOptionText: { fontSize: FontSize.body, color: Colors.title },

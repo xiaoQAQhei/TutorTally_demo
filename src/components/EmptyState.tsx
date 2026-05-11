@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../styles/theme';
 import { useFadeIn } from '../styles/animations';
+import { useResponsive, moderateScale } from '../utils/responsive';
 
 interface EmptyStateProps {
   icon: string;
@@ -20,11 +21,15 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   onButtonPress,
 }) => {
   const { opacity, translateY } = useFadeIn();
+  const { isTablet } = useResponsive();
+
+  const iconSize = moderateScale(isTablet ? 110 : 100);
+  const iconInner = isTablet ? 64 : 56;
 
   return (
     <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]}>
-      <View style={styles.iconContainer}>
-        <Ionicons name={icon as any} size={56} color={Colors.caption} />
+      <View style={[styles.iconContainer, { width: iconSize, height: iconSize, borderRadius: iconSize / 2 }]}>
+        <Ionicons name={icon as any} size={iconInner} color={Colors.caption} />
       </View>
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -45,9 +50,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     backgroundColor: Colors.divider,
     justifyContent: 'center',
     alignItems: 'center',

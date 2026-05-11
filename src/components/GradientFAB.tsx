@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Shadows, BorderRadius } from '../styles/theme';
 import { usePulse, useBounce } from '../styles/animations';
+import { useResponsive, moderateScale } from '../utils/responsive';
 
 interface GradientFABProps {
   icon?: string;
@@ -15,28 +16,34 @@ const GradientFAB: React.FC<GradientFABProps> = ({
   icon = 'add',
   onPress,
   color = Colors.primary,
-  position = { bottom: 24, right: 24 },
+  position,
 }) => {
   const { pulse } = usePulse();
   const { scale, bounce } = useBounce(onPress);
+  const { isTablet, contentPaddingH } = useResponsive();
+
+  const btnSize = moderateScale(60);
+  const iconSize = isTablet ? 32 : 28;
+  const defaultPos = { bottom: isTablet ? 32 : 24, right: isTablet ? 24 : contentPaddingH + 4 };
+  const pos = position ?? defaultPos;
 
   return (
     <Animated.View
       style={[
         styles.wrapper,
         {
-          bottom: position.bottom,
-          right: position.right,
+          bottom: pos.bottom,
+          right: pos.right,
           transform: [{ scale: Animated.multiply(pulse, scale) }],
         },
       ]}
     >
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: color, shadowColor: color }]}
+        style={[styles.button, { backgroundColor: color, shadowColor: color, width: btnSize, height: btnSize }]}
         activeOpacity={0.9}
         onPress={bounce}
       >
-        <Ionicons name={icon as any} size={28} color={Colors.white} />
+        <Ionicons name={icon as any} size={iconSize} color={Colors.white} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -48,8 +55,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   button: {
-    width: 60,
-    height: 60,
     borderRadius: BorderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',

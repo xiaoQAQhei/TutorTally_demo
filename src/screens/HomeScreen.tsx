@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, MAX_CONTENT_WIDTH } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, MAX_CONTENT_WIDTH, useResponsive } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -298,15 +298,16 @@ const QuickActionButton: React.FC<{
   onPress: () => void;
 }> = ({ item, onPress }) => {
   const { scale, bounce } = useBounce(onPress);
+  const { isTablet } = useResponsive();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={bounce}
-      style={[styles.quickAction, { backgroundColor: item.color + '12' }]}
+      style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? Spacing.xl : Spacing.lg }]}
     >
       <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
         <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22' }]}>
-          <Ionicons name={item.icon as any} size={20} color={item.color} />
+          <Ionicons name={item.icon as any} size={isTablet ? 24 : 20} color={item.color} />
         </View>
         <Text style={styles.quickActionLabel}>{item.label}</Text>
       </Animated.View>
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.lg, gap: Spacing.md,
   },
   greeting: { fontSize: FontSize.h1, fontWeight: FontWeight.bold, color: Colors.title },
   date: { fontSize: FontSize.caption, color: Colors.caption, marginTop: Spacing.xs },
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
   overviewLarge: { flex: 0.55 },
   overviewSmall: { flex: 0.45 },
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%' },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%', maxWidth: 400 },
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },

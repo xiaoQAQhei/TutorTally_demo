@@ -9,10 +9,12 @@ import GradientFAB from '../components/GradientFAB';
 import Toast from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 const RecurringRulesScreen: React.FC = () => {
+  const { maxContentWidth } = useResponsive();
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
@@ -143,7 +145,7 @@ const RecurringRulesScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={styles.list}
         ListEmptyComponent={<EmptyState icon="repeat-outline" title="没有周期规则" subtitle="创建规则自动排课" buttonLabel="创建规则" onButtonPress={() => { resetForm(); setModalVisible(true); }} />}
       />
@@ -211,7 +213,7 @@ const RecurringRulesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },

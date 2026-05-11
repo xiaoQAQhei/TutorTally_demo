@@ -12,6 +12,7 @@ import { ActionProvider } from './contexts/ActionContext';
 import { initDatabase, migrateFromV1 } from './database';
 import { requestPermission, scheduleAllReminders } from './utils/notifications';
 import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
+import { useResponsive, rem } from './utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +26,7 @@ const TAB_ICONS: Record<string, [string, string]> = {
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { isTablet } = useResponsive();
 
   useEffect(() => {
     const setupDatabase = async () => {
@@ -58,14 +60,14 @@ const App: React.FC = () => {
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.caption,
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: rem(11),
             fontWeight: FontWeight.medium,
           },
           tabBarStyle: {
             backgroundColor: Colors.white,
             borderTopWidth: 0,
-            height: 60,
-            paddingBottom: 8,
+            height: isTablet ? 70 : 60,
+            paddingBottom: isTablet ? 12 : 8,
             paddingTop: 6,
             ...Shadows.topBar,
           },

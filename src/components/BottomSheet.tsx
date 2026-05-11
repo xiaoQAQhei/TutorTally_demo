@@ -1,12 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, Animated,
-  Dimensions, ScrollView,
+  ScrollView, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface BottomSheetProps {
   visible: boolean;
@@ -18,12 +16,14 @@ interface BottomSheetProps {
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, children, heightFactor = 0.82, scrollable = true }) => {
-  const sheetHeight = SCREEN_HEIGHT * heightFactor;
+  const { height: screenH } = useWindowDimensions();
+  const sheetHeight = useMemo(() => screenH * heightFactor, [screenH, heightFactor]);
   const translateY = useRef(new Animated.Value(sheetHeight)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      translateY.setValue(sheetHeight);
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0, useNativeDriver: true, speed: 14, bounciness: 4,
@@ -42,7 +42,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, chil
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, sheetHeight]);
 
   if (!visible) return null;
 

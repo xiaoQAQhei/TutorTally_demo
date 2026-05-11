@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, BorderRadius, Shadows, Spacing } from '../styles/theme';
 import { useFadeIn, useScale } from '../styles/animations';
+import { useResponsive, moderateScale } from '../utils/responsive';
 
 interface StatCardProps {
   icon: string;
@@ -21,6 +22,10 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const { opacity, translateY } = useFadeIn();
   const { scale, scaleDown, scaleUp } = useScale();
+  const { isTablet } = useResponsive();
+
+  const iconSize = isTablet ? 26 : 22;
+  const iconBox = moderateScale(isTablet ? 48 : 42);
 
   const content = (
     <Animated.View
@@ -30,8 +35,8 @@ const StatCard: React.FC<StatCardProps> = ({
         { opacity, transform: [{ translateY }] },
       ]}
     >
-      <View style={[styles.iconContainer, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon as any} size={22} color={color} />
+      <View style={[styles.iconContainer, { backgroundColor: color + '18', width: iconBox, height: iconBox }]}>
+        <Ionicons name={icon as any} size={iconSize} color={color} />
       </View>
       <Text style={styles.label}>{label}</Text>
       <Text style={[styles.value, { color: Colors.title }]}>{value}</Text>
@@ -62,8 +67,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   iconContainer: {
-    width: 42,
-    height: 42,
     borderRadius: BorderRadius.iconContainer,
     justifyContent: 'center',
     alignItems: 'center',

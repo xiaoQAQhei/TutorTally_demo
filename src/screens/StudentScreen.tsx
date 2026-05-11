@@ -13,8 +13,10 @@ import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
   SubjectColorPalette,
 } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 const StudentScreen: React.FC = () => {
+  const { maxContentWidth } = useResponsive();
   const [students, setStudents] = useState<Student[]>([]);
   const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -138,7 +140,7 @@ const StudentScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <FlatList
         data={students}
         renderItem={renderStudent}
@@ -215,7 +217,7 @@ const StudentScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,

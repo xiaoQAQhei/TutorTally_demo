@@ -1,76 +1,167 @@
-import { Dimensions, PixelRatio, Platform } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import { Dimensions, PixelRatio, Platform, ScaledSize } from 'react-native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// ── Breakpoint system ──────────────────────────────────────────────
+export type Breakpoint = 'sm' | 'md' | 'lg';
 
-// 基于标准设计稿的尺寸（一般按 iPhone X/11/12 等 375x812 算）
+const BP_SM_MAX = 375;   // small phone (iPhone SE, etc.)
+const BP_MD_MAX = 768;   // tablet threshold
+
+function calcBreakpoint(width: number): Breakpoint {
+  if (width < BP_SM_MAX) return 'sm';
+  if (width < BP_MD_MAX) return 'md';
+  return 'lg';
+}
+
+// ── Base dimensions (iPhone 11/12/13 as design reference) ──────
 const BASE_WIDTH = 375;
 const BASE_HEIGHT = 812;
 
-/**
- * 获取屏幕宽度的百分比尺寸 (类似 CSS 的 vw)
- * @param percent 百分比数值 (0-100)
- */
-export const vw = (percent: number) => {
-  return (SCREEN_WIDTH * percent) / 100;
-};
+// ── Static getters (initial values) ─────────────────────────────────
+let _window: ScaledSize = Dimensions.get('window');
+let _screen: ScaledSize = Dimensions.get('screen');
 
-/**
- * 获取屏幕高度的百分比尺寸 (类似 CSS 的 vh)
- * @param percent 百分比数值 (0-100)
- */
-export const vh = (percent: number) => {
-  return (SCREEN_HEIGHT * percent) / 100;
-};
+export function getWindow() { return _window; }
+export function getScreen() { return _screen; }
 
-/**
- * 根据屏幕宽度进行比例缩放
- * 适用于：宽、高、间距(margin/padding)
- * @param size 设计稿上的像素值
- */
-export const scale = (size: number) => {
-  return (SCREEN_WIDTH / BASE_WIDTH) * size;
-};
+/** Scale factor based on current width relative to base */
+export const scale = (size: number) => (_window.width / BASE_WIDTH) * size;
 
-/**
- * 根据屏幕高度进行比例缩放
- * @param size 设计稿上的像素值
- */
-export const verticalScale = (size: number) => {
-  return (SCREEN_HEIGHT / BASE_HEIGHT) * size;
-};
+/** Scale based on height */
+export const verticalScale = (size: number) => (_window.height / BASE_HEIGHT) * size;
 
-/**
- * 缓和缩放：在平板或大屏上不会缩放得过大
- * @param size 设计稿上的像素值
- * @param factor 缩放因子 (默认 0.5)
- */
-export const moderateScale = (size: number, factor = 0.5) => {
-  return size + (scale(size) - size) * factor;
-};
+/** Moderate scale: dampened on large screens */
+export const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
 
-/**
- * 字体缩放 (类似 CSS 的 rem/em，结合了 PixelRatio 以保证文字清晰)
- * 适用于：fontSize, lineHeight
- * @param size 设计稿上的像素值
- */
+/** Font size: width-scaled + pixel-rounded */
 export const rem = (size: number) => {
   const newSize = scale(size);
   if (Platform.OS === 'ios') {
     return Math.round(PixelRatio.roundToNearestPixel(newSize));
-  } else {
-    return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
   }
+  return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
 };
 
-/**
- * 判断当前设备是否为平板尺寸
- */
-export const isTablet = () => {
-  return SCREEN_WIDTH >= 768;
-};
+/** % of screen width (like CSS vw) */
+export const vw = (percent: number) => (_window.width * percent) / 100;
+
+/** % of screen height (like CSS vh) */
+export const vh = (percent: number) => (_window.height * percent) / 100;
+
+/** Current breakpoint (snapshot) */
+export function currentBreakpoint(): Breakpoint {
+  return calcBreakpoint(_window.width);
+}
+
+/** Tablet check (snapshot) */
+export function isTablet(): boolean {
+  return _window.width >= BP_MD_MAX;
+}
+
+/** Max content width for preventing infinite stretch on wide screens */
+export function maxContentWidth(): number {
+  return _window.width >= BP_MD_MAX ? 600 : _window.width;
+}
+
+// Keep exported constant for non-reactive usage (backward compat)
+export const MAX_CONTENT_WIDTH = maxContentWidth();
+
+// ── Reactive Hook ───────────────────────────────────────────────────
+export interface ResponsiveInfo {
+  width: number;
+  height: number;
+  bp: Breakpoint;
+  isTablet: boolean;
+  isSmallPhone: boolean;
+  maxContentWidth: number;
+  fontScale: number;
+  orientation: 'portrait' | 'landscape';
+  /** Safe horizontal padding for content containers */
+  contentPaddingH: number;
+}
+
+let _responsiveCache: ResponsiveInfo | null = null;
+let _listeners = new Set<() => void>();
+
+function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
+  const bp = calcBreakpoint(win.width);
+  return {
+    width: win.width,
+    height: win.height,
+    bp,
+    isTablet: win.width >= BP_MD_MAX,
+    isSmallPhone: win.width < BP_SM_MAX,
+    maxContentWidth: win.width >= BP_MD_MAX ? 600 : win.width,
+    fontScale: win.fontScale ?? PixelRatio.getFontScale(),
+    orientation: win.width > win.height ? 'landscape' : 'portrait',
+    contentPaddingH:
+      bp === 'sm' ? 12 :
+      bp === 'md' ? 16 :
+      20,
+  };
+}
+
+function notifyListeners() {
+  const info = buildResponsiveInfo(_window);
+  _responsiveCache = info;
+  _listeners.forEach((fn) => fn());
+}
+
+Dimensions.addEventListener('change', ({ window: win }) => {
+  _window = win;
+  _screen = Dimensions.get('screen');
+  // Update the static MAX_CONTENT_WIDTH constant
+  (MAX_CONTENT_WIDTH as number) = _window.width >= BP_MD_MAX ? 600 : _window.width;
+  notifyListeners();
+});
 
 /**
- * 获取内容区域的最大宽度限制
- * 在大屏幕（平板、Web）上防止内容被无限拉长
+ * React hook: returns reactive ResponsiveInfo updated on dimension change.
  */
-export const MAX_CONTENT_WIDTH = isTablet() ? 600 : SCREEN_WIDTH;
+export function useResponsive(): ResponsiveInfo {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const listener = () => forceUpdate((n) => n + 1);
+    _listeners.add(listener);
+    return () => { _listeners.delete(listener); };
+  }, []);
+
+  return _responsiveCache ?? buildResponsiveInfo(_window);
+}
+
+/**
+ * Returns scaling helpers bound to current dimensions (for use in render).
+ * Use these instead of the module-level scale()/rem()/etc. for truly reactive sizing.
+ */
+export function useScaleHelpers() {
+  const { width, height } = useResponsive();
+
+  return useMemo(() => ({
+    scale: (size: number) => (width / BASE_WIDTH) * size,
+    verticalScale: (size: number) => (height / BASE_HEIGHT) * size,
+    moderateScale: (size: number, factor = 0.5) => {
+      const s = (width / BASE_WIDTH) * size;
+      return size + (s - size) * factor;
+    },
+    rem: (size: number) => {
+      const ns = (width / BASE_WIDTH) * size;
+      return Platform.OS === 'ios'
+        ? Math.round(PixelRatio.roundToNearestPixel(ns))
+        : Math.round(PixelRatio.roundToNearestPixel(ns)) - 1;
+    },
+    vw: (pct: number) => (width * pct) / 100,
+    vh: (pct: number) => (height * pct) / 100,
+  }), [width, height]);
+}
+
+// ── Responsive value helper (breakpoint-based) ──────────────────────
+/**
+ * Returns a different value for each breakpoint.
+ * Usage: bpValue({ sm: 12, md: 16, lg: 20 })
+ */
+export function bpValue<T>(values: Partial<Record<Breakpoint, T>> & { default: T }): T {
+  const bp = currentBreakpoint();
+  return values[bp] ?? values.default;
+}

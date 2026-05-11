@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   filterRow: {
-    flexDirection: 'row', gap: Spacing.sm,
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
   filterChip: {
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     ...Shadows.standard,
   },
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%' },
+  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%', maxWidth: 400 },
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },

@@ -4,6 +4,7 @@ import {
   NativeSyntheticEvent, NativeScrollEvent, Animated,
 } from 'react-native';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 const ITEM_HEIGHT = 36;
 const VISIBLE_ITEMS = 3;
@@ -255,6 +256,9 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     }
   };
 
+  const { height: screenH } = useResponsive();
+  const sheetHeight = Math.min(screenH * 0.6, 500);
+
   const totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
   const isValid = totalMinutes > 0;
   const durationText = isValid
@@ -263,7 +267,6 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
       : `${totalMinutes} 分钟`
     : '结束时间不能早于或等于开始时间';
 
-  const sheetHeight = 500;
   const translateY = useRef(new Animated.Value(sheetHeight)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 

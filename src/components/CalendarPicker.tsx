@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 const CELL_GAP = Spacing.xs;
-const MAX_CARD_WIDTH = 400;
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -22,8 +22,9 @@ const formatDate = (y: number, m: number, d: number) =>
   `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
 const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfirm, onClose }) => {
-  const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = Math.min(screenWidth - Spacing.xl * 2, MAX_CARD_WIDTH);
+  const { width: screenWidth, isTablet } = useResponsive();
+  const maxCardW = isTablet ? 480 : Math.min(screenWidth - Spacing.xl * 2, 400);
+  const cardWidth = Math.min(screenWidth - Spacing.xl * 2, maxCardW);
   const cellSize = Math.floor((cardWidth - Spacing.lg * 2 - CELL_GAP * 7) / 7);
 
   const today = new Date();

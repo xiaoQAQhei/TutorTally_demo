@@ -1,4 +1,4 @@
-import { scale, rem, moderateScale } from '../utils/responsive';
+import { scale, rem, moderateScale, Breakpoint, bpValue, currentBreakpoint } from '../utils/responsive';
 
 export const Colors = {
   // Functional colors
@@ -68,6 +68,7 @@ export function getSubjectColor(subject: string): string {
   return DefaultSubjectColors[subject] || SubjectColorPalette[0];
 }
 
+// ── Base spacing (phone baseline, scaled from 375) ──────────────────
 export const Spacing = {
   xs: scale(4),
   sm: scale(8),
@@ -78,6 +79,24 @@ export const Spacing = {
   xxxl: scale(32),
 } as const;
 
+// ── Breakpoint-aware spacing (larger on tablets) ────────────────────
+export function getSpacing(): typeof Spacing {
+  const bp = currentBreakpoint();
+  if (bp === 'lg') {
+    return {
+      xs: scale(6),
+      sm: scale(12),
+      md: scale(16),
+      lg: scale(20),
+      xl: scale(28),
+      xxl: scale(32),
+      xxxl: scale(40),
+    };
+  }
+  return Spacing;
+}
+
+// ── Base font sizes (phone baseline) ────────────────────────────────
 export const FontSize = {
   h1: rem(28),
   h2: rem(22),
@@ -87,6 +106,23 @@ export const FontSize = {
   small: rem(11),
   amount: rem(20),
 } as const;
+
+// ── Breakpoint-aware font sizes (slightly larger on tablets) ───────
+export function getFontSize(): typeof FontSize {
+  const bp = currentBreakpoint();
+  if (bp === 'lg') {
+    return {
+      h1: rem(32),
+      h2: rem(26),
+      h3: rem(20),
+      body: rem(17),
+      caption: rem(14),
+      small: rem(12),
+      amount: rem(24),
+    };
+  }
+  return FontSize;
+}
 
 export const FontWeight = {
   bold: '700' as const,

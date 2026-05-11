@@ -6,6 +6,7 @@ import { getLessonsByStudentId, getSubjectsByStudentId } from '../database';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 interface Props {
   student: Student | null;
@@ -29,6 +30,7 @@ const MONTH_NAMES: Record<string, string> = {
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const { maxContentWidth } = useResponsive();
 
   useEffect(() => {
     if (student) {
@@ -65,7 +67,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: maxContentWidth }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -152,7 +154,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.card, paddingTop: 50, paddingBottom: Spacing.md,

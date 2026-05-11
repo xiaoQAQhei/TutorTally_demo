@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 interface ToastProps {
   visible: boolean;
@@ -13,6 +14,9 @@ interface ToastProps {
 const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismiss }) => {
   const translateY = useRef(new Animated.Value(100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const { isTablet, maxContentWidth } = useResponsive();
+
+  const toastMaxWidth = isTablet ? Math.min(maxContentWidth * 0.8, 500) : undefined;
 
   useEffect(() => {
     if (visible) {
@@ -40,7 +44,7 @@ const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismi
     <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
       <View style={styles.wrapper}>
         <Animated.View
-          style={[styles.container, { opacity, transform: [{ translateY }] }, type === 'success' ? styles.successBg : styles.errorBg]}
+          style={[styles.container, { opacity, transform: [{ translateY }] }, type === 'success' ? styles.successBg : styles.errorBg, toastMaxWidth ? { maxWidth: toastMaxWidth, alignSelf: 'center' } : null]}
         >
           <Ionicons name={iconName} size={18} color={Colors.white} />
           <Text style={styles.message}>{message}</Text>

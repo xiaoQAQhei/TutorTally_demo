@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { BarChart } from 'react-native-gifted-charts';
@@ -10,6 +10,7 @@ import StudentBillingDetailScreen from './StudentBillingDetailScreen';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
 } from '../styles/theme';
+import { useResponsive } from '../utils/responsive';
 
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
@@ -28,8 +29,10 @@ const StatsScreen: React.FC = () => {
   const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 });
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
-  const { width: screenW } = useWindowDimensions();
-  const chartAvail = screenW - Spacing.xl * 2 - Spacing.lg * 2;
+  const [chartCardWidth, setChartCardWidth] = useState(0);
+  const { maxContentWidth, isTablet } = useResponsive();
+
+  const chartAvail = chartCardWidth > 0 ? chartCardWidth - Spacing.lg * 2 : 280;
   const chartBarW = Math.floor(chartAvail / 12);
   const chartGap = chartBarW;
   const chartInitial = Math.floor(chartBarW / 2);
@@ -182,7 +185,7 @@ const StatsScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Month Selector */}
         <View style={styles.monthSelector}>
@@ -219,11 +222,11 @@ const StatsScreen: React.FC = () => {
         </View>
 
         {/* Bar Chart */}
-        <View style={[styles.chartCard, Shadows.standard]}>
+        <View style={[styles.chartCard, Shadows.standard]} onLayout={(e: LayoutChangeEvent) => setChartCardWidth(e.nativeEvent.layout.width)}>
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
           <View style={styles.chartWrap}>
             <BarChart
-              key={`${selectedMonth}-${screenW}`}
+              key={`${selectedMonth}-${chartCardWidth}`}
               data={chartData.map((d) => ({
                 value: d.value,
                 label: d.label,
@@ -342,7 +345,7 @@ const StatsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
   scrollContent: { padding: Spacing.xl, paddingBottom: 100 },
 
   // Month selector
@@ -362,11 +365,11 @@ const styles = StyleSheet.create({
 
   // Compact stats bar
   statsBar: {
-    flexDirection: 'row', alignItems: 'stretch',
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch',
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     paddingVertical: Spacing.md, marginBottom: Spacing.xl,
   },
-  statsBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
+  statsBarItem: { flex: 1, minWidth: 70, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
   statsBarValue: {
     fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: 2,
@@ -408,7 +411,8 @@ const styles = StyleSheet.create({
     height: '100%', backgroundColor: Colors.paid, borderRadius: 4,
   },
   overviewRow: {
-    flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center',
+    gap: Spacing.sm,
   },
   overviewItem: { alignItems: 'center' },
   overviewLabel: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
@@ -446,8 +450,9 @@ const styles = StyleSheet.create({
   studentStats: { marginBottom: Spacing.md },
   studentStatText: { fontSize: FontSize.caption, color: Colors.caption },
   studentAmounts: {
-    flexDirection: 'row', justifyContent: 'space-around',
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around',
     paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+    gap: Spacing.sm,
   },
   amountCol: { alignItems: 'center' },
   amountColLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: 2 },
