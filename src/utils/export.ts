@@ -1,8 +1,33 @@
 import * as XLSX from 'xlsx-js-style';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { getAllStudents, getSubjectsByStudentId, getAllLessons } from '../database';
-import { Student, StudentSubject, Lesson } from '../models';
+import { getAllStudents, getSubjectsByStudentId, getAllLessons, getPaymentsByLessonId } from '../database';
+import { Student, StudentSubject, Lesson, Payment } from '../models';
+
+export interface ExportOptions {
+  includeHeader?: boolean;
+  includeLegend?: boolean;
+  includeTotal?: boolean;
+  includeNotes?: boolean;
+  includePaymentInfo?: boolean;
+  dateFormat?: string;
+  numberFormat?: string;
+  currencySymbol?: string;
+  sheetName?: string;
+  title?: string;
+  customFields?: string[];
+  statusFilter?: string[];
+  dateRange?: { start: string; end: string };
+}
+
+export interface ExportProgress {
+  current: number;
+  total: number;
+  stage: 'preparing' | 'loading' | 'processing' | 'generating' | 'saving' | 'sharing' | 'completed';
+  message: string;
+}
+
+export type ProgressCallback = (progress: ExportProgress) => void;
 
 const STATUS_LABEL: Record<string, string> = {
   scheduled: '待上课',
@@ -14,6 +39,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' as const } };
 const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' as const } };
+const CANCELLED_STYLE = { fill: { fgColor: { rgb: 'FEE2E2' }, patternType: 'solid' as const } };
+const COMPLETED_STYLE = { fill: { fgColor: { rgb: 'DBEAFE' }, patternType: 'solid' as const } };
+const SCHEDULED_STYLE = { fill: { fgColor: { rgb: 'F3F4F6' }, patternType: 'solid' as const } };
+
 const CENTER_STYLE = { alignment: { horizontal: 'center' as const } };
 const BOLD_STYLE = { font: { bold: true } };
 const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
@@ -25,12 +54,13 @@ const COL_WIDTHS = [
   { wch: 10 },
   { wch: 16 },
   { wch: 8 },
-  { wch: 10 },
+  { wch: 12 },
   { wch: 14 },
   { wch: 18 },
+  { wch: 20 },
 ];
 
-const RH = {
+const ROW_HEIGHTS = {
   title: { hpt: 30 },
   subheader: { hpt: 24 },
   header: { hpt: 20 },
@@ -40,236 +70,575 @@ const RH = {
   legend: { hpt: 20 },
 };
 
+const DEFAULT_OPTIONS: ExportOptions = {
+  includeHeader: true,
+  includeLegend: true,
+  includeTotal: true,
+  includeNotes: true,
+  includePaymentInfo: false,
+  dateFormat: 'YYYY-MM-DD',
+  numberFormat: '#,##0.00',
+  currencySymbol: '元',
+};
+
+class ExportError extends Error {
+  constructor(message: string, public code: string, public details?: any) {
+    super(message);
+    this.name = 'ExportError';
+  }
+}
+
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
 }
 
-function cell(v: string, s?: object) {
+function cell(v: any, s?: object) {
   return s ? { v, s } : { v };
 }
 
-function buildLessonRows(lessons: Lesson[], subjects: StudentSubject[], paidStyle?: object) {
+function formatDate(dateStr: string, format: string = 'YYYY-MM-DD'): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return format
+    .replace('YYYY', String(year))
+    .replace('MM', month)
+    .replace('DD', day)
+    .replace('HH', hours)
+    .replace('mm', minutes);
+}
+
+function formatNumber(num: number, format: string = '#,##0.00'): string {
+  if (format.includes(',')) {
+    return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return num.toFixed(2);
+}
+
+function formatCurrency(amount: number, symbol: string = '元'): string {
+  return `${formatNumber(amount)}${symbol}`;
+}
+
+function getStatusStyle(status: string): object | undefined {
+  switch (status) {
+    case 'paid': return PAID_STYLE;
+    case 'pendingPayment': return PENDING_STYLE;
+    case 'cancelled': return CANCELLED_STYLE;
+    case 'completed': return COMPLETED_STYLE;
+    case 'scheduled': return SCHEDULED_STYLE;
+    default: return undefined;
+  }
+}
+
+async function loadLessonPayments(lessons: Lesson[]): Promise<Map<number, Payment[]>> {
+  const paymentMap = new Map<number, Payment[]>();
+  for (const lesson of lessons) {
+    try {
+      const payments = await getPaymentsByLessonId(lesson.id);
+      paymentMap.set(lesson.id, payments);
+    } catch (error) {
+      paymentMap.set(lesson.id, []);
+    }
+  }
+  return paymentMap;
+}
+
+function buildLessonRows(
+  lessons: Lesson[],
+  subjects: StudentSubject[],
+  options: ExportOptions,
+  paymentMap?: Map<number, Payment[]>
+): { rows: any[][]; totalHours: number; totalAmount: number; paidAmount: number; pendingAmount: number } {
   const sorted = [...lessons].sort((a, b) =>
     a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot)
   );
 
-  let totalHours = 0, totalAmount = 0, paidAmount = 0;
+  let totalHours = 0, totalAmount = 0, paidAmount = 0, pendingAmount = 0;
   const rows: any[][] = [];
 
   for (const l of sorted) {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
+
+    if (options.statusFilter && !options.statusFilter.includes(l.status)) {
+      continue;
+    }
+
     totalHours += l.duration;
     totalAmount += l.amount;
-    if (l.status === 'paid') paidAmount += l.amount;
 
-    const style = l.status === 'paid' && paidStyle ? paidStyle : undefined;
-    rows.push([
-      cell(l.date, style),
+    if (l.status === 'paid') paidAmount += l.amount;
+    else if (l.status === 'pendingPayment') pendingAmount += l.amount;
+
+    const style = getStatusStyle(l.status);
+    const payments = paymentMap?.get(l.id) || [];
+    const paymentInfo = payments.length > 0
+      ? `${payments[0].method} ${formatCurrency(payments[0].amount)}`
+      : '';
+
+    const row = [
+      cell(formatDate(l.date, options.dateFormat), style),
       cell(sub?.subject || '', style),
       cell(l.timeSlot, style),
       cell(`${l.duration}h`, style),
-      cell(`${l.amount}元`, style),
+      cell(formatCurrency(l.amount, options.currencySymbol), style),
       cell(STATUS_LABEL[l.status] || l.status, style),
-      cell(l.notes || '', style),
-    ]);
+      ...(options.includeNotes ? [cell(l.notes || '', style)] : []),
+      ...(options.includePaymentInfo ? [cell(paymentInfo, style)] : []),
+    ];
+
+    rows.push(row);
   }
 
-  return { rows, totalHours, totalAmount, paidAmount };
+  return { rows, totalHours, totalAmount, paidAmount, pendingAmount };
 }
 
-function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons: Lesson[]) {
-  const subjectInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-  const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects, PAID_STYLE);
+function buildStudentSheet(
+  student: Student,
+  subjects: StudentSubject[],
+  lessons: Lesson[],
+  options: ExportOptions,
+  paymentMap?: Map<number, Payment[]>
+): { sheet: any[][]; rowHeights: Array<{ hpt: number }> } {
+  const subjectInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}${options.currencySymbol}/h`).join(' · ');
+  const { rows, totalHours, totalAmount, paidAmount, pendingAmount } = buildLessonRows(lessons, subjects, options, paymentMap);
 
   const sheet: any[][] = [];
   const rowHeights: Array<{ hpt: number }> = [];
 
-  sheet.push([cell('家教课程总账单', TITLE_STYLE)]);
-  rowHeights.push(RH.title);
+  if (options.includeHeader) {
+    sheet.push([cell(options.title || '家教课程总账单', TITLE_STYLE)]);
+    rowHeights.push(ROW_HEIGHTS.title);
 
-  sheet.push([cell(`学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subjectInfo}`, BOLD14_STYLE)]);
-  rowHeights.push(RH.subheader);
+    const studentInfo = `学生: ${student.name}${student.phone ? `    电话: ${student.phone}` : ''}${subjectInfo ? `    ${subjectInfo}` : ''}`;
+    sheet.push([cell(studentInfo, BOLD14_STYLE)]);
+    rowHeights.push(ROW_HEIGHTS.subheader);
 
-  sheet.push([]);
-  rowHeights.push(RH.empty);
+    sheet.push([]);
+    rowHeights.push(ROW_HEIGHTS.empty);
+  }
 
-  sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
-  rowHeights.push(RH.header);
+  const headers = ['日期', '学科', '时间段', '时长', '金额', '状态'];
+  if (options.includeNotes) headers.push('备注');
+  if (options.includePaymentInfo) headers.push('支付信息');
+  
+  sheet.push(headers.map(h => cell(h)));
+  rowHeights.push(ROW_HEIGHTS.header);
 
   for (const row of rows) {
     sheet.push(row);
-    rowHeights.push(RH.data);
+    rowHeights.push(ROW_HEIGHTS.data);
   }
 
-  sheet.push([]);
-  rowHeights.push(RH.empty);
+  if (options.includeLegend) {
+    sheet.push([]);
+    rowHeights.push(ROW_HEIGHTS.empty);
 
-  sheet.push([
-    cell(''), cell(''), cell(''), cell(''), cell(''),
-    cell('✓ 已收款', PAID_STYLE),
-    cell('待收款', PENDING_STYLE),
-  ]);
-  rowHeights.push(RH.legend);
-
-  sheet.push([
-    cell('合计:', BOLD16_STYLE), cell(''),
-    cell(`${lessons.length}节`, BOLD16_STYLE),
-    cell(`${totalHours.toFixed(1)}h`, BOLD16_STYLE),
-    cell(`${totalAmount}元`, BOLD16_STYLE),
-    cell(`${paidAmount}元`, { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
-    cell(`${totalAmount - paidAmount}元`, { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
-  ]);
-  rowHeights.push(RH.total);
-
-  return { sheet, rows: rowHeights };
-}
-
-export async function exportAllToExcel(): Promise<string> {
-  const students = await getAllStudents();
-  const allLessons = await getAllLessons();
-
-  const wb = XLSX.utils.book_new();
-
-  for (const student of students) {
-    const subjects = await getSubjectsByStudentId(student.id);
-    const sLessons = allLessons.filter(l => l.studentId === student.id);
-
-    const { sheet: sheetData, rows } = buildStudentSheet(student, subjects, sLessons);
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-    ws['!cols'] = COL_WIDTHS;
-    ws['!rows'] = rows;
-    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
+    sheet.push([
+      cell('', undefined), cell('', undefined), cell('', undefined), 
+      cell('', undefined), cell('', undefined), cell('', undefined),
+      cell('✓ 已收款', PAID_STYLE),
+      cell('待收款', PENDING_STYLE),
+    ]);
+    rowHeights.push(ROW_HEIGHTS.legend);
   }
 
-  const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-  const path = FileSystem.documentDirectory + `家教账单_全部_${new Date().toISOString().split('T')[0]}.xlsx`;
-  await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
-  await Sharing.shareAsync(path, {
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    dialogTitle: '导出全部账单',
-  });
-  return path;
+  if (options.includeTotal) {
+    sheet.push([
+      cell('合计:', BOLD16_STYLE), cell(''),
+      cell(`${lessons.length}节`, BOLD16_STYLE),
+      cell(`${totalHours.toFixed(1)}h`, BOLD16_STYLE),
+      cell(formatCurrency(totalAmount, options.currencySymbol), BOLD16_STYLE),
+      cell(formatCurrency(paidAmount, options.currencySymbol), { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
+      cell(formatCurrency(pendingAmount, options.currencySymbol), { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
+    ]);
+    rowHeights.push(ROW_HEIGHTS.total);
+  }
+
+  return { sheet, rowHeights };
 }
 
-export async function exportByMonth(month: string): Promise<string> {
-  const allStudents = await getAllStudents();
-  const allLessons = await getAllLessons();
-  const monthLessons = allLessons.filter(l => l.date.startsWith(month));
-  const studentIds = [...new Set(monthLessons.map(l => l.studentId))];
-  const students = allStudents.filter(s => studentIds.includes(s.id));
+async function saveAndShareWorkbook(wb: XLSX.WorkBook, filename: string, dialogTitle: string): Promise<string> {
+  try {
+    const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+    const path = FileSystem.documentDirectory + filename;
+    
+    await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
+    
+    await Sharing.shareAsync(path, {
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      dialogTitle,
+    });
 
-  const [y, m] = month.split('-');
-  const title = `${y}年${parseInt(m, 10)}月 课程账单`;
+    return path;
+  } catch (error) {
+    throw new ExportError('保存或分享文件失败', 'FILE_ERROR', error);
+  }
+}
 
-  let monthTotal = 0, monthPaid = 0, monthHours = 0, monthLessonsCount = 0;
+function updateProgress(callback: ProgressCallback | undefined, progress: Partial<ExportProgress>) {
+  if (callback) {
+    callback({
+      current: progress.current || 0,
+      total: progress.total || 0,
+      stage: progress.stage || 'preparing',
+      message: progress.message || '',
+    });
+  }
+}
 
-  const sheet: any[][] = [];
-  const rowHeights: Array<{ hpt: number }> = [];
+export async function exportAllToExcel(
+  options: Partial<ExportOptions> = {},
+  onProgress?: ProgressCallback
+): Promise<string> {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  sheet.push([cell(title, TITLE_STYLE)]);
-  rowHeights.push(RH.title);
+  try {
+    updateProgress(onProgress, { stage: 'loading', message: '正在加载数据...', current: 0, total: 100 });
 
-  sheet.push([]);
-  rowHeights.push(RH.empty);
+    const students = await getAllStudents();
+    const allLessons = await getAllLessons();
 
-  for (const student of students) {
-    const subjects = await getSubjectsByStudentId(student.id);
-    const sLessons = monthLessons.filter(l => l.studentId === student.id);
-    if (sLessons.length === 0) continue;
+    updateProgress(onProgress, { stage: 'processing', message: '正在处理数据...', current: 30, total: 100 });
 
-    const data = buildLessonRows(sLessons, subjects, PAID_STYLE);
-
-    monthLessonsCount += sLessons.length;
-    monthHours += data.totalHours;
-    monthTotal += data.totalAmount;
-    monthPaid += data.paidAmount;
-
-    // Student header — bold 14pt
-    const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
-    sheet.push([cell(`${student.name}  ·  ${subInfo}`, BOLD14_STYLE)]);
-    rowHeights.push(RH.subheader);
-
-    // Table headers
-    sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
-    rowHeights.push(RH.header);
-
-    // Data rows
-    for (const row of data.rows) {
-      sheet.push(row);
-      rowHeights.push(RH.data);
+    let paymentMap: Map<number, Payment[]> | undefined;
+    if (opts.includePaymentInfo) {
+      updateProgress(onProgress, { stage: 'processing', message: '正在加载支付信息...', current: 40, total: 100 });
+      paymentMap = await loadLessonPayments(allLessons);
     }
 
-    // Subtotal — bold 14pt, values in A/C/D/E
-    sheet.push([
-      cell('小计:', BOLD14_STYLE), cell(''),
-      cell(`${sLessons.length}节`, BOLD14_STYLE),
-      cell(`${data.totalHours.toFixed(1)}h`, BOLD14_STYLE),
-      cell(`${data.totalAmount}元`, BOLD14_STYLE),
-      cell(''), cell(''),
-    ]);
-    rowHeights.push(RH.subheader);
+    const wb = XLSX.utils.book_new();
+    let processedCount = 0;
 
-    sheet.push([]);
-    rowHeights.push(RH.empty);
+    for (const student of students) {
+      const subjects = await getSubjectsByStudentId(student.id);
+      const sLessons = allLessons.filter(l => l.studentId === student.id);
+
+      if (sLessons.length === 0) continue;
+
+      const { sheet: sheetData, rowHeights } = buildStudentSheet(student, subjects, sLessons, opts, paymentMap);
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws['!cols'] = COL_WIDTHS;
+      ws['!rows'] = rowHeights;
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
+
+      processedCount++;
+      updateProgress(onProgress, {
+        stage: 'processing',
+        message: `正在处理 ${student.name}...`,
+        current: 40 + (processedCount / students.length) * 40,
+        total: 100
+      });
+    }
+
+    updateProgress(onProgress, { stage: 'generating', message: '正在生成 Excel 文件...', current: 85, total: 100 });
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    const path = await saveAndShareWorkbook(
+      wb,
+      `家教账单_全部_${timestamp}.xlsx`,
+      '导出全部账单'
+    );
+
+    updateProgress(onProgress, { stage: 'completed', message: '导出完成！', current: 100, total: 100 });
+
+    return path;
+  } catch (error) {
+    if (error instanceof ExportError) throw error;
+    throw new ExportError(`导出全部账单失败: ${error}`, 'EXPORT_ALL_ERROR', error);
+  }
+}
+
+export async function exportByMonth(
+  month: string,
+  options: Partial<ExportOptions> = {},
+  onProgress?: ProgressCallback
+): Promise<string> {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+
+  try {
+    updateProgress(onProgress, { stage: 'loading', message: '正在加载数据...', current: 0, total: 100 });
+
+    const allStudents = await getAllStudents();
+    const allLessons = await getAllLessons();
+    
+    let monthLessons = allLessons.filter(l => l.date.startsWith(month));
+    
+    if (options.dateRange) {
+      monthLessons = monthLessons.filter(l => 
+        l.date >= options.dateRange!.start && l.date <= options.dateRange!.end
+      );
+    }
+
+    const studentIds = [...new Set(monthLessons.map(l => l.studentId))];
+    const students = allStudents.filter(s => studentIds.includes(s.id));
+
+    const [y, m] = month.split('-');
+    const title = opts.title || `${y}年${parseInt(m, 10)}月 课程账单`;
+
+    updateProgress(onProgress, { stage: 'processing', message: '正在处理数据...', current: 20, total: 100 });
+
+    let paymentMap: Map<number, Payment[]> | undefined;
+    if (opts.includePaymentInfo) {
+      paymentMap = await loadLessonPayments(monthLessons);
+    }
+
+    let monthTotal = 0, monthPaid = 0, monthPending = 0, monthHours = 0, monthLessonsCount = 0;
+
+    const sheet: any[][] = [];
+    const rowHeights: Array<{ hpt: number }> = [];
+
+    if (opts.includeHeader) {
+      sheet.push([cell(title, TITLE_STYLE)]);
+      rowHeights.push(ROW_HEIGHTS.title);
+
+      sheet.push([]);
+      rowHeights.push(ROW_HEIGHTS.empty);
+    }
+
+    let processedCount = 0;
+    for (const student of students) {
+      const subjects = await getSubjectsByStudentId(student.id);
+      const sLessons = monthLessons.filter(l => l.studentId === student.id);
+      if (sLessons.length === 0) continue;
+
+      const data = buildLessonRows(sLessons, subjects, opts, paymentMap);
+
+      monthLessonsCount += data.rows.length;
+      monthHours += data.totalHours;
+      monthTotal += data.totalAmount;
+      monthPaid += data.paidAmount;
+      monthPending += data.pendingAmount;
+
+      const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}${opts.currencySymbol}/h`).join(' · ');
+      sheet.push([cell(`${student.name}  ·  ${subInfo}`, BOLD14_STYLE)]);
+      rowHeights.push(ROW_HEIGHTS.subheader);
+
+      const headers = ['日期', '学科', '时间段', '时长', '金额', '状态'];
+      if (opts.includeNotes) headers.push('备注');
+      if (opts.includePaymentInfo) headers.push('支付信息');
+      
+      sheet.push(headers.map(h => cell(h)));
+      rowHeights.push(ROW_HEIGHTS.header);
+
+      for (const row of data.rows) {
+        sheet.push(row);
+        rowHeights.push(ROW_HEIGHTS.data);
+      }
+
+      sheet.push([
+        cell('小计:', BOLD14_STYLE), cell(''),
+        cell(`${data.rows.length}节`, BOLD14_STYLE),
+        cell(`${data.totalHours.toFixed(1)}h`, BOLD14_STYLE),
+        cell(formatCurrency(data.totalAmount, opts.currencySymbol), BOLD14_STYLE),
+        cell(''), cell(''),
+      ]);
+      rowHeights.push(ROW_HEIGHTS.subheader);
+
+      sheet.push([]);
+      rowHeights.push(ROW_HEIGHTS.empty);
+
+      processedCount++;
+      updateProgress(onProgress, {
+        stage: 'processing',
+        message: `正在处理 ${student.name}...`,
+        current: 20 + (processedCount / students.length) * 50,
+        total: 100
+      });
+    }
+
+    if (opts.includeLegend) {
+      sheet.push([
+        cell(''), cell(''), cell(''), cell(''), cell(''),
+        cell('✓ 已收款', PAID_STYLE),
+        cell('待收款', PENDING_STYLE),
+      ]);
+      rowHeights.push(ROW_HEIGHTS.legend);
+    }
+
+    if (opts.includeTotal) {
+      sheet.push([
+        cell('总计:', BOLD16_STYLE), cell(''),
+        cell(`${monthLessonsCount}节`, BOLD16_STYLE),
+        cell(`${monthHours.toFixed(1)}h`, BOLD16_STYLE),
+        cell(formatCurrency(monthTotal, opts.currencySymbol), BOLD16_STYLE),
+        cell(formatCurrency(monthPaid, opts.currencySymbol), { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
+        cell(formatCurrency(monthPending, opts.currencySymbol), { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
+      ]);
+      rowHeights.push(ROW_HEIGHTS.total);
+    }
+
+    updateProgress(onProgress, { stage: 'generating', message: '正在生成 Excel 文件...', current: 80, total: 100 });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(sheet);
+    ws['!cols'] = COL_WIDTHS;
+    ws['!rows'] = rowHeights;
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(title));
+
+    const path = await saveAndShareWorkbook(wb, `家教账单_${month}.xlsx`, `导出 ${month} 账单`);
+
+    updateProgress(onProgress, { stage: 'completed', message: '导出完成！', current: 100, total: 100 });
+
+    return path;
+  } catch (error) {
+    if (error instanceof ExportError) throw error;
+    throw new ExportError(`按月导出失败: ${error}`, 'EXPORT_MONTH_ERROR', error);
+  }
+}
+
+export async function exportByStudent(
+  studentId: number,
+  options: Partial<ExportOptions> = {},
+  onProgress?: ProgressCallback
+): Promise<string> {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+
+  try {
+    updateProgress(onProgress, { stage: 'loading', message: '正在加载学生信息...', current: 0, total: 100 });
+
+    const students = await getAllStudents();
+    const student = students.find(s => s.id === studentId);
+    if (!student) throw new ExportError('学生不存在', 'STUDENT_NOT_FOUND');
+
+    const subjects = await getSubjectsByStudentId(studentId);
+    const allLessons = await getAllLessons();
+
+    updateProgress(onProgress, { stage: 'processing', message: '正在筛选课程数据...', current: 25, total: 100 });
+
+    let sLessons = allLessons.filter(l => l.studentId === studentId);
+    
+    if (options.dateRange) {
+      sLessons = sLessons.filter(l => 
+        l.date >= options.dateRange!.start && l.date <= options.dateRange!.end
+      );
+    }
+
+    let paymentMap: Map<number, Payment[]> | undefined;
+    if (opts.includePaymentInfo) {
+      updateProgress(onProgress, { stage: 'processing', message: '正在加载支付信息...', current: 35, total: 100 });
+      paymentMap = await loadLessonPayments(sLessons);
+    }
+
+    updateProgress(onProgress, { stage: 'generating', message: '正在生成 Excel 文件...', current: 70, total: 100 });
+
+    const wb = XLSX.utils.book_new();
+    const { sheet: sheetData, rowHeights } = buildStudentSheet(student, subjects, sLessons, opts, paymentMap);
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    ws['!cols'] = COL_WIDTHS;
+    ws['!rows'] = rowHeights;
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(opts.sheetName || student.name));
+
+    const path = await saveAndShareWorkbook(
+      wb,
+      `家教账单_${student.name}.xlsx`,
+      `导出 ${student.name} 账单`
+    );
+
+    updateProgress(onProgress, { stage: 'completed', message: '导出完成！', current: 100, total: 100 });
+
+    return path;
+  } catch (error) {
+    if (error instanceof ExportError) throw error;
+    throw new ExportError(`按学生导出失败: ${error}`, 'EXPORT_STUDENT_ERROR', error);
+  }
+}
+
+export async function exportCustomData(
+  data: any[][],
+  filename: string,
+  options: {
+    title?: string;
+    headers?: string[];
+    columnWidths?: Array<{ wch: number }>;
+    dialogTitle?: string;
+  } = {},
+  onProgress?: ProgressCallback
+): Promise<string> {
+  try {
+    updateProgress(onProgress, { stage: 'generating', message: '正在生成自定义 Excel 文件...', current: 50, total: 100 });
+
+    const wb = XLSX.utils.book_new();
+    const sheet: any[][] = [];
+    const rowHeights: Array<{ hpt: number }> = [];
+
+    if (options.title) {
+      sheet.push([cell(options.title, TITLE_STYLE)]);
+      rowHeights.push(ROW_HEIGHTS.title);
+      sheet.push([]);
+      rowHeights.push(ROW_HEIGHTS.empty);
+    }
+
+    if (options.headers) {
+      sheet.push(options.headers.map(h => cell(h)));
+      rowHeights.push(ROW_HEIGHTS.header);
+    }
+
+    for (let i = 0; i < data.length; i++) {
+      sheet.push(data[i]);
+      rowHeights.push(ROW_HEIGHTS.data);
+      
+      if (i % 100 === 0) {
+        updateProgress(onProgress, {
+          stage: 'processing',
+          message: `正在处理第 ${i + 1}/${data.length} 行...`,
+          current: 50 + (i / data.length) * 40,
+          total: 100
+        });
+      }
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(sheet);
+    ws['!cols'] = options.columnWidths || COL_WIDTHS;
+    ws['!rows'] = rowHeights;
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(options.title || 'Sheet1'));
+
+    const path = await saveAndShareWorkbook(
+      wb,
+      filename,
+      options.dialogTitle || '导出数据'
+    );
+
+    updateProgress(onProgress, { stage: 'completed', message: '导出完成！', current: 100, total: 100 });
+
+    return path;
+  } catch (error) {
+    throw new ExportError(`自定义导出失败: ${error}`, 'EXPORT_CUSTOM_ERROR', error);
+  }
+}
+
+export function validateExportOptions(options: Partial<ExportOptions>): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (options.dateRange) {
+    if (options.dateRange.start > options.dateRange.end) {
+      errors.push('日期范围开始时间不能晚于结束时间');
+    }
   }
 
-  // Legend row
-  sheet.push([
-    cell(''), cell(''), cell(''), cell(''), cell(''),
-    cell('✓ 已收款', PAID_STYLE),
-    cell('待收款', PENDING_STYLE),
-  ]);
-  rowHeights.push(RH.legend);
+  if (options.statusFilter) {
+    const validStatuses = Object.keys(STATUS_LABEL);
+    const invalidStatuses = options.statusFilter.filter(s => !validStatuses.includes(s));
+    if (invalidStatuses.length > 0) {
+      errors.push(`无效的状态值: ${invalidStatuses.join(', ')}`);
+    }
+  }
 
-  // Grand total — bold 16pt, values in A/C/D/E/F/G
-  sheet.push([
-    cell('总计:', BOLD16_STYLE), cell(''),
-    cell(`${monthLessonsCount}节`, BOLD16_STYLE),
-    cell(`${monthHours.toFixed(1)}h`, BOLD16_STYLE),
-    cell(`${monthTotal}元`, BOLD16_STYLE),
-    cell(`${monthPaid}元`, { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
-    cell(`${monthTotal - monthPaid}元`, { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
-  ]);
-  rowHeights.push(RH.total);
+  if (options.customFields) {
+    const allowedFields = ['date', 'subject', 'timeSlot', 'duration', 'amount', 'status', 'notes', 'payment'];
+    const invalidFields = options.customFields.filter(f => !allowedFields.includes(f));
+    if (invalidFields.length > 0) {
+      errors.push(`无效的自定义字段: ${invalidFields.join(', ')}`);
+    }
+  }
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(sheet);
-  ws['!cols'] = COL_WIDTHS;
-  ws['!rows'] = rowHeights;
-  XLSX.utils.book_append_sheet(wb, ws, safeSheetName(title));
-
-  const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-  const path = FileSystem.documentDirectory + `家教账单_${month}.xlsx`;
-  await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
-  await Sharing.shareAsync(path, {
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    dialogTitle: `导出 ${month} 账单`,
-  });
-  return path;
+  return { valid: errors.length === 0, errors };
 }
 
-export async function exportByStudent(studentId: number): Promise<string> {
-  const students = await getAllStudents();
-  const student = students.find(s => s.id === studentId);
-  if (!student) throw new Error('学生不存在');
-
-  const subjects = await getSubjectsByStudentId(studentId);
-  const allLessons = await getAllLessons();
-  const sLessons = allLessons.filter(l => l.studentId === studentId);
-
-  const wb = XLSX.utils.book_new();
-  const { sheet: sheetData, rows } = buildStudentSheet(student, subjects, sLessons);
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-  ws['!cols'] = COL_WIDTHS;
-  ws['!rows'] = rows;
-  XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
-
-  const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-  const path = FileSystem.documentDirectory + `家教账单_${student.name}.xlsx`;
-  await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
-  await Sharing.shareAsync(path, {
-    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    dialogTitle: `导出 ${student.name} 账单`,
-  });
-  return path;
-}
+export { ExportError };
