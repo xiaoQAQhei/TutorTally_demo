@@ -1,4 +1,12 @@
 ## [2026-05-11 16:04] 子元素硬编码尺寸改用响应式单位
+## 2026-05-11 16:20 | auto: 05-11 16:20 | src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/SettingsScreen.tsx src/screens/StatsScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx 
+- src/screens/LessonScreen.tsx
+- src/screens/RecurringRulesScreen.tsx
+- src/screens/SettingsScreen.tsx
+- src/screens/StatsScreen.tsx
+- src/screens/StudentBillingDetailScreen.tsx
+- src/screens/StudentScreen.tsx
+
 ## 2026-05-11 16:17 | auto: 05-11 16:17 | src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/SettingsScreen.tsx src/screens/StatsScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx src/utils/export.ts src/utils/responsive.ts 
 - src/screens/HomeScreen.tsx
 - src/screens/LessonScreen.tsx

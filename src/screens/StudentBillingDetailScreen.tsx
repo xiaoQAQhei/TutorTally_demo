@@ -74,7 +74,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
             <Ionicons name="chevron-back" size={24} color={Colors.title} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{student.name}</Text>
+            <Text style={[styles.headerTitle, { fontSize: fontSize.h3 }]}>{student.name}</Text>
             <View style={styles.headerSubRow}>
               <View style={[styles.subjectDot, { backgroundColor: subjectColor }]} />
               <Text style={styles.headerSub}>{subjects?.[0]?.subject || '未分类'} · {subjects?.[0]?.hourlyRate || 0}元/h</Text>
@@ -87,7 +87,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
           data={monthlyGroups}
           keyExtractor={(item) => item.month}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: spacing.xl }]}
           ListHeaderComponent={
             <>
               {/* Summary Cards */}
@@ -107,7 +107,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
                 </View>
               </View>
 
-              <Text style={styles.sectionTitle}>月度分布</Text>
+              <Text style={[styles.sectionTitle, { fontSize: fontSize.h3 }]}>月度分布</Text>
             </>
           }
           renderItem={({ item }) => (
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   headerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   subjectDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.xs },
   headerSub: { fontSize: FontSize.small, color: Colors.caption },
-  scrollContent: { padding: Spacing.xl, paddingBottom: 40 },
+  scrollContent: { paddingBottom: 40 },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
   summaryCard: {
     flex: 1, borderRadius: BorderRadius.smallCard,

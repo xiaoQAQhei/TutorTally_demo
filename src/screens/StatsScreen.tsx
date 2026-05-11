@@ -186,7 +186,7 @@ const StatsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { padding: spacing.xl }]} showsVerticalScrollIndicator={false}>
         {/* Month Selector */}
         <View style={styles.monthSelector}>
           <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthArrow}>
@@ -223,7 +223,7 @@ const StatsScreen: React.FC = () => {
 
         {/* Bar Chart */}
         <View style={[styles.chartCard, Shadows.standard]} onLayout={(e: LayoutChangeEvent) => setChartCardWidth(e.nativeEvent.layout.width)}>
-          <Text style={styles.chartTitle}>近6月收入趋势</Text>
+          <Text style={[styles.chartTitle, { fontSize: fontSize.h3 }]}>近6月收入趋势</Text>
           <View style={styles.chartWrap}>
             <BarChart
               key={`${selectedMonth}-${chartCardWidth}`}
@@ -256,7 +256,7 @@ const StatsScreen: React.FC = () => {
 
         {/* Monthly payment overview */}
         <View style={[styles.overviewCard, Shadows.standard]}>
-          <Text style={styles.overviewTitle}>收款概览 · 本月</Text>
+          <Text style={[styles.overviewTitle, { fontSize: fontSize.h3 }]}>收款概览 · 本月</Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${Math.max(monthRatio, 4)}%` }]} />
           </View>
@@ -283,7 +283,7 @@ const StatsScreen: React.FC = () => {
         </View>
 
         {/* Student billing cards */}
-        <Text style={styles.sectionTitle}>学生账单</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.h3 }]}>学生账单</Text>
         {monthFilteredStats.map((item, index) => {
           const subColor = item.subjects?.[0]?.color || Colors.primary;
           const hasPending = item.pendingAmount > 0;
@@ -346,7 +346,7 @@ const StatsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  scrollContent: { padding: Spacing.xl, paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100 },
 
   // Month selector
   monthSelector: {

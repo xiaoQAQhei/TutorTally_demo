@@ -112,7 +112,7 @@ const RecurringRulesScreen: React.FC = () => {
       <View style={[styles.card, Shadows.standard]}>
         <View style={styles.cardHeader}>
           <View>
-            <Text style={styles.ruleStudent}>{getStudentName(item.studentId)}</Text>
+            <Text style={[styles.ruleStudent, { fontSize: fontSize.h3 }]}>{getStudentName(item.studentId)}</Text>
             <Text style={styles.ruleSubtext}>{getSubjectName(item.studentSubjectId) || '未指定科目'}</Text>
           </View>
           <TouchableOpacity onPress={() => handleGenerate(item)}>
@@ -146,7 +146,7 @@ const RecurringRulesScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
-      <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={styles.list}
+      <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={[styles.list, { padding: spacing.xl }]}
         ListEmptyComponent={<EmptyState icon="repeat-outline" title="没有周期规则" subtitle="创建规则自动排课" buttonLabel="创建规则" onButtonPress={() => { resetForm(); setModalVisible(true); }} />}
       />
       <GradientFAB icon="add" onPress={() => { resetForm(); setModalVisible(true); }} color={Colors.pending} />
@@ -214,7 +214,7 @@ const RecurringRulesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { padding: Spacing.xl, paddingBottom: 100 },
+  list: { paddingBottom: 100 },
   card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   ruleStudent: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },

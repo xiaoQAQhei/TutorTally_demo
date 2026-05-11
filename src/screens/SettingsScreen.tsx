@@ -49,8 +49,8 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
 
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>数据管理</Text>
+      <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: spacing.xl }]} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>数据管理</Text>
         {menuItems.map((item, i) => (
           <TouchableOpacity key={i} style={[styles.menuItem, Shadows.subtle]} activeOpacity={0.7} onPress={item.onPress}>
             <View style={[styles.iconBox, { backgroundColor: item.color + '14' }]}>
@@ -64,7 +64,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>偏好设置</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>偏好设置</Text>
         <View style={[styles.menuItem, Shadows.subtle]}>
           <View style={styles.menuText}>
             <Text style={styles.menuLabel}>状态变更前提醒</Text>
@@ -73,7 +73,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
           <Switch value={confirmBeforeChange} onValueChange={toggleConfirmBeforeChange} trackColor={{ false: Colors.divider, true: Colors.primary }} />
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>关于</Text>
+        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
           <Text style={styles.aboutApp}>家教账单 v1.0</Text>
           <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>

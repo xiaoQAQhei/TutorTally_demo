@@ -145,7 +145,7 @@ const StudentScreen: React.FC = () => {
         data={students}
         renderItem={renderStudent}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: spacing.xl }]}
         ListEmptyComponent={
           <EmptyState
             icon="people-outline"
@@ -218,7 +218,7 @@ const StudentScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { padding: Spacing.xl, paddingBottom: 100 },
+  list: { paddingBottom: 100 },
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,

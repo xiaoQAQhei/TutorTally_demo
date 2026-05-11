@@ -808,9 +808,9 @@ const LessonScreen: React.FC = () => {
 
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
-          <View style={[styles.confirmBox, Shadows.floating]}>
-            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
-            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+          <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
+            <Text style={[styles.confirmTitle, { fontSize: fontSize.h3 }]}>{confirmDialog.title}</Text>
+            <Text style={[styles.confirmMessage, { fontSize: fontSize.body }]}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
                 <Text style={styles.confirmCancelText}>取消</Text>
@@ -828,7 +828,7 @@ const LessonScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
-  list: { padding: Spacing.xl, paddingBottom: 100 },
+  list: { paddingBottom: 100 },
   filterRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
     marginBottom: Spacing.lg,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     ...Shadows.standard,
   },
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%', maxWidth: 400 },
+  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },
