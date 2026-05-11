@@ -236,7 +236,7 @@ const StatsScreen: React.FC = () => {
                 ) : undefined,
               }))}
               barWidth={chartBarW}
-              height={120}
+              height={isTablet ? 160 : 120}
               maxValue={chartMax}
               stepValue={chartStep}
               noOfSections={noOfSections}
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl, gap: Spacing.lg,
   },
   monthArrow: {
-    width: 36, height: 36, borderRadius: 18,
+    width: scale(36), height: scale(36), borderRadius: scale(18),
     backgroundColor: Colors.primaryLight,
     justifyContent: 'center', alignItems: 'center',
   },

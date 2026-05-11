@@ -1,4 +1,9 @@
 ## [2026-05-11 16:04] 子元素硬编码尺寸改用响应式单位
+## 2026-05-11 16:23 | auto: 05-11 16:23 | src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/StatsScreen.tsx 
+- src/screens/HomeScreen.tsx
+- src/screens/LessonScreen.tsx
+- src/screens/StatsScreen.tsx
+
 ## 2026-05-11 16:22 | auto: 05-11 16:22 | src/App.tsx src/screens/StatsScreen.tsx 
 - src/App.tsx
 - src/screens/StatsScreen.tsx

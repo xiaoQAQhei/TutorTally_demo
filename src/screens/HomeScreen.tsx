@@ -402,9 +402,9 @@ const styles = StyleSheet.create({
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },
-  confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelBtn: { flex: 1, height: scale(48), borderRadius: scale(24), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
-  confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkBtn: { flex: 1, height: scale(48), borderRadius: scale(24), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 });
 
