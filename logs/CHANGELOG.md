@@ -1,3 +1,14 @@
+## [2026-05-11 18:23] 全面响应式优化：宽高比感知 + 全屏文本响应式字体 + 硬编码像素值消除
+## 2026-05-11 18:26 | auto: 05-11 18:26 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+- responsive.ts 新增 aspectRatio/isUltraNarrow/isWide 字段，buildFontSize/buildSpacing 接入宽高比加权，新增 adaptSize() 工具函数
+- 7 个屏幕 150+ 处静态 FontSize.xxx 切换为响应式 fontSize.xxx 内联覆盖
+- TimeRangePicker/BottomSheet/CalendarPicker 等组件 20+ 处硬编码 px 值替换为 scale/verticalScale
+- QuickActionButton/GradientFAB 图标尺寸按窄屏/平板自适应
+- StatsScreen statsBar 溢出修复、StatCard 文本截断保护
+  - 文件: src/utils/responsive.ts, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/components/BottomSheet.tsx, src/components/CalendarPicker.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx, src/components/TimeRangePicker.tsx
+
 ## [2026-05-11 16:42] Excel 导出添加行高设置，根据字体大小分类配置
 ## 2026-05-11 18:24 | auto: 05-11 18:24 | "export_example_全量.xlsx" scripts/gen_sample_xlsx.js "export_example_按学生_李小明.xlsx" "export_example_按学生_王雨涵.xlsx" "export_example_按学生_陈子豪.xlsx" 
 - "export_example_全量.xlsx"
