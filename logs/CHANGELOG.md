@@ -1,3 +1,18 @@
+## [2026-05-11 16:30] 全面适配平板设备响应式布局（better 分支汇总）
+## 2026-05-11 16:28 | auto: 05-11 16:28 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+
+本轮在 better 分支上对全应用进行了平板设备响应式布局适配，覆盖核心工具层、主题系统、所有组件和所有页面。
+
+- 新增 `src/utils/responsive.ts`：断点系统（sm/md/lg）、`scale/verticalScale/moderateScale/rem/vw/vh` 缩放工具、`useResponsive` Hook（响应维度变化）、`useScaleHelpers` 绑定缩放辅助、`bpValue` 断点取值、平板自动放大间距与字号
+- 增强 `src/styles/theme.ts`：Spacing/FontSize/BorderRadius 改用 scale/rem/moderateScale 缩放、新增 `getSpacing/getFontSize` 断点感知函数（平板下间距和字号自动放大 1.5x 左右）
+- 所有组件适配：GradientFAB（平板下按钮放大、位置调整）、BottomSheet（动态高度响应窗口变化）、CalendarPicker（平板更大弹窗宽度）、TimeRangePicker/StatCard/EmptyState/Toast（尺寸动态缩放）
+- 所有 8 个页面适配：HomeScreen、LessonScreen、SettingsScreen、StatsScreen、StudentScreen、StudentBillingDetailScreen、RecurringRulesScreen 均添加 `maxContentWidth` 居中约束，filterRow 支持换行防溢出，弹窗添加 `maxWidth`，StatsScreen 图表宽度改用 `onLayout` 实测
+- App.tsx：平板下 TabBar 高度调整
+- `src/utils/export.ts`：导出尺寸适配响应式
+  - 文件: src/App.tsx, src/components/BottomSheet.tsx, src/components/CalendarPicker.tsx, src/components/EmptyState.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx, src/components/TimeRangePicker.tsx, src/components/Toast.tsx, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/styles/theme.ts, src/utils/export.ts, src/utils/responsive.ts
+
 ## [2026-05-11 16:04] 子元素硬编码尺寸改用响应式单位
 ## 2026-05-11 16:23 | auto: 05-11 16:23 | src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/StatsScreen.tsx 
 - src/screens/HomeScreen.tsx
