@@ -1,4 +1,8 @@
 ## [2026-05-11 18:23] 全面响应式优化：宽高比感知 + 全屏文本响应式字体 + 硬编码像素值消除
+## 2026-05-11 18:31 | auto: 05-11 18:31 | src/components/ExcelExportExample.tsx src/utils/__tests__/ 
+- src/components/ExcelExportExample.tsx
+- src/utils/__tests__/
+
 ## 2026-05-11 18:29 | auto: 05-11 18:29 | "export_example_全量.xlsx" "export_example_按学生_李小明.xlsx" "export_example_按学生_王雨涵.xlsx" "export_example_按学生_陈子豪.xlsx" "export_example_按月_2026-05.xlsx" src/utils/export.ts 
 - "export_example_全量.xlsx"
 - "export_example_按学生_李小明.xlsx"
