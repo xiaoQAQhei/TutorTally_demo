@@ -30,6 +30,16 @@ const COL_WIDTHS = [
   { wch: 18 },
 ];
 
+const RH = {
+  title: { hpt: 30 },
+  subheader: { hpt: 24 },
+  header: { hpt: 20 },
+  data: { hpt: 20 },
+  empty: { hpt: 10 },
+  total: { hpt: 28 },
+  legend: { hpt: 20 },
+};
+
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
 }
@@ -72,22 +82,35 @@ function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons
   const { rows, totalHours, totalAmount, paidAmount } = buildLessonRows(lessons, subjects, PAID_STYLE);
 
   const sheet: any[][] = [];
+  const rowHeights: Array<{ hpt: number }> = [];
 
   sheet.push([cell('家教课程总账单', TITLE_STYLE)]);
+  rowHeights.push(RH.title);
+
   sheet.push([cell(`学生: ${student.name}    ${student.phone ? `电话: ${student.phone}    ` : ''} ${subjectInfo}`, BOLD14_STYLE)]);
+  rowHeights.push(RH.subheader);
+
   sheet.push([]);
+  rowHeights.push(RH.empty);
+
   sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
+  rowHeights.push(RH.header);
 
   for (const row of rows) {
     sheet.push(row);
+    rowHeights.push(RH.data);
   }
 
   sheet.push([]);
+  rowHeights.push(RH.empty);
+
   sheet.push([
     cell(''), cell(''), cell(''), cell(''), cell(''),
     cell('✓ 已收款', PAID_STYLE),
     cell('待收款', PENDING_STYLE),
   ]);
+  rowHeights.push(RH.legend);
+
   sheet.push([
     cell('合计:', BOLD16_STYLE), cell(''),
     cell(`${lessons.length}节`, BOLD16_STYLE),
@@ -96,8 +119,9 @@ function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons
     cell(`${paidAmount}元`, { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
     cell(`${totalAmount - paidAmount}元`, { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
   ]);
+  rowHeights.push(RH.total);
 
-  return sheet;
+  return { sheet, rows: rowHeights };
 }
 
 export async function exportAllToExcel(): Promise<string> {
@@ -110,9 +134,10 @@ export async function exportAllToExcel(): Promise<string> {
     const subjects = await getSubjectsByStudentId(student.id);
     const sLessons = allLessons.filter(l => l.studentId === student.id);
 
-    const sheetData = buildStudentSheet(student, subjects, sLessons);
+    const { sheet: sheetData, rows } = buildStudentSheet(student, subjects, sLessons);
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
     ws['!cols'] = COL_WIDTHS;
+    ws['!rows'] = rows;
     XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
   }
 
@@ -139,8 +164,13 @@ export async function exportByMonth(month: string): Promise<string> {
   let monthTotal = 0, monthPaid = 0, monthHours = 0, monthLessonsCount = 0;
 
   const sheet: any[][] = [];
+  const rowHeights: Array<{ hpt: number }> = [];
+
   sheet.push([cell(title, TITLE_STYLE)]);
+  rowHeights.push(RH.title);
+
   sheet.push([]);
+  rowHeights.push(RH.empty);
 
   for (const student of students) {
     const subjects = await getSubjectsByStudentId(student.id);
@@ -157,13 +187,16 @@ export async function exportByMonth(month: string): Promise<string> {
     // Student header — bold 14pt
     const subInfo = subjects.map(s => `${s.subject} ${s.hourlyRate}元/h`).join(' · ');
     sheet.push([cell(`${student.name}  ·  ${subInfo}`, BOLD14_STYLE)]);
+    rowHeights.push(RH.subheader);
 
     // Table headers
     sheet.push(['日期', '学科', '时间段', '时长', '金额', '状态', '备注'].map(h => cell(h)));
+    rowHeights.push(RH.header);
 
     // Data rows
     for (const row of data.rows) {
       sheet.push(row);
+      rowHeights.push(RH.data);
     }
 
     // Subtotal — bold 14pt, values in A/C/D/E
@@ -174,7 +207,10 @@ export async function exportByMonth(month: string): Promise<string> {
       cell(`${data.totalAmount}元`, BOLD14_STYLE),
       cell(''), cell(''),
     ]);
+    rowHeights.push(RH.subheader);
+
     sheet.push([]);
+    rowHeights.push(RH.empty);
   }
 
   // Legend row
@@ -183,6 +219,8 @@ export async function exportByMonth(month: string): Promise<string> {
     cell('✓ 已收款', PAID_STYLE),
     cell('待收款', PENDING_STYLE),
   ]);
+  rowHeights.push(RH.legend);
+
   // Grand total — bold 16pt, values in A/C/D/E/F/G
   sheet.push([
     cell('总计:', BOLD16_STYLE), cell(''),
@@ -192,10 +230,12 @@ export async function exportByMonth(month: string): Promise<string> {
     cell(`${monthPaid}元`, { ...PAID_STYLE, font: { bold: true, sz: 16 } }),
     cell(`${monthTotal - monthPaid}元`, { ...PENDING_STYLE, font: { bold: true, sz: 16 } }),
   ]);
+  rowHeights.push(RH.total);
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(sheet);
   ws['!cols'] = COL_WIDTHS;
+  ws['!rows'] = rowHeights;
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName(title));
 
   const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
@@ -218,9 +258,10 @@ export async function exportByStudent(studentId: number): Promise<string> {
   const sLessons = allLessons.filter(l => l.studentId === studentId);
 
   const wb = XLSX.utils.book_new();
-  const sheetData = buildStudentSheet(student, subjects, sLessons);
+  const { sheet: sheetData, rows } = buildStudentSheet(student, subjects, sLessons);
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
   ws['!cols'] = COL_WIDTHS;
+  ws['!rows'] = rows;
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
 
   const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
