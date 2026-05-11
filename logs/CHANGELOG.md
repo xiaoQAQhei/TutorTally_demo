@@ -1,3 +1,11 @@
+## [2026-05-11 15:45] HomeScreen 和 LessonScreen 统一响应式 maxContentWidth 模式
+## 2026-05-11 15:45 | auto: 05-11 15:45 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+- 将 HomeScreen 和 LessonScreen 的 container maxWidth 从静态 StyleSheet 常量改为 useResponsive().maxContentWidth 内联样式
+- 其余 5 个 Screen 此前已完成此改动，本次补齐遗漏，保证所有屏幕响应式方案一致
+  - 文件: src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx
+
 ## [2026-05-11 15:30] 全面实现响应式布局：自适应不同设备屏幕尺寸和比例
 ## 2026-05-11 15:31 | auto: 05-11 15:31 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
