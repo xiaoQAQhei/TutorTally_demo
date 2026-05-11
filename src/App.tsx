@@ -11,8 +11,8 @@ import SettingsScreen from './screens/SettingsScreen';
 import { ActionProvider } from './contexts/ActionContext';
 import { initDatabase, migrateFromV1 } from './database';
 import { requestPermission, scheduleAllReminders } from './utils/notifications';
-import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
-import { useResponsive, rem } from './utils/responsive';
+import { Colors, FontSize, FontWeight, Spacing, Shadows, BorderRadius } from './styles/theme';
+import { useResponsive, rem, scale } from './utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
@@ -102,7 +102,7 @@ const loadStyles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   iconBox: {
-    width: 80, height: 80, borderRadius: 24,
+    width: scale(80), height: scale(80), borderRadius: BorderRadius.card,
     backgroundColor: Colors.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     marginBottom: Spacing.lg,

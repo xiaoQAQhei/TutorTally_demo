@@ -13,7 +13,7 @@ import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
   SubjectColorPalette,
 } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, scale } from '../utils/responsive';
 
 const StudentScreen: React.FC = () => {
   const { maxContentWidth, spacing, fontSize } = useResponsive();
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   actionButton: { padding: Spacing.sm },
   formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
   input: {
-    height: 50, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+    height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
     paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title,
     backgroundColor: Colors.background,
   },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   addSubjectBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.sm },
   addSubjectText: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.medium },
   saveButton: {
-    backgroundColor: Colors.paid, height: 52, borderRadius: BorderRadius.button,
+    backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,
     justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
   },
   saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },

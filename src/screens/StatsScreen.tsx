@@ -10,7 +10,7 @@ import StudentBillingDetailScreen from './StudentBillingDetailScreen';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
 } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, scale } from '../utils/responsive';
 
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',

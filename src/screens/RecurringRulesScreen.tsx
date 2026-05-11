@@ -9,7 +9,7 @@ import GradientFAB from '../components/GradientFAB';
 import Toast from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, scale } from '../utils/responsive';
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   generateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.paid, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, gap: 4 },
   generateBtnText: { fontSize: FontSize.small, color: Colors.white, fontWeight: FontWeight.semiBold },
   weekdayRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm },
-  weekdayDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.divider, justifyContent: 'center', alignItems: 'center' },
+  weekdayDot: { width: scale(30), height: scale(30), borderRadius: scale(15), backgroundColor: Colors.divider, justifyContent: 'center', alignItems: 'center' },
   weekdayDotText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
   ruleInfo: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
   ruleInfoText: { fontSize: FontSize.caption, color: Colors.body },
@@ -231,11 +231,11 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xs },
   chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background },
   chipText: { fontSize: FontSize.caption, color: Colors.body },
-  weekdayChip: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
-  input: { height: 50, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title, backgroundColor: Colors.background },
+  weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  input: { height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title, backgroundColor: Colors.background },
   formRow: { flexDirection: 'row', gap: Spacing.md },
   formHalf: { flex: 1 },
-  saveButton: { backgroundColor: Colors.primary, height: 52, borderRadius: BorderRadius.button, justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl },
+  saveButton: { backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button, justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl },
   saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
 });
 
