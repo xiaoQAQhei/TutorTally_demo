@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, verticalScale } from '../utils/responsive';
 
 interface ToastProps {
   visible: boolean;
@@ -57,7 +57,7 @@ const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismi
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1, justifyContent: 'flex-end',
-    paddingBottom: 70, paddingHorizontal: Spacing.xl,
+    paddingBottom: verticalScale(70), paddingHorizontal: Spacing.xl,
     marginHorizontal:Spacing.xxl,
   },
   container: {

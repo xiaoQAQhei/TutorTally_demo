@@ -4,7 +4,7 @@ import {
   NativeSyntheticEvent, NativeScrollEvent, Animated,
 } from 'react-native';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, scale } from '../utils/responsive';
 
 const ITEM_HEIGHT = 36;
 const VISIBLE_ITEMS = 3;
@@ -334,7 +334,7 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
           </View>
 
           <TouchableOpacity
-            style={[styles.confirmBtn, !isValid && styles.confirmBtnDisabled]}
+            style={[styles.confirmBtn, !isValid && styles.confirmBtnDisabled, { height: scale(50) }]}
             activeOpacity={0.8}
             onPress={handleConfirm}
           >
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 2,
   },
   columnsRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  colGap: { width: 8 },
+  colGap: { width: Spacing.sm },
   divider: {
     alignSelf: 'stretch', justifyContent: 'center',
     paddingHorizontal: Spacing.md,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     marginHorizontal: Spacing.xl, marginTop: Spacing.lg,
-    height: 50, borderRadius: BorderRadius.button,
+    borderRadius: BorderRadius.button,
     backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
   },

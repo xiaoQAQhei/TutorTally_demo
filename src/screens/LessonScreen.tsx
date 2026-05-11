@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },
   filterCount: {
-    minWidth: 20, height: 20, borderRadius: 10,
+    minWidth: scale(20), height: scale(20), borderRadius: scale(10),
     backgroundColor: Colors.divider,
     justifyContent: 'center', alignItems: 'center',
     paddingHorizontal: Spacing.xs,
@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
   infoItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   infoText: { fontSize: FontSize.caption, color: Colors.body },
   timeSlotBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2,
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.smallCard,
     backgroundColor: Colors.primaryLight,
