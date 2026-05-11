@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, MAX_CONTENT_WIDTH, useResponsive } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, useResponsive } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -112,6 +112,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
+  const { maxContentWidth } = useResponsive();
   const { opacity, translateY } = useFadeIn();
 
   const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
@@ -198,7 +199,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
         {/* Header */}
         <View style={styles.header}>
@@ -316,7 +317,7 @@ const QuickActionButton: React.FC<{
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, width: '100%', alignSelf: 'center' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.lg, gap: Spacing.md,

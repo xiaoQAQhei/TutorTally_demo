@@ -20,7 +20,7 @@ import {
 } from '../styles/theme';
 import { useSlideManager, useShatterManager } from '../utils/animationHooks';
 import { ShredderStrip } from '../components/ShredderStrip';
-import { scale, MAX_CONTENT_WIDTH } from '../utils/responsive';
+import { scale, useResponsive } from '../utils/responsive';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -51,6 +51,7 @@ const LessonScreen: React.FC = () => {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
+  const { maxContentWidth } = useResponsive();
   const itemHeightRef = useRef(180);
   const cardWidthRef = useRef<Map<number, number>>(new Map());
   const cardHeightRef = useRef<Map<number, number>>(new Map());
@@ -541,7 +542,7 @@ const LessonScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container} ref={containerRef}>
+    <View style={[styles.container, { maxWidth: maxContentWidth }]} ref={containerRef}>
       <FlatList
         data={filteredLessons}
         renderItem={renderLesson}
@@ -826,7 +827,7 @@ const LessonScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   filterRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
