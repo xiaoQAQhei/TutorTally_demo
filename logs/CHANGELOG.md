@@ -1,4 +1,9 @@
 ## [2026-05-11 16:30] 全面适配平板设备响应式布局（better 分支汇总）
+## 2026-05-11 16:43 | auto: 05-11 16:43 | app.json "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" 
+- app.json
+- "export_example_全量.xlsx"
+- "export_example_按月_2026-05.xlsx"
+
 ## 2026-05-11 16:28 | auto: 05-11 16:28 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 

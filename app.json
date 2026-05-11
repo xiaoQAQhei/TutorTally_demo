@@ -22,9 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tutorbill.app",
-      "versionCode": 2,
-      "targetSdkVersion": 34
+      "package": "com.tutorbill.app"
     },
     "web": {},
     "extra": {
