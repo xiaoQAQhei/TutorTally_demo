@@ -1,3 +1,17 @@
+## [2026-05-11 15:30] 全面实现响应式布局：自适应不同设备屏幕尺寸和比例
+## 2026-05-11 15:31 | auto: 05-11 15:31 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+- 重构 responsive.ts：新增断点系统(sm/md/lg)、useResponsive Hook 响应维度变化、useContentInsets、reactive isTablet
+- 增强 theme.ts：添加 getSpacing/getFontSize 断点感知函数、移除未使用的 helper
+- 所有组件适配响应式：GradientFAB/BottomSheet/CalendarPicker/TimeRangePicker/StatCard/EmptyState/Toast 均根据屏幕尺寸动态调整
+- 所有屏幕添加 MAX_CONTENT_WIDTH 居中约束，防止平板上内容被无限拉长
+- HomeScreen: 平板下快捷操作按钮放大、确认弹窗添加 maxWidth
+- LessonScreen: filterRow 支持换行以防窄屏溢出、确认弹窗 maxWidth
+- StatsScreen: chart 宽度改用 onLayout 实测、statsBar/overviewRow 支持 wrap
+- App.tsx: 平板下 TabBar 高度调整
+  - 文件: src/App.tsx, src/components/BottomSheet.tsx, src/components/CalendarPicker.tsx, src/components/EmptyState.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx, src/components/TimeRangePicker.tsx, src/components/Toast.tsx, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/styles/theme.ts, src/utils/responsive.ts
+
 ## [2026-05-11 14:45] 替换硬编码的像素尺寸为响应式尺寸，并限制内容最大宽度
 ## 2026-05-11 15:09 | auto: 05-11 15:09 | logs/CHANGELOG.md src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/styles/theme.ts src/utils/responsive.ts 
 - logs/CHANGELOG.md
