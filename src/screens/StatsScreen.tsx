@@ -30,7 +30,7 @@ const StatsScreen: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
   const [chartCardWidth, setChartCardWidth] = useState(0);
-  const { maxContentWidth, isTablet } = useResponsive();
+  const { maxContentWidth, isTablet, spacing, fontSize } = useResponsive();
 
   const chartAvail = chartCardWidth > 0 ? chartCardWidth - Spacing.lg * 2 : 280;
   const chartBarW = Math.floor(chartAvail / 12);

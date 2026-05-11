@@ -30,7 +30,7 @@ const MONTH_NAMES: Record<string, string> = {
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize } = useResponsive();
 
   useEffect(() => {
     if (student) {

@@ -112,7 +112,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
   const { opacity, translateY } = useFadeIn();
 
   const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
@@ -188,7 +188,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>今日待上课</Text>
+      <Text style={[styles.sectionTitle, { fontSize: fontSize.h3 }]}>今日待上课</Text>
       <TouchableOpacity onPress={() => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
@@ -199,12 +199,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <View style={[styles.container, { maxWidth: maxContentWidth }]}>
+    <View style={[styles.container, { maxWidth: maxContentWidth, paddingHorizontal: spacing.xl }]}>
       <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>🙂你好，老师</Text>
+            <Text style={[styles.greeting, { fontSize: fontSize.h1 }]}>🙂你好，老师</Text>
             <Text style={styles.date}>
               {new Date().toLocaleDateString('zh-CN', {
                 year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
@@ -276,7 +276,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
-          <View style={[styles.confirmBox, Shadows.floating]}>
+          <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
             <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
             <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   overviewLarge: { flex: 0.55 },
   overviewSmall: { flex: 0.45 },
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, borderRadius: 20, padding: Spacing.xxl, width: '80%', maxWidth: 400 },
+  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },

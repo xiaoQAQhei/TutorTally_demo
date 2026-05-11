@@ -61,13 +61,27 @@ export function isTablet(): boolean {
 
 /** Max content width for preventing infinite stretch on wide screens */
 export function maxContentWidth(): number {
-  return _window.width >= BP_MD_MAX ? 600 : _window.width;
+  if (_window.width < BP_MD_MAX) return _window.width;
+  return Math.round(Math.min(_window.width * 0.75, 800));
 }
 
 // Keep exported constant for non-reactive usage (backward compat)
 export const MAX_CONTENT_WIDTH = maxContentWidth();
 
 // ── Reactive Hook ───────────────────────────────────────────────────
+
+/** Breakpoint-aware spacing — larger on tablets */
+export interface ResponsiveSpacing {
+  xs: number; sm: number; md: number; lg: number;
+  xl: number; xxl: number; xxxl: number;
+}
+
+/** Breakpoint-aware font sizes — larger on tablets */
+export interface ResponsiveFontSize {
+  h1: number; h2: number; h3: number;
+  body: number; caption: number; small: number; amount: number;
+}
+
 export interface ResponsiveInfo {
   width: number;
   height: number;
@@ -79,6 +93,42 @@ export interface ResponsiveInfo {
   orientation: 'portrait' | 'landscape';
   /** Safe horizontal padding for content containers */
   contentPaddingH: number;
+  /** Breakpoint-aware spacing (replaces static Spacing on tablets) */
+  spacing: ResponsiveSpacing;
+  /** Breakpoint-aware font sizes (replaces static FontSize on tablets) */
+  fontSize: ResponsiveFontSize;
+}
+
+function buildSpacing(bp: Breakpoint, winWidth: number): ResponsiveSpacing {
+  const s = (size: number) => (winWidth / BASE_WIDTH) * size;
+  if (bp === 'lg') {
+    return {
+      xs: s(6), sm: s(12), md: s(16), lg: s(20),
+      xl: s(28), xxl: s(32), xxxl: s(40),
+    };
+  }
+  return {
+    xs: s(4), sm: s(8), md: s(12), lg: s(16),
+    xl: s(20), xxl: s(24), xxxl: s(32),
+  };
+}
+
+function buildFontSize(bp: Breakpoint, winWidth: number): ResponsiveFontSize {
+  const r = (size: number) => {
+    const ns = (winWidth / BASE_WIDTH) * size;
+    if (Platform.OS === 'ios') return Math.round(PixelRatio.roundToNearestPixel(ns));
+    return Math.round(PixelRatio.roundToNearestPixel(ns)) - 1;
+  };
+  if (bp === 'lg') {
+    return {
+      h1: r(32), h2: r(26), h3: r(20),
+      body: r(17), caption: r(14), small: r(12), amount: r(24),
+    };
+  }
+  return {
+    h1: r(28), h2: r(22), h3: r(18),
+    body: r(15), caption: r(13), small: r(11), amount: r(20),
+  };
 }
 
 let _responsiveCache: ResponsiveInfo | null = null;
@@ -86,19 +136,25 @@ let _listeners = new Set<() => void>();
 
 function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
   const bp = calcBreakpoint(win.width);
+  const isTabletDevice = win.width >= BP_MD_MAX;
   return {
     width: win.width,
     height: win.height,
     bp,
-    isTablet: win.width >= BP_MD_MAX,
+    isTablet: isTabletDevice,
     isSmallPhone: win.width < BP_SM_MAX,
-    maxContentWidth: win.width >= BP_MD_MAX ? 600 : win.width,
+    // Dynamic maxContentWidth: 75% of screen on tablet landscape, 600 on tablet portrait
+    maxContentWidth: isTabletDevice
+      ? Math.round(Math.min(win.width * 0.75, 800))
+      : win.width,
     fontScale: win.fontScale ?? PixelRatio.getFontScale(),
     orientation: win.width > win.height ? 'landscape' : 'portrait',
     contentPaddingH:
       bp === 'sm' ? 12 :
       bp === 'md' ? 16 :
       20,
+    spacing: buildSpacing(bp, win.width),
+    fontSize: buildFontSize(bp, win.width),
   };
 }
 
@@ -112,7 +168,10 @@ Dimensions.addEventListener('change', ({ window: win }) => {
   _window = win;
   _screen = Dimensions.get('screen');
   // Update the static MAX_CONTENT_WIDTH constant
-  (MAX_CONTENT_WIDTH as number) = _window.width >= BP_MD_MAX ? 600 : _window.width;
+  const isTabletDevice = _window.width >= BP_MD_MAX;
+  (MAX_CONTENT_WIDTH as number) = isTabletDevice
+    ? Math.round(Math.min(_window.width * 0.75, 800))
+    : _window.width;
   notifyListeners();
 });
 

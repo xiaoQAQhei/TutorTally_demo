@@ -16,7 +16,7 @@ import {
 import { useResponsive } from '../utils/responsive';
 
 const StudentScreen: React.FC = () => {
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize } = useResponsive();
   const [students, setStudents] = useState<Student[]>([]);
   const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({});
   const [modalVisible, setModalVisible] = useState(false);

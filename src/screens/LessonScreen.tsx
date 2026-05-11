@@ -51,7 +51,7 @@ const LessonScreen: React.FC = () => {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
   const itemHeightRef = useRef(180);
   const cardWidthRef = useRef<Map<number, number>>(new Map());
   const cardHeightRef = useRef<Map<number, number>>(new Map());
@@ -356,7 +356,7 @@ const LessonScreen: React.FC = () => {
           <View style={styles.cardHeaderLeft}>
             {student && <StudentAvatar name={student.name} size={40} />}
             <View>
-              <Text style={styles.studentName}>{student?.name || '未知学生'}</Text>
+              <Text style={[styles.studentName, { fontSize: fontSize.h3 }]}>{student?.name || '未知学生'}</Text>
               <Text style={styles.subject}>{student?.phone || ''}</Text>
             </View>
           </View>
@@ -547,7 +547,7 @@ const LessonScreen: React.FC = () => {
         data={filteredLessons}
         renderItem={renderLesson}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: spacing.xl, paddingBottom: 100 }]}
         ref={flatListRef}
         onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
         scrollEventThrottle={16}

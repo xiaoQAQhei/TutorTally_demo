@@ -14,7 +14,7 @@ import { useResponsive } from '../utils/responsive';
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 const RecurringRulesScreen: React.FC = () => {
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize } = useResponsive();
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);

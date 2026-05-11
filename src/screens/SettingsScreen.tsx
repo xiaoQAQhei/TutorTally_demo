@@ -20,7 +20,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
   const [exportMode, setExportMode] = useState<ExportMode>(null);
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
-  const { maxContentWidth } = useResponsive();
+  const { maxContentWidth, spacing, fontSize } = useResponsive();
 
   const handleExport = async (mode: ExportMode) => {
     setExportMode(null);

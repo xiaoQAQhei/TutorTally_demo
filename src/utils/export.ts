@@ -20,6 +20,16 @@ const BOLD14_STYLE = { font: { bold: true, sz: 14 } };
 const BOLD16_STYLE = { font: { bold: true, sz: 16 } };
 const TITLE_STYLE = { font: { bold: true, sz: 18, color: { rgb: '0070C0' } } };
 
+const COL_WIDTHS = [
+  { wch: 14 },
+  { wch: 10 },
+  { wch: 16 },
+  { wch: 8 },
+  { wch: 10 },
+  { wch: 14 },
+  { wch: 18 },
+];
+
 function safeSheetName(name: string): string {
   return name.replace(/[\\\/\*\?\[\]:]/g, '-').slice(0, 31);
 }
@@ -102,6 +112,7 @@ export async function exportAllToExcel(): Promise<string> {
 
     const sheetData = buildStudentSheet(student, subjects, sLessons);
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    ws['!cols'] = COL_WIDTHS;
     XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
   }
 
@@ -184,6 +195,7 @@ export async function exportByMonth(month: string): Promise<string> {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(sheet);
+  ws['!cols'] = COL_WIDTHS;
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName(title));
 
   const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
@@ -208,6 +220,7 @@ export async function exportByStudent(studentId: number): Promise<string> {
   const wb = XLSX.utils.book_new();
   const sheetData = buildStudentSheet(student, subjects, sLessons);
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!cols'] = COL_WIDTHS;
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName(student.name));
 
   const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
