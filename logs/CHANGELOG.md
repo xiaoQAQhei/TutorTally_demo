@@ -1,3 +1,10 @@
+## [2026-05-11 16:42] Excel 导出添加行高设置，根据字体大小分类配置
+## 2026-05-11 16:44 | auto: 05-11 16:44 | logs/CHANGELOG.md 
+- logs/CHANGELOG.md
+
+- 为 Excel 导出表格添加行高配置：标题行和汇总行使用较大行高（26），数据行使用较小行高（22），提升导出表格的可读性
+  - 文件: src/utils/export.ts
+
 ## [2026-05-11 16:30] 全面适配平板设备响应式布局（better 分支汇总）
 ## 2026-05-11 16:43 | auto: 05-11 16:43 | app.json "export_example_全量.xlsx" "export_example_按月_2026-05.xlsx" 
 - app.json
