@@ -49,6 +49,18 @@ export const vw = (percent: number) => (_window.width * percent) / 100;
 /** % of screen height (like CSS vh) */
 export const vh = (percent: number) => (_window.height * percent) / 100;
 
+/**
+ * Adaptive size that blends width and height scaling.
+ * On tall/narrow screens, gives weight to height to prevent
+ * oversized elements from width-only scaling.
+ * factor: 0 = width-only, 1 = height-only, default 0.3
+ */
+export function adaptSize(size: number, factor = 0.3): number {
+  const ws = (_window.width / BASE_WIDTH) * size;
+  const hs = (_window.height / BASE_HEIGHT) * size;
+  return ws * (1 - factor) + hs * factor;
+}
+
 /** Current breakpoint (snapshot) */
 export function currentBreakpoint(): Breakpoint {
   return calcBreakpoint(_window.width);
@@ -97,37 +109,50 @@ export interface ResponsiveInfo {
   spacing: ResponsiveSpacing;
   /** Breakpoint-aware font sizes (replaces static FontSize on tablets) */
   fontSize: ResponsiveFontSize;
+  /** width / height ratio */
+  aspectRatio: number;
+  /** aspectRatio < 0.52 — ultra-narrow like iPhone SE 1st gen (320x568) */
+  isUltraNarrow: boolean;
+  /** aspectRatio < 0.58 — narrow like iPhone 12/13 Mini */
+  isNarrow: boolean;
+  /** aspectRatio > 0.65 — wide like landscape tablets */
+  isWide: boolean;
 }
 
-function buildSpacing(bp: Breakpoint, winWidth: number): ResponsiveSpacing {
+function buildSpacing(bp: Breakpoint, winWidth: number, aspectRatio: number): ResponsiveSpacing {
   const s = (size: number) => (winWidth / BASE_WIDTH) * size;
+  // Narrow screens: slightly larger vertical spacing for breathing room
+  // Wide screens: slightly tighter vertical spacing
+  const arFactor = aspectRatio < 0.52 ? 1.12 : aspectRatio < 0.58 ? 1.06 : aspectRatio > 0.65 ? 0.92 : 1;
   if (bp === 'lg') {
     return {
-      xs: s(6), sm: s(12), md: s(16), lg: s(20),
-      xl: s(28), xxl: s(32), xxxl: s(40),
+      xs: s(6 * arFactor), sm: s(12 * arFactor), md: s(16 * arFactor), lg: s(20 * arFactor),
+      xl: s(28 * arFactor), xxl: s(32 * arFactor), xxxl: s(40 * arFactor),
     };
   }
   return {
-    xs: s(4), sm: s(8), md: s(12), lg: s(16),
-    xl: s(20), xxl: s(24), xxxl: s(32),
+    xs: s(4 * arFactor), sm: s(8 * arFactor), md: s(12 * arFactor), lg: s(16 * arFactor),
+    xl: s(20 * arFactor), xxl: s(24 * arFactor), xxxl: s(32 * arFactor),
   };
 }
 
-function buildFontSize(bp: Breakpoint, winWidth: number): ResponsiveFontSize {
+function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): ResponsiveFontSize {
   const r = (size: number) => {
     const ns = (winWidth / BASE_WIDTH) * size;
     if (Platform.OS === 'ios') return Math.round(PixelRatio.roundToNearestPixel(ns));
     return Math.round(PixelRatio.roundToNearestPixel(ns)) - 1;
   };
+  // Narrow screens: slightly smaller fonts; wide screens: slightly larger
+  const arFactor = aspectRatio < 0.52 ? 0.90 : aspectRatio < 0.58 ? 0.95 : aspectRatio > 0.65 ? 1.08 : 1;
   if (bp === 'lg') {
     return {
-      h1: r(32), h2: r(26), h3: r(20),
-      body: r(17), caption: r(14), small: r(12), amount: r(24),
+      h1: r(32 * arFactor), h2: r(26 * arFactor), h3: r(20 * arFactor),
+      body: r(17 * arFactor), caption: r(14 * arFactor), small: r(12 * arFactor), amount: r(24 * arFactor),
     };
   }
   return {
-    h1: r(28), h2: r(22), h3: r(18),
-    body: r(15), caption: r(13), small: r(11), amount: r(20),
+    h1: r(28 * arFactor), h2: r(22 * arFactor), h3: r(18 * arFactor),
+    body: r(15 * arFactor), caption: r(13 * arFactor), small: r(11 * arFactor), amount: r(20 * arFactor),
   };
 }
 
@@ -137,6 +162,7 @@ let _listeners = new Set<() => void>();
 function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
   const bp = calcBreakpoint(win.width);
   const isTabletDevice = win.width >= BP_MD_MAX;
+  const aspectRatio = win.width / Math.max(win.height, 1);
   return {
     width: win.width,
     height: win.height,
@@ -153,8 +179,12 @@ function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
       bp === 'sm' ? 12 :
       bp === 'md' ? 16 :
       20,
-    spacing: buildSpacing(bp, win.width),
-    fontSize: buildFontSize(bp, win.width),
+    spacing: buildSpacing(bp, win.width, aspectRatio),
+    fontSize: buildFontSize(bp, win.width, aspectRatio),
+    aspectRatio,
+    isUltraNarrow: aspectRatio < 0.52,
+    isNarrow: aspectRatio < 0.58 && aspectRatio >= 0.52,
+    isWide: aspectRatio > 0.65,
   };
 }
 

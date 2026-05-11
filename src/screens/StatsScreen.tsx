@@ -10,7 +10,7 @@ import StudentBillingDetailScreen from './StudentBillingDetailScreen';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
 } from '../styles/theme';
-import { useResponsive, scale } from '../utils/responsive';
+import { useResponsive, scale, moderateScale } from '../utils/responsive';
 
 const MONTH_NAMES: Record<string, string> = {
   '01': '1月', '02': '2月', '03': '3月', '04': '4月',
@@ -192,7 +192,7 @@ const StatsScreen: React.FC = () => {
           <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthArrow}>
             <Ionicons name="chevron-back" size={20} color={Colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.monthLabel}>{formatSelectedMonth()}</Text>
+          <Text style={[styles.monthLabel, { fontSize: fontSize.h3 }]}>{formatSelectedMonth()}</Text>
           <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthArrow}>
             <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
           </TouchableOpacity>
@@ -201,23 +201,23 @@ const StatsScreen: React.FC = () => {
         {/* Compact stats bar */}
         <View style={[styles.statsBar, Shadows.subtle]}>
           <View style={styles.statsBarItem}>
-            <Text style={styles.statsBarValue}>{monthTotalStats.students}</Text>
-            <Text style={styles.statsBarLabel}>学生</Text>
+            <Text style={[styles.statsBarValue, { fontSize: fontSize.body }]}>{monthTotalStats.students}</Text>
+            <Text style={[styles.statsBarLabel, { fontSize: fontSize.small }]}>学生</Text>
           </View>
           <View style={styles.statsBarDivider} />
           <View style={styles.statsBarItem}>
-            <Text style={styles.statsBarValue}>{monthTotalStats.lessons}节</Text>
-            <Text style={styles.statsBarLabel}>课时</Text>
+            <Text style={[styles.statsBarValue, { fontSize: fontSize.body }]}>{monthTotalStats.lessons}节</Text>
+            <Text style={[styles.statsBarLabel, { fontSize: fontSize.small }]}>课时</Text>
           </View>
           <View style={styles.statsBarDivider} />
           <View style={styles.statsBarItem}>
-            <Text style={styles.statsBarValue}>{monthTotalStats.hours.toFixed(1)}h</Text>
-            <Text style={styles.statsBarLabel}>时长</Text>
+            <Text style={[styles.statsBarValue, { fontSize: fontSize.body }]}>{monthTotalStats.hours.toFixed(1)}h</Text>
+            <Text style={[styles.statsBarLabel, { fontSize: fontSize.small }]}>时长</Text>
           </View>
           <View style={styles.statsBarDivider} />
           <View style={styles.statsBarItem}>
             <Text style={[styles.statsBarValue, { color: Colors.paid }]}>¥{monthTotalStats.amount.toFixed(0)}</Text>
-            <Text style={styles.statsBarLabel}>收入</Text>
+            <Text style={[styles.statsBarLabel, { fontSize: fontSize.small }]}>收入</Text>
           </View>
         </View>
 
@@ -232,7 +232,7 @@ const StatsScreen: React.FC = () => {
                 label: d.label,
                 frontColor: d.value > 0 ? Colors.primary : Colors.primaryLight,
                 topLabelComponent: d.value > 0 ? () => (
-                  <Text style={styles.barTopLabel}>{d.value.toFixed(0)}</Text>
+                  <Text style={[styles.barTopLabel, { fontSize: fontSize.small }]}>{d.value.toFixed(0)}</Text>
                 ) : undefined,
               }))}
               barWidth={chartBarW}
@@ -257,25 +257,25 @@ const StatsScreen: React.FC = () => {
         {/* Monthly payment overview */}
         <View style={[styles.overviewCard, Shadows.standard]}>
           <Text style={[styles.overviewTitle, { fontSize: fontSize.h3 }]}>收款概览 · 本月</Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${Math.max(monthRatio, 4)}%` }]} />
+          <View style={[styles.progressTrack, { height: scale(8), borderRadius: scale(4) }]}>
+            <View style={[styles.progressFill, { width: `${Math.max(monthRatio, 4)}%`, borderRadius: scale(4) }]} />
           </View>
           <View style={styles.overviewRow}>
             <View style={styles.overviewItem}>
-              <Text style={styles.overviewValue}>{monthRatio.toFixed(0)}%</Text>
-              <Text style={styles.overviewLabel}>已收比例</Text>
+              <Text style={[styles.overviewValue, { fontSize: fontSize.h2 }]}>{monthRatio.toFixed(0)}%</Text>
+              <Text style={[styles.overviewLabel, { fontSize: fontSize.small }]}>已收比例</Text>
             </View>
             <View style={styles.overviewDivider} />
             <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>本月已收</Text>
-              <Text style={[styles.overviewDetail, { color: Colors.paid }]}>
+              <Text style={[styles.overviewLabel, { fontSize: fontSize.small }]}>本月已收</Text>
+              <Text style={[styles.overviewDetail, { color: Colors.paid, fontSize: fontSize.body }]}>
                 {monthStats.paid.toFixed(0)}元
               </Text>
             </View>
             <View style={styles.overviewDivider} />
             <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>本月待收</Text>
-              <Text style={[styles.overviewDetail, { color: Colors.pending }]}>
+              <Text style={[styles.overviewLabel, { fontSize: fontSize.small }]}>本月待收</Text>
+              <Text style={[styles.overviewDetail, { color: Colors.pending, fontSize: fontSize.body }]}>
                 {monthStats.pending.toFixed(0)}元
               </Text>
             </View>
@@ -296,33 +296,33 @@ const StatsScreen: React.FC = () => {
             >
               <View style={styles.studentHeader}>
                 <View style={styles.studentInfo}>
-                  <View style={[styles.studentDot, { backgroundColor: subColor }]} />
+                  <View style={[styles.studentDot, { backgroundColor: subColor, width: moderateScale(10), height: moderateScale(10), borderRadius: moderateScale(5) }]} />
                   <View>
-                    <Text style={styles.studentName}>{item.student.name}</Text>
-                    <Text style={styles.studentSubject}>{item.subjects?.[0]?.subject || '未分类'} · {item.subjects?.[0]?.hourlyRate || 0}元/h</Text>
+                    <Text style={[styles.studentName, { fontSize: fontSize.body }]}>{item.student.name}</Text>
+                    <Text style={[styles.studentSubject, { fontSize: fontSize.small }]}>{item.subjects?.[0]?.subject || '未分类'} · {item.subjects?.[0]?.hourlyRate || 0}元/h</Text>
                   </View>
                 </View>
                 {hasPending && (
                   <View style={styles.pendingTag}>
-                    <Text style={styles.pendingTagText}>有待收</Text>
+                    <Text style={[styles.pendingTagText, { fontSize: fontSize.small }]}>有待收</Text>
                   </View>
                 )}
               </View>
               <View style={styles.studentStats}>
-                <Text style={styles.studentStatText}>本月上了{item.totalLessons}节课，课时为{item.totalHours.toFixed(1)}小时</Text>
+                <Text style={[styles.studentStatText, { fontSize: fontSize.caption }]}>本月上了{item.totalLessons}节课，课时为{item.totalHours.toFixed(1)}小时</Text>
               </View>
               <View style={styles.studentAmounts}>
                 <View style={styles.amountCol}>
-                  <Text style={styles.amountColLabel}>合计</Text>
-                  <Text style={styles.amountColValue}>{item.totalAmount.toFixed(0)}元</Text>
+                  <Text style={[styles.amountColLabel, { fontSize: fontSize.small }]}>合计</Text>
+                  <Text style={[styles.amountColValue, { fontSize: fontSize.amount }]}>{item.totalAmount.toFixed(0)}元</Text>
                 </View>
                 <View style={styles.amountCol}>
-                  <Text style={styles.amountColLabel}>已收</Text>
-                  <Text style={[styles.amountColValue, { color: Colors.paid }]}>{item.paidAmount.toFixed(0)}元</Text>
+                  <Text style={[styles.amountColLabel, { fontSize: fontSize.small }]}>已收</Text>
+                  <Text style={[styles.amountColValue, { color: Colors.paid, fontSize: fontSize.amount }]}>{item.paidAmount.toFixed(0)}元</Text>
                 </View>
                 <View style={styles.amountCol}>
-                  <Text style={styles.amountColLabel}>待收</Text>
-                  <Text style={[styles.amountColValue, { color: hasPending ? Colors.danger : Colors.caption }]}>
+                  <Text style={[styles.amountColLabel, { fontSize: fontSize.small }]}>待收</Text>
+                  <Text style={[styles.amountColValue, { color: hasPending ? Colors.danger : Colors.caption, fontSize: fontSize.amount }]}>
                     {item.pendingAmount.toFixed(0)}元
                   </Text>
                 </View>
@@ -331,7 +331,7 @@ const StatsScreen: React.FC = () => {
           );
         })}
         {monthFilteredStats.length === 0 && (
-          <Text style={styles.emptyMonth}>本月无课程记录</Text>
+          <Text style={[styles.emptyMonth, { fontSize: fontSize.caption }]}>本月无课程记录</Text>
         )}
       </ScrollView>
 
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     paddingVertical: Spacing.md, marginBottom: Spacing.xl,
   },
-  statsBarItem: { flex: 1, minWidth: 70, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
+  statsBarItem: { flex: 1, flexBasis: 0, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
   statsBarValue: {
     fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: 2,

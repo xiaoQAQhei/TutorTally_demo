@@ -357,7 +357,7 @@ const LessonScreen: React.FC = () => {
             {student && <StudentAvatar name={student.name} size={40} />}
             <View>
               <Text style={[styles.studentName, { fontSize: fontSize.h3 }]}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.subject}>{student?.phone || ''}</Text>
+              <Text style={[styles.subject, { fontSize: fontSize.small }]}>{student?.phone || ''}</Text>
             </View>
           </View>
           <StatusBadge
@@ -371,28 +371,28 @@ const LessonScreen: React.FC = () => {
             <View style={styles.infoLeft}>
               <View style={styles.infoItem}>
                 <Ionicons name="calendar-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{lesson.date}</Text>
+                <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.date}</Text>
               </View>
               <View style={styles.infoItem}>
                 <Ionicons name="hourglass-outline" size={14} color={Colors.caption} />
-                <Text style={styles.infoText}>{lesson.duration}h</Text>
+                <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.duration}h</Text>
               </View>
             </View>
             {lesson.timeSlot ? (
               <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
                 <Ionicons name="time-outline" size={25} color={showCancelAnim ? Colors.caption : Colors.primary} />
-                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
+                <Text style={[styles.timeSlotBadgeText, { fontSize: fontSize.h2 }, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
               </View>
             ) : null}
           </View>
           <View style={styles.amountRow}>
             <Ionicons name="wallet-outline" size={20} color={Colors.caption} />
-            <Text style={styles.amountText}>{lesson.amount.toFixed(0)}元</Text>
+            <Text style={[styles.amountText, { fontSize: fontSize.amount }]}>{lesson.amount.toFixed(0)}元</Text>
           </View>
           {lesson.notes ? (
             <View style={styles.noteRow}>
               <Ionicons name="document-text-outline" size={14} color={Colors.caption} />
-              <Text style={styles.noteText} numberOfLines={2}>{lesson.notes}</Text>
+              <Text style={[styles.noteText, { fontSize: fontSize.small }]} numberOfLines={2}>{lesson.notes}</Text>
             </View>
           ) : null}
           {showCancelAnim && interactive && (
@@ -403,7 +403,7 @@ const LessonScreen: React.FC = () => {
                   outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
                 }),
               }]} />
-              <Animated.Text style={[styles.strikethroughLabel, {
+              <Animated.Text style={[styles.strikethroughLabel, { fontSize: fontSize.caption }, {
                 opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
               }]}>已取消</Animated.Text>
             </View>
@@ -411,7 +411,7 @@ const LessonScreen: React.FC = () => {
           {showCancelAnim && !interactive && isCancelled && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
               <View style={[styles.strikethroughLine, { width: cancelData.width > 0 ? cancelData.width + 20 : 400 }]} />
-              <Text style={styles.strikethroughLabel}>已取消</Text>
+              <Text style={[styles.strikethroughLabel, { fontSize: fontSize.caption }]}>已取消</Text>
             </View>
           )}
         </View>
@@ -581,11 +581,11 @@ const LessonScreen: React.FC = () => {
                   activeOpacity={0.75}
                   onPress={() => setFilterStatus(opt.key)}
                 >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
                   <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
+                    <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                       {count}
                     </Text>
                   </View>
@@ -632,11 +632,11 @@ const LessonScreen: React.FC = () => {
                   activeOpacity={0.75}
                   onPress={() => setFilterStatus(opt.key)}
                 >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
                   <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
+                    <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                       {count}
                     </Text>
                   </View>
@@ -702,32 +702,32 @@ const LessonScreen: React.FC = () => {
       })()}
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
-        <Text style={styles.formLabel}>选择学生</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>选择学生</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
               <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={28} />
-              <Text style={styles.pickerText}>{getStudent(selectedStudentId)?.name}</Text>
+              <Text style={[styles.pickerText, { fontSize: fontSize.body }]}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
-            <Text style={styles.pickerPlaceholder}>请选择学生</Text>
+            <Text style={[styles.pickerPlaceholder, { fontSize: fontSize.body }]}>请选择学生</Text>
           )}
           <Ionicons name="chevron-down" size={20} color={Colors.caption} />
         </TouchableOpacity>
 
-        <Text style={styles.formLabel}>上课日期</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课日期</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)} activeOpacity={0.7}>
           <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
-          <Text style={[styles.datePickerText, !date && styles.datePickerPlaceholder]}>
+          <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !date && styles.datePickerPlaceholder]}>
             {date || '选择日期'}
           </Text>
           <Ionicons name="chevron-down" size={16} color={Colors.caption} />
         </TouchableOpacity>
 
-        <Text style={styles.formLabel}>上课时段</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课时段</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)} activeOpacity={0.7}>
           <Ionicons name="time-outline" size={18} color={Colors.primary} />
-          <Text style={[styles.datePickerText, !timeSlot && styles.datePickerPlaceholder]}>
+          <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !timeSlot && styles.datePickerPlaceholder]}>
             {timeSlot || '选择时段'}
           </Text>
           <Ionicons name="chevron-down" size={16} color={Colors.caption} />
@@ -735,11 +735,11 @@ const LessonScreen: React.FC = () => {
 
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>课时（小时）</Text>
+            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时（小时）</Text>
             <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
           </View>
           <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>课时费（元/小时）</Text>
+            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时费（元/小时）</Text>
             <TextInput
               style={[styles.input, styles.rateInput]}
               placeholder="如 75"
@@ -752,15 +752,15 @@ const LessonScreen: React.FC = () => {
         </View>
 
         <View style={styles.amountPreview}>
-          <Text style={styles.amountPreviewLabel}>预计课时费</Text>
-          <Text style={styles.amountPreviewValue}>{calculateAmount().toFixed(0)}元</Text>
+          <Text style={[styles.amountPreviewLabel, { fontSize: fontSize.body }]}>预计课时费</Text>
+          <Text style={[styles.amountPreviewValue, { fontSize: fontSize.h2 }]}>{calculateAmount().toFixed(0)}元</Text>
         </View>
 
-        <Text style={styles.formLabel}>备注（可选）</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>备注（可选）</Text>
         <TextInput style={[styles.input, styles.textArea]} placeholder="添加备注..." value={notes} onChangeText={setNotes} multiline placeholderTextColor={Colors.caption} />
 
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>{editingLesson ? '更新课程' : '添加课程'}</Text>
+          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingLesson ? '更新课程' : '添加课程'}</Text>
         </TouchableOpacity>
       </BottomSheet>
 
@@ -790,8 +790,8 @@ const LessonScreen: React.FC = () => {
             >
               <StudentAvatar name={s.name} size={40} />
               <View style={styles.studentItemInfo}>
-                <Text style={[styles.studentItemName, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
-                <Text style={styles.studentItemSubject}>{s.phone || ''}</Text>
+                <Text style={[styles.studentItemName, { fontSize: fontSize.body }, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
+                <Text style={[styles.studentItemSubject, { fontSize: fontSize.small }]}>{s.phone || ''}</Text>
               </View>
               {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
             </TouchableOpacity>
@@ -813,10 +813,10 @@ const LessonScreen: React.FC = () => {
             <Text style={[styles.confirmMessage, { fontSize: fontSize.body }]}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
-                <Text style={styles.confirmCancelText}>取消</Text>
+                <Text style={[styles.confirmCancelText, { fontSize: fontSize.body }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
-                <Text style={styles.confirmOkText}>确定</Text>
+                <Text style={[styles.confirmOkText, { fontSize: fontSize.body }]}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>

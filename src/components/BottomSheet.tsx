@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
+import { useResponsive, scale, verticalScale } from '../utils/responsive';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -17,6 +18,10 @@ interface BottomSheetProps {
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, children, heightFactor = 0.82, scrollable = true }) => {
   const { height: screenH } = useWindowDimensions();
+  const { isTablet } = useResponsive();
+  const handleW = scale(isTablet ? 48 : 36);
+  const handleH = verticalScale(4);
+  const closeBtnSize = scale(isTablet ? 44 : 36);
   const sheetHeight = useMemo(() => screenH * heightFactor, [screenH, heightFactor]);
   const translateY = useRef(new Animated.Value(sheetHeight)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -54,11 +59,11 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, chil
         </Animated.View>
         <Animated.View style={[styles.sheet, { height: sheetHeight, transform: [{ translateY }] }]}>
           <View style={styles.handleContainer}>
-            <View style={styles.handle} />
+            <View style={[styles.handle, { width: handleW, height: handleH }]} />
           </View>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <TouchableOpacity style={[styles.closeButton, { width: closeBtnSize, height: closeBtnSize, borderRadius: closeBtnSize / 2 }]} onPress={onClose}>
               <Ionicons name="close" size={24} color={Colors.title} />
             </TouchableOpacity>
           </View>

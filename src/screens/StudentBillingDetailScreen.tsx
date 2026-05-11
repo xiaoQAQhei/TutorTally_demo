@@ -77,7 +77,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
             <Text style={[styles.headerTitle, { fontSize: fontSize.h3 }]}>{student.name}</Text>
             <View style={styles.headerSubRow}>
               <View style={[styles.subjectDot, { backgroundColor: subjectColor }]} />
-              <Text style={styles.headerSub}>{subjects?.[0]?.subject || '未分类'} · {subjects?.[0]?.hourlyRate || 0}元/h</Text>
+              <Text style={[styles.headerSub, { fontSize: fontSize.small }]}>{subjects?.[0]?.subject || '未分类'} · {subjects?.[0]?.hourlyRate || 0}元/h</Text>
             </View>
           </View>
           <View style={styles.closeBtn} />
@@ -93,17 +93,17 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
               {/* Summary Cards */}
               <View style={styles.summaryRow}>
                 <View style={[styles.summaryCard, { backgroundColor: Colors.primaryLight }]}>
-                  <Text style={styles.summaryLabel}>总收入</Text>
-                  <Text style={[styles.summaryValue, { color: Colors.primary }]}>{totalAmount.toFixed(0)}元</Text>
-                  <Text style={styles.summarySub}>{totalHours.toFixed(1)}h / {lessons.length}节</Text>
+                  <Text style={[styles.summaryLabel, { fontSize: fontSize.small }]}>总收入</Text>
+                  <Text style={[styles.summaryValue, { color: Colors.primary, fontSize: fontSize.amount }]}>{totalAmount.toFixed(0)}元</Text>
+                  <Text style={[styles.summarySub, { fontSize: fontSize.small }]}>{totalHours.toFixed(1)}h / {lessons.length}节</Text>
                 </View>
                 <View style={[styles.summaryCard, { backgroundColor: Colors.paidLight }]}>
-                  <Text style={styles.summaryLabel}>已收款</Text>
-                  <Text style={[styles.summaryValue, { color: Colors.paid }]}>{paidAmount.toFixed(0)}元</Text>
+                  <Text style={[styles.summaryLabel, { fontSize: fontSize.small }]}>已收款</Text>
+                  <Text style={[styles.summaryValue, { color: Colors.paid, fontSize: fontSize.amount }]}>{paidAmount.toFixed(0)}元</Text>
                 </View>
                 <View style={[styles.summaryCard, { backgroundColor: Colors.pendingLight }]}>
-                  <Text style={styles.summaryLabel}>待收款</Text>
-                  <Text style={[styles.summaryValue, { color: Colors.pending }]}>{pendingAmount.toFixed(0)}元</Text>
+                  <Text style={[styles.summaryLabel, { fontSize: fontSize.small }]}>待收款</Text>
+                  <Text style={[styles.summaryValue, { color: Colors.pending, fontSize: fontSize.amount }]}>{pendingAmount.toFixed(0)}元</Text>
                 </View>
               </View>
 
@@ -113,26 +113,26 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
           renderItem={({ item }) => (
             <View style={[styles.monthCard, Shadows.subtle]}>
               <View style={styles.monthHeader}>
-                <Text style={styles.monthLabel}>{formatMonth(item.month)}</Text>
+                <Text style={[styles.monthLabel, { fontSize: fontSize.body }]}>{formatMonth(item.month)}</Text>
                 <View style={styles.monthStats}>
-                  <Text style={styles.monthStat}>{item.lessons.length}节</Text>
-                  <Text style={styles.monthSep}>·</Text>
-                  <Text style={styles.monthStat}>{item.hours.toFixed(1)}h</Text>
-                  <Text style={styles.monthSep}>·</Text>
-                  <Text style={[styles.monthAmount, { color: Colors.primary }]}>{item.total.toFixed(0)}元</Text>
+                  <Text style={[styles.monthStat, { fontSize: fontSize.small }]}>{item.lessons.length}节</Text>
+                  <Text style={[styles.monthSep, { fontSize: fontSize.small }]}>·</Text>
+                  <Text style={[styles.monthStat, { fontSize: fontSize.small }]}>{item.hours.toFixed(1)}h</Text>
+                  <Text style={[styles.monthSep, { fontSize: fontSize.small }]}>·</Text>
+                  <Text style={[styles.monthAmount, { color: Colors.primary, fontSize: fontSize.body }]}>{item.total.toFixed(0)}元</Text>
                 </View>
               </View>
               {item.lessons.map((l) => (
                 <View key={l.id} style={styles.lessonRow}>
                   <View style={styles.lessonLeft}>
-                    <Text style={styles.lessonDate}>{l.date}</Text>
-                    {l.notes ? <Text style={styles.lessonNotes} numberOfLines={1}>{l.notes}</Text> : null}
+                    <Text style={[styles.lessonDate, { fontSize: fontSize.caption }]}>{l.date}</Text>
+                    {l.notes ? <Text style={[styles.lessonNotes, { fontSize: fontSize.small }]} numberOfLines={1}>{l.notes}</Text> : null}
                   </View>
                   <View style={styles.lessonRight}>
-                    <Text style={styles.lessonDuration}>{l.duration.toFixed(1)}h</Text>
-                    <Text style={styles.lessonAmount}>{l.amount.toFixed(0)}元</Text>
+                    <Text style={[styles.lessonDuration, { fontSize: fontSize.small }]}>{l.duration.toFixed(1)}h</Text>
+                    <Text style={[styles.lessonAmount, { fontSize: fontSize.body }]}>{l.amount.toFixed(0)}元</Text>
                     <View style={[styles.inlineBadgeBase, { backgroundColor: LessonStatusColors[l.status]?.bg || Colors.card }]}>
-                      <Text style={[styles.inlineBadgeText, { color: LessonStatusColors[l.status]?.text || Colors.caption }]}>
+                      <Text style={[styles.inlineBadgeText, { color: LessonStatusColors[l.status]?.text || Colors.caption, fontSize: fontSize.small }]}>
                         {LessonStatusColors[l.status]?.label || l.status}
                       </Text>
                     </View>
@@ -144,7 +144,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="document-text-outline" size={48} color={Colors.caption} />
-              <Text style={styles.emptyText}>暂无课程记录</Text>
+              <Text style={[styles.emptyText, { fontSize: fontSize.body }]}>暂无课程记录</Text>
             </View>
           }
         />

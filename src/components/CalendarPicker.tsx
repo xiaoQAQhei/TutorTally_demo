@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
-import { useResponsive } from '../utils/responsive';
+import { useResponsive, scale, verticalScale, moderateScale } from '../utils/responsive';
 
 const CELL_GAP = Spacing.xs;
 
@@ -22,9 +22,13 @@ const formatDate = (y: number, m: number, d: number) =>
   `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
 const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfirm, onClose }) => {
-  const { width: screenWidth, isTablet } = useResponsive();
+  const { width: screenWidth, isTablet, isUltraNarrow } = useResponsive();
   const maxCardW = isTablet ? 480 : Math.min(screenWidth - Spacing.xl * 2, 400);
   const cardWidth = Math.min(screenWidth - Spacing.xl * 2, maxCardW);
+  const navBtnSize = scale(isTablet ? 44 : isUltraNarrow ? 32 : 36);
+  const weekdayH = verticalScale(24);
+  const dotSize = moderateScale(4);
+  const actionBtnH = scale(isTablet ? 48 : 44);
   const cellSize = Math.floor((cardWidth - Spacing.lg * 2 - CELL_GAP * 7) / 7);
 
   const today = new Date();
@@ -75,13 +79,13 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
         <View style={[styles.card, Shadows.floating, { width: cardWidth }]}>
           {/* Month Navigator */}
           <View style={styles.nav}>
-            <TouchableOpacity style={styles.navButton} onPress={goToPrevMonth} activeOpacity={0.6}>
+            <TouchableOpacity style={[styles.navButton, { width: navBtnSize, height: navBtnSize, borderRadius: navBtnSize / 2 }]} onPress={goToPrevMonth} activeOpacity={0.6}>
               <Ionicons name="chevron-back" size={20} color={Colors.title} />
             </TouchableOpacity>
             <Text style={styles.navTitle}>
               {viewYear}年 {viewMonth + 1}月
             </Text>
-            <TouchableOpacity style={styles.navButton} onPress={goToNextMonth} activeOpacity={0.6}>
+            <TouchableOpacity style={[styles.navButton, { width: navBtnSize, height: navBtnSize, borderRadius: navBtnSize / 2 }]} onPress={goToNextMonth} activeOpacity={0.6}>
               <Ionicons name="chevron-forward" size={20} color={Colors.title} />
             </TouchableOpacity>
           </View>
@@ -89,7 +93,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
           {/* Weekday Headers */}
           <View style={styles.weekdayRow}>
             {WEEKDAYS.map((d) => (
-              <View key={d} style={[styles.weekdayCell, { width: cellSize }]}>
+              <View key={d} style={[styles.weekdayCell, { width: cellSize, height: weekdayH }]}>
                 <Text style={styles.weekdayText}>{d}</Text>
               </View>
             ))}
@@ -114,7 +118,7 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
                     <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
                       {day}
                     </Text>
-                    {isToday && !isSelected && <View style={styles.todayDot} />}
+                    {isToday && !isSelected && <View style={[styles.todayDot, { width: dotSize, height: dotSize, borderRadius: dotSize / 2 }]} />}
                   </TouchableOpacity>
                 );
               })}
@@ -123,10 +127,10 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, value, onConfi
 
           {/* Actions */}
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.cancelButton, { height: actionBtnH }]} onPress={onClose} activeOpacity={0.7}>
               <Text style={styles.cancelText}>取消</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.confirmButton, { height: actionBtnH }]} onPress={handleConfirm} activeOpacity={0.8}>
               <Text style={styles.confirmText}>确定</Text>
             </TouchableOpacity>
           </View>

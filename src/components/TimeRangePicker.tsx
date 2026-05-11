@@ -4,11 +4,9 @@ import {
   NativeSyntheticEvent, NativeScrollEvent, Animated,
 } from 'react-native';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
-import { useResponsive, scale } from '../utils/responsive';
+import { useResponsive, scale, verticalScale } from '../utils/responsive';
 
-const ITEM_HEIGHT = 36;
-const VISIBLE_ITEMS = 3;
-const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const BASE_ITEM_H = 36;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
@@ -33,13 +31,18 @@ interface ScrollColumnProps {
 }
 
 const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSelect, label }) => {
+  const { isTablet, isUltraNarrow } = useResponsive();
+  const itemH = verticalScale(isTablet ? 44 : isUltraNarrow ? 32 : BASE_ITEM_H);
+  const colW = scale(isUltraNarrow ? 40 : isTablet ? 56 : 48);
+  const pickerH = itemH * 3;
+
   const scrollRef = useRef<ScrollView>(null);
   const [centeredIndex, setCenteredIndex] = useState(selectedIndex);
   const isDragging = useRef(false);
   const isSnapping = useRef(false);
   const snapTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const targetOffsets = data.map((_, i) => i * ITEM_HEIGHT);
+  const targetOffsets = data.map((_, i) => i * itemH);
 
   useEffect(() => {
     setCenteredIndex(selectedIndex);
@@ -47,7 +50,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+      scrollRef.current.scrollTo({ y: selectedIndex * itemH, animated: false });
     }
   }, []);
 
@@ -61,7 +64,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
     if (isSnapping.current) return;
     isSnapping.current = true;
     const clamped = Math.max(0, Math.min(index, data.length - 1));
-    const targetY = clamped * ITEM_HEIGHT;
+    const targetY = clamped * itemH;
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ y: targetY, animated: true });
     }
@@ -74,7 +77,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
       clearTimeout(snapTimeout.current);
     }
     const y = e.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
+    const index = Math.round(y / itemH);
     const clamped = Math.max(0, Math.min(index, data.length - 1));
     setCenteredIndex(clamped);
 
@@ -95,21 +98,21 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
   const handleScrollEndDrag = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     isDragging.current = false;
     const y = e.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
+    const index = Math.round(y / itemH);
     performSnap(index);
   }, [performSnap]);
 
   const handleMomentumScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     isDragging.current = false;
     const y = e.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
+    const index = Math.round(y / itemH);
     performSnap(index);
   }, [performSnap]);
 
   return (
     <View style={columnStyles.container}>
       <Text style={columnStyles.label}>{label}</Text>
-      <View style={columnStyles.pickerContainer}>
+      <View style={[columnStyles.pickerContainer, { height: pickerH, width: colW }]}>
         <ScrollView
           ref={scrollRef}
           style={columnStyles.scrollView}
@@ -122,10 +125,10 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
           onMomentumScrollEnd={handleMomentumScrollEnd}
           scrollEventThrottle={16}
           bounces={false}
-          contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
+          contentContainerStyle={{ paddingVertical: itemH }}
         >
           {data.map((val) => (
-            <View key={val} style={columnStyles.item}>
+            <View key={val} style={[columnStyles.item, { height: itemH }]}>
               <Text style={[
                 columnStyles.itemText,
                 val === data[centeredIndex] && columnStyles.itemTextSelected,
@@ -137,7 +140,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ data, selectedIndex, onSele
         </ScrollView>
         <View style={columnStyles.mask} pointerEvents="none">
           <View style={columnStyles.maskTop} />
-          <View style={columnStyles.maskCenter} />
+          <View style={[columnStyles.maskCenter, { height: itemH }]} />
           <View style={columnStyles.maskBottom} />
         </View>
       </View>
@@ -152,12 +155,12 @@ const columnStyles = StyleSheet.create({
     color: Colors.caption, marginBottom: Spacing.xs,
   },
   pickerContainer: {
-    height: PICKER_HEIGHT, width: 48,
+    height: BASE_ITEM_H * 3, width: 48,
     position: 'relative', overflow: 'hidden',
   },
   scrollView: { flex: 1 },
   item: {
-    height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center',
+    height: BASE_ITEM_H, justifyContent: 'center', alignItems: 'center',
   },
   itemText: {
     fontSize: FontSize.h3, color: Colors.caption, fontWeight: FontWeight.medium,
@@ -175,7 +178,7 @@ const columnStyles = StyleSheet.create({
     opacity: 0.85,
   },
   maskCenter: {
-    height: ITEM_HEIGHT,
+    height: BASE_ITEM_H,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.divider,

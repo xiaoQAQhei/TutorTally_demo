@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, useResponsive } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, useResponsive, ResponsiveFontSize } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -144,18 +144,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={[styles.colorBar, { backgroundColor: morphBorderColor }]} />
           <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
             <View style={styles.recentLeft}>
-              <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-              <Text style={styles.recentDate}>{item.date}</Text>
+              <Text style={[styles.recentName, { fontSize: fontSize.body }]} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+              <Text style={[styles.recentDate, { fontSize: fontSize.small }]}>{item.date}</Text>
             </View>
             <View style={styles.recentCenter}>
-              {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+              {item.timeSlot ? <Text style={[styles.recentTimeSlot, { fontSize: fontSize.h2 }]}>{item.timeSlot}</Text> : null}
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
-            <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+            <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
               <Ionicons name="checkmark-circle" size={14} color={morphBadgeColor} />
-              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
+              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor, fontSize: fontSize.small }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -174,12 +174,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.recentDate}>{item.date}</Text>
         </View>
         <View style={styles.recentCenter}>
-          {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+          {item.timeSlot ? <Text style={[styles.recentTimeSlot, { fontSize: fontSize.h2 }]}>{item.timeSlot}</Text> : null}
         </View>
         <View style={styles.recentRight}>
-          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+          <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
           <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
-            <Text style={[styles.miniBadgeText, { color: Colors.primary }]}>待上</Text>
+            <Text style={[styles.miniBadgeText, { color: Colors.primary, fontSize: fontSize.small }]}>待上</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -193,7 +193,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
       }}>
-        <Text style={styles.viewAll}>查看全部</Text>
+        <Text style={[styles.viewAll, { fontSize: fontSize.caption }]}>查看全部</Text>
       </TouchableOpacity>
     </View>
   );
@@ -205,7 +205,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { fontSize: fontSize.h1 }]}>🙂你好，老师</Text>
-            <Text style={styles.date}>
+            <Text style={[styles.date, { fontSize: fontSize.caption }]}>
               {new Date().toLocaleDateString('zh-CN', {
                 year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
               })}
@@ -222,6 +222,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <QuickActionButton
               key={item.screen + index}
               item={item}
+              fontSize={fontSize}
               onPress={() => {
                 if (item.action) setPendingAction(item.action);
                 navigation.navigate(item.screen);
@@ -277,14 +278,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
           <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
-            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
-            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <Text style={[styles.confirmTitle, { fontSize: fontSize.h3 }]}>{confirmDialog.title}</Text>
+            <Text style={[styles.confirmMessage, { fontSize: fontSize.body }]}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
-                <Text style={styles.confirmCancelText}>取消</Text>
+                <Text style={[styles.confirmCancelText, { fontSize: fontSize.body }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
-                <Text style={styles.confirmOkText}>确定</Text>
+                <Text style={[styles.confirmOkText, { fontSize: fontSize.body }]}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -297,20 +298,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 const QuickActionButton: React.FC<{
   item: typeof QUICK_ACTIONS[0];
   onPress: () => void;
-}> = ({ item, onPress }) => {
-  const { scale, bounce } = useBounce(onPress);
-  const { isTablet } = useResponsive();
+  fontSize: ResponsiveFontSize;
+}> = ({ item, onPress, fontSize }) => {
+  const { scale: bounceScale, bounce } = useBounce(onPress);
+  const { isTablet, isUltraNarrow } = useResponsive();
+  const iconSize = isTablet ? 28 : isUltraNarrow ? 18 : 22;
+  const iconContainerSize = scale(isTablet ? 48 : isUltraNarrow ? 32 : 40);
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={bounce}
-      style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? Spacing.xl : Spacing.lg }]}
+      style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? Spacing.xl : isUltraNarrow ? Spacing.sm : Spacing.lg }]}
     >
-      <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
-        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22' }]}>
-          <Ionicons name={item.icon as any} size={isTablet ? 24 : 20} color={item.color} />
+      <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
+        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2 }]}>
+          <Ionicons name={item.icon as any} size={iconSize} color={item.color} />
         </View>
-        <Text style={styles.quickActionLabel}>{item.label}</Text>
+        <Text style={[styles.quickActionLabel, { fontSize: fontSize.small }]}>{item.label}</Text>
       </Animated.View>
     </TouchableOpacity>
   );

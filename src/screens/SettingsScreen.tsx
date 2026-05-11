@@ -57,8 +57,8 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
               <Ionicons name={item.icon as any} size={22} color={item.color} />
             </View>
             <View style={styles.menuText}>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Text style={styles.menuSub}>{item.subtitle}</Text>
+              <Text style={[styles.menuLabel, { fontSize: fontSize.body }]}>{item.label}</Text>
+              <Text style={[styles.menuSub, { fontSize: fontSize.small }]}>{item.subtitle}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={Colors.caption} />
           </TouchableOpacity>
@@ -67,25 +67,25 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
         <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>偏好设置</Text>
         <View style={[styles.menuItem, Shadows.subtle]}>
           <View style={styles.menuText}>
-            <Text style={styles.menuLabel}>状态变更前提醒</Text>
-            <Text style={styles.menuSub}>切换状态时是否需要弹窗确认</Text>
+            <Text style={[styles.menuLabel, { fontSize: fontSize.body }]}>状态变更前提醒</Text>
+            <Text style={[styles.menuSub, { fontSize: fontSize.small }]}>切换状态时是否需要弹窗确认</Text>
           </View>
           <Switch value={confirmBeforeChange} onValueChange={toggleConfirmBeforeChange} trackColor={{ false: Colors.divider, true: Colors.primary }} />
         </View>
 
         <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
-          <Text style={styles.aboutApp}>家教账单 v1.0</Text>
-          <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>
+          <Text style={[styles.aboutApp, { fontSize: fontSize.h3 }]}>家教账单 v1.0</Text>
+          <Text style={[styles.aboutDesc, { fontSize: fontSize.small }]}>个人离线家教课程账单管理工具</Text>
           <View style={styles.aboutDivider} />
-          <Text style={styles.aboutDesc}>数据安全：所有数据仅存储在您的设备上</Text>
+          <Text style={[styles.aboutDesc, { fontSize: fontSize.small }]}>数据安全：所有数据仅存储在您的设备上</Text>
         </View>
       </ScrollView>
 
       {exportMode && (
         <View style={styles.overlay}>
           <View style={[styles.exportModal, Shadows.floating]}>
-            <Text style={styles.modalTitle}>选择导出范围</Text>
+            <Text style={[styles.modalTitle, { fontSize: fontSize.h3 }]}>选择导出范围</Text>
             {[
               { key: 'all' as ExportMode, label: '全部数据', icon: 'server-outline' },
               { key: 'month' as ExportMode, label: '按月份', icon: 'calendar-outline' },
@@ -93,11 +93,11 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
             ].map(opt => (
               <TouchableOpacity key={opt.key} style={styles.exportOption} onPress={() => handleExport(opt.key)}>
                 <Ionicons name={opt.icon as any} size={20} color={Colors.primary} />
-                <Text style={styles.exportOptionText}>{opt.label}</Text>
+                <Text style={[styles.exportOptionText, { fontSize: fontSize.body }]}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setExportMode(null)}>
-              <Text style={styles.cancelBtnText}>取消</Text>
+              <Text style={[styles.cancelBtnText, { fontSize: fontSize.body }]}>取消</Text>
             </TouchableOpacity>
           </View>
         </View>

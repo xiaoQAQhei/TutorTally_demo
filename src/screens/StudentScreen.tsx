@@ -103,13 +103,13 @@ const StudentScreen: React.FC = () => {
         <View style={styles.cardMain}>
           <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={48} />
           <View style={styles.info}>
-            <Text style={styles.name}>{item.name}</Text>
+            <Text style={[styles.name, { fontSize: fontSize.h3 }]}>{item.name}</Text>
             <View style={styles.subjectTags}>
               {subs.map(sub => (
                 <View key={sub.id} style={[styles.subjectTag, { backgroundColor: (sub.color || SubjectColorPalette[0]) + '18' }]}>
                   <View style={[styles.subjectDot, { backgroundColor: sub.color || SubjectColorPalette[0] }]} />
-                  <Text style={[styles.subjectTagText, { color: sub.color || SubjectColorPalette[0] }]}>{sub.subject}</Text>
-                  <Text style={styles.subjectTagRate}>{sub.hourlyRate}元/h</Text>
+                  <Text style={[styles.subjectTagText, { color: sub.color || SubjectColorPalette[0], fontSize: fontSize.small }]}>{sub.subject}</Text>
+                  <Text style={[styles.subjectTagRate, { fontSize: fontSize.small }]}>{sub.hourlyRate}元/h</Text>
                 </View>
               ))}
             </View>
@@ -118,13 +118,13 @@ const StudentScreen: React.FC = () => {
         {item.phone ? (
           <View style={styles.phoneRow}>
             <Ionicons name="call-outline" size={14} color={Colors.caption} />
-            <Text style={styles.phoneText}>{item.phone}</Text>
+            <Text style={[styles.phoneText, { fontSize: fontSize.caption }]}>{item.phone}</Text>
           </View>
         ) : null}
         {item.address ? (
           <View style={styles.addressRow}>
             <Ionicons name="location-outline" size={14} color={Colors.caption} />
-            <Text style={styles.addressText} numberOfLines={1}>{item.address}</Text>
+            <Text style={[styles.addressText, { fontSize: fontSize.caption }]} numberOfLines={1}>{item.address}</Text>
           </View>
         ) : null}
         <View style={styles.actions}>
@@ -160,10 +160,10 @@ const StudentScreen: React.FC = () => {
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.paid} />
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingStudent(null); }} title={editingStudent ? '编辑学生' : '添加学生'}>
-        <Text style={styles.formLabel}>学生姓名</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>学生姓名</Text>
         <TextInput style={styles.input} placeholder="输入姓名" value={name} onChangeText={setName} placeholderTextColor={Colors.caption} />
 
-        <Text style={styles.formLabel}>科目与课时费</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>科目与课时费</Text>
         {editSubjects.map((sub, idx) => (
           <View key={idx} style={styles.subjectEditRow}>
             <TextInput
@@ -192,17 +192,17 @@ const StudentScreen: React.FC = () => {
           setEditSubjects([...editSubjects, { subject: '', hourlyRate: '', color: SubjectColorPalette[editSubjects.length % SubjectColorPalette.length] }]);
         }}>
           <Ionicons name="add-circle-outline" size={20} color={Colors.primary} />
-          <Text style={styles.addSubjectText}>添加科目</Text>
+          <Text style={[styles.addSubjectText, { fontSize: fontSize.caption }]}>添加科目</Text>
         </TouchableOpacity>
 
-        <Text style={styles.formLabel}>联系电话（可选）</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>联系电话（可选）</Text>
         <TextInput style={styles.input} placeholder="输入电话" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={Colors.caption} />
 
-        <Text style={styles.formLabel}>上课地址（可选）</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课地址（可选）</Text>
         <TextInput style={styles.input} placeholder="如 幸福小区3号楼201" value={address} onChangeText={setAddress} placeholderTextColor={Colors.caption} />
 
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>{editingStudent ? '更新学生' : '添加学生'}</Text>
+          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingStudent ? '更新学生' : '添加学生'}</Text>
         </TouchableOpacity>
       </BottomSheet>
 

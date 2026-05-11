@@ -113,24 +113,24 @@ const RecurringRulesScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <View>
             <Text style={[styles.ruleStudent, { fontSize: fontSize.h3 }]}>{getStudentName(item.studentId)}</Text>
-            <Text style={styles.ruleSubtext}>{getSubjectName(item.studentSubjectId) || '未指定科目'}</Text>
+            <Text style={[styles.ruleSubtext, { fontSize: fontSize.small }]}>{getSubjectName(item.studentSubjectId) || '未指定科目'}</Text>
           </View>
           <TouchableOpacity onPress={() => handleGenerate(item)}>
             <View style={styles.generateBtn}>
               <Ionicons name="flash" size={14} color={Colors.white} />
-              <Text style={styles.generateBtnText}>生成</Text>
+              <Text style={[styles.generateBtnText, { fontSize: fontSize.small }]}>生成</Text>
             </View>
           </TouchableOpacity>
         </View>
         <View style={styles.weekdayRow}>
           {[1,2,3,4,5,6,7].map(d => (
             <View key={d} style={[styles.weekdayDot, weekdays.includes(d) && { backgroundColor: Colors.primary }]}>
-              <Text style={[styles.weekdayDotText, weekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
+              <Text style={[styles.weekdayDotText, { fontSize: fontSize.small }, weekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
             </View>
           ))}
         </View>
         <View style={styles.ruleInfo}>
-          <Text style={styles.ruleInfoText}>{item.timeSlot} · {item.duration}h · {item.interval === 2 ? '隔周' : '每周'}</Text>
+          <Text style={[styles.ruleInfoText, { fontSize: fontSize.caption }]}>{item.timeSlot} · {item.duration}h · {item.interval === 2 ? '隔周' : '每周'}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => { setEditingRule(item); setSelectedStudentId(item.studentId); loadSubjectsForStudent(item.studentId); setSelectedSubjectId(item.studentSubjectId || null); setSelectedWeekdays(JSON.parse(item.weekdays)); setInterval(item.interval.toString()); setTimeSlot(item.timeSlot); setDuration(item.duration.toString()); setAmount(item.amount?.toString() || ''); setStartDate(item.startDate); setEndDate(item.endDate || ''); setNotes(item.notes || ''); setModalVisible(true); }}>
@@ -155,17 +155,17 @@ const RecurringRulesScreen: React.FC = () => {
         <View style={styles.chipRow}>
           {students.map(s => (
             <TouchableOpacity key={s.id} style={[styles.chip, selectedStudentId === s.id && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedStudentId(s.id); loadSubjectsForStudent(s.id); }}>
-              <Text style={[styles.chipText, selectedStudentId === s.id && { color: Colors.white }]}>{s.name}</Text>
+              <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedStudentId === s.id && { color: Colors.white }]}>{s.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
         {subjects.length > 0 && (
           <>
-            <Text style={styles.formLabel}>科目</Text>
+            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>科目</Text>
             <View style={styles.chipRow}>
               {subjects.map(sub => (
                 <TouchableOpacity key={sub.id} style={[styles.chip, selectedSubjectId === sub.id && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => setSelectedSubjectId(sub.id)}>
-                  <Text style={[styles.chipText, selectedSubjectId === sub.id && { color: Colors.white }]}>{sub.subject}</Text>
+                  <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedSubjectId === sub.id && { color: Colors.white }]}>{sub.subject}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -175,7 +175,7 @@ const RecurringRulesScreen: React.FC = () => {
         <View style={styles.chipRow}>
           {[1,2,3,4,5,6,7].map(d => (
             <TouchableOpacity key={d} style={[styles.weekdayChip, selectedWeekdays.includes(d) && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedWeekdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); }}>
-              <Text style={[styles.chipText, selectedWeekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
+              <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedWeekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -183,7 +183,7 @@ const RecurringRulesScreen: React.FC = () => {
         <View style={styles.chipRow}>
           {[{v:'1',l:'每周'},{v:'2',l:'隔周'}].map(o => (
             <TouchableOpacity key={o.v} style={[styles.chip, interval === o.v && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => setInterval(o.v)}>
-              <Text style={[styles.chipText, interval === o.v && { color: Colors.white }]}>{o.l}</Text>
+              <Text style={[styles.chipText, { fontSize: fontSize.caption }, interval === o.v && { color: Colors.white }]}>{o.l}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -191,11 +191,11 @@ const RecurringRulesScreen: React.FC = () => {
         <TextInput style={styles.input} placeholder="如 14:00-16:00" value={timeSlot} onChangeText={setTimeSlot} placeholderTextColor={Colors.caption} />
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>课时（小时）</Text>
+            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时（小时）</Text>
             <TextInput style={styles.input} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
           </View>
           <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>费用（可选）</Text>
+            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>费用（可选）</Text>
             <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="自动计算" placeholderTextColor={Colors.caption} />
           </View>
         </View>
@@ -204,7 +204,7 @@ const RecurringRulesScreen: React.FC = () => {
         <Text style={styles.formLabel}>结束日期（可选）</Text>
         <TextInput style={styles.input} placeholder="留空则持续生成" value={endDate} onChangeText={setEndDate} placeholderTextColor={Colors.caption} />
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>{editingRule ? '更新规则' : '创建规则'}</Text>
+          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingRule ? '更新规则' : '创建规则'}</Text>
         </TouchableOpacity>
       </BottomSheet>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />

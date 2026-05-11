@@ -39,7 +39,7 @@ const StatCard: React.FC<StatCardProps> = ({
         <Ionicons name={icon as any} size={iconSize} color={color} />
       </View>
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, { color: Colors.title }]}>{value}</Text>
+      <Text style={[styles.value, { color: Colors.title }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
     </Animated.View>
   );
 
