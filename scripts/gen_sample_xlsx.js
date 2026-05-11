@@ -162,3 +162,25 @@ wsMonth['!cols'] = [            // ← 加这里
 XLSX.utils.book_append_sheet(wbMonth, wsMonth, safeSheetName('2026年5月 课程账单'));
 XLSX.writeFile(wbMonth, 'export_example_按月_2026-05.xlsx');
 console.log('OK: export_example_按月_2026-05.xlsx');
+
+// === 按学生导出 ===
+for (const stu of students) {
+  const ssubs = subjects.filter(s => s.studentId === stu.id);
+  const sless = lessons.filter(l => l.studentId === stu.id);
+  if (sless.length === 0) continue;
+
+  const wbStu = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(buildStudentSheet(stu, ssubs, sless));
+  ws['!cols'] = [
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 8 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 18 },
+  ];
+  XLSX.utils.book_append_sheet(wbStu, ws, safeSheetName(stu.name + ' 课程账单'));
+  XLSX.writeFile(wbStu, `export_example_按学生_${stu.name}.xlsx`);
+  console.log(`OK: export_example_按学生_${stu.name}.xlsx`);
+}
