@@ -20,6 +20,7 @@ import {
 } from '../styles/theme';
 import { useSlideManager, useShatterManager } from '../utils/animationHooks';
 import { ShredderStrip } from '../components/ShredderStrip';
+import { scale, MAX_CONTENT_WIDTH } from '../utils/responsive';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -825,7 +826,7 @@ const LessonScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const },
+  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   list: { padding: Spacing.xl, paddingBottom: 100 },
   filterRow: {
     flexDirection: 'row', gap: Spacing.sm,
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: Spacing.sm + 2, gap: Spacing.xs,
   },
-  segmentDivider: { width: 1, backgroundColor: Colors.divider },
+  segmentDivider: { width: scale(1), backgroundColor: Colors.divider },
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
@@ -926,7 +927,7 @@ const styles = StyleSheet.create({
   actionButton: { padding: Spacing.sm },
   scrollTopBtn: {
     position: 'absolute', bottom: 100, right: 30,
-    width: 44, height: 44, borderRadius: 22,
+    width: scale(44), height: scale(44), borderRadius: scale(22),
     backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
     justifyContent: 'center', alignItems: 'center',
     ...Shadows.standard,

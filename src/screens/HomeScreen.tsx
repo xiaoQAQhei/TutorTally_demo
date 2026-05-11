@@ -7,6 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
+import { vw, scale, verticalScale, rem, MAX_CONTENT_WIDTH } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -314,7 +315,7 @@ const QuickActionButton: React.FC<{
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm },
+  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: FontSize.h1, fontWeight: FontWeight.bold, color: Colors.title },
   date: { fontSize: FontSize.caption, color: Colors.caption, marginTop: Spacing.xs },
   refreshButton: {
-    width: 44, height: 44, borderRadius: BorderRadius.iconContainer,
+    width: scale(44), height: scale(44), borderRadius: scale(22),
     backgroundColor: Colors.card, justifyContent: 'center', alignItems: 'center',
     ...Shadows.subtle,
   },
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.card, alignItems: 'center',
   },
   quickActionIcon: {
-    width: 40, height: 40, borderRadius: BorderRadius.iconContainer,
+    width: scale(40), height: scale(40), borderRadius: scale(20),
     justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.xs,
   },
   quickActionLabel: {
@@ -353,8 +354,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
   },
   recentItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  colorBar: { width: 4, height: 40, borderRadius: 2, marginRight: Spacing.md },
-  recentLeft: { maxWidth: 80 },
+  colorBar: { width: scale(4), height: scale(40), borderRadius: scale(2), marginRight: Spacing.md },
+  recentLeft: { maxWidth: scale(80) },
   recentName: {
     fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title,
     marginBottom: 2,
@@ -399,9 +400,9 @@ const styles = StyleSheet.create({
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md },
-  confirmCancelBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
-  confirmOkBtn: { flex: 1, height: 46, borderRadius: 23, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 });
 

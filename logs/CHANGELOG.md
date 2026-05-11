@@ -1,3 +1,15 @@
+## [2026-05-11 14:45] 替换硬编码的像素尺寸为响应式尺寸，并限制内容最大宽度
+## 2026-05-11 15:09 | auto: 05-11 15:09 | logs/CHANGELOG.md src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/styles/theme.ts src/utils/responsive.ts 
+- logs/CHANGELOG.md
+- src/screens/HomeScreen.tsx
+- src/screens/LessonScreen.tsx
+- src/styles/theme.ts
+- src/utils/responsive.ts
+
+- 在 HomeScreen 和 LessonScreen 中替换写死的 width/height/borderRadius 为 scale 包装的值
+- 在根容器添加 maxWidth: MAX_CONTENT_WIDTH 防止在平板等大屏设备上过度拉伸
+  - 文件: src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx
+
 # 改动日志
 ## 2026-05-11 14:39 | auto: 05-11 14:39 | app.json eas.json package-lock.json package.json src/utils/notifications.ts 
 - app.json

@@ -1,3 +1,5 @@
+import { scale, rem, moderateScale } from '../utils/responsive';
+
 export const Colors = {
   // Functional colors
   paid: '#10B981',
@@ -67,23 +69,23 @@ export function getSubjectColor(subject: string): string {
 }
 
 export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
+  xs: scale(4),
+  sm: scale(8),
+  md: scale(12),
+  lg: scale(16),
+  xl: scale(20),
+  xxl: scale(24),
+  xxxl: scale(32),
 } as const;
 
 export const FontSize = {
-  h1: 28,
-  h2: 22,
-  h3: 18,
-  body: 15,
-  caption: 13,
-  small: 11,
-  amount: 20,
+  h1: rem(28),
+  h2: rem(22),
+  h3: rem(18),
+  body: rem(15),
+  caption: rem(13),
+  small: rem(11),
+  amount: rem(20),
 } as const;
 
 export const FontWeight = {
@@ -94,11 +96,11 @@ export const FontWeight = {
 };
 
 export const BorderRadius = {
-  card: 16,
-  smallCard: 12,
-  button: 12,
-  pill: 24,
-  iconContainer: 14,
+  card: moderateScale(16),
+  smallCard: moderateScale(12),
+  button: moderateScale(12),
+  pill: moderateScale(24),
+  iconContainer: moderateScale(14),
   full: 9999,
 } as const;
 
