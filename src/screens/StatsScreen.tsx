@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   },
   chartWrap: { overflow: 'hidden' },
   barTopLabel: {
-    fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.primary,
+    fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.primary,
     marginBottom: 2,
   },
 
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dangerBg, paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: BorderRadius.pill,
   },
-  pendingTagText: { fontSize: 10, fontWeight: FontWeight.semiBold, color: Colors.danger },
+  pendingTagText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.danger },
   studentStats: { marginBottom: Spacing.md },
   studentStatText: { fontSize: FontSize.caption, color: Colors.caption },
   studentAmounts: {

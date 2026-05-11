@@ -26,7 +26,7 @@ const TAB_ICONS: Record<string, [string, string]> = {
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { isTablet } = useResponsive();
+  const { isTablet, fontSize, spacing } = useResponsive();
 
   useEffect(() => {
     const setupDatabase = async () => {
@@ -60,15 +60,15 @@ const App: React.FC = () => {
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.caption,
           tabBarLabelStyle: {
-            fontSize: rem(11),
+            fontSize: fontSize.small,
             fontWeight: FontWeight.medium,
           },
           tabBarStyle: {
             backgroundColor: Colors.white,
             borderTopWidth: 0,
-            height: isTablet ? 70 : 60,
-            paddingBottom: isTablet ? 12 : 8,
-            paddingTop: 6,
+            height: isTablet ? 72 : 60,
+            paddingBottom: isTablet ? 14 : 8,
+            paddingTop: isTablet ? 8 : 6,
             ...Shadows.topBar,
           },
           headerStyle: {
@@ -78,7 +78,7 @@ const App: React.FC = () => {
             borderBottomWidth: 0,
           },
           headerTitleStyle: {
-            fontSize: FontSize.h3,
+            fontSize: fontSize.h3,
             fontWeight: FontWeight.bold,
             color: Colors.title,
           },
