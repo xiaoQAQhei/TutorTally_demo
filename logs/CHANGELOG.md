@@ -1,4 +1,11 @@
 # 改动日志
+## 2026-05-11 14:39 | auto: 05-11 14:39 | app.json eas.json package-lock.json package.json src/utils/notifications.ts 
+- app.json
+- eas.json
+- package-lock.json
+- package.json
+- src/utils/notifications.ts
+
 
 ## [2026-05-09 19:42] EAS 构建配置和项目清理
 - 新增 .easignore 文件，忽略 android/、ios/ 和 node_modules/.cache/，加速 EAS 构建上传

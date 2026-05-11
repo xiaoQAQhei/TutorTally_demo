@@ -1,20 +1,25 @@
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { getAllLessons } from '../database';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export async function requestPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
 }
 
 export async function scheduleAllReminders(): Promise<void> {
+  if (Platform.OS === 'web') return;
   await Notifications.cancelAllScheduledNotificationsAsync();
   const lessons = await getAllLessons();
   const now = new Date();
