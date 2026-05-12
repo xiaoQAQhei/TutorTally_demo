@@ -1,4 +1,7 @@
 ## [2026-05-11 18:23] 全面响应式优化：宽高比感知 + 全屏文本响应式字体 + 硬编码像素值消除
+## 2026-05-12 14:56 | auto: 05-12 14:56 | src/utils/responsive.ts 
+- src/utils/responsive.ts
+
 ## 2026-05-12 14:45 | auto: 05-12 14:45 | src/App.tsx src/components/BottomSheet.tsx src/components/ExcelExportExample.tsx src/components/StatCard.tsx src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/StatsScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx src/utils/responsive.ts android/ 
 - src/App.tsx
 - src/components/BottomSheet.tsx
