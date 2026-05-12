@@ -147,7 +147,7 @@ function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): R
   if (bp === 'lg') {
     return {
       h1: r(20 * arFactor), h2: r(16 * arFactor), h3: r(12 * arFactor),
-      body: r(9 * arFactor), caption: r(7 * arFactor), small: r(5 * arFactor), amount: r(12 * arFactor),
+      body: r(9 * arFactor), caption: r(7 * arFactor), small: r(10 * arFactor), amount: r(12 * arFactor),
     };
   }
   return {
