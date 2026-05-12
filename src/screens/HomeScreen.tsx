@@ -173,17 +173,17 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
           {/* 学生名 + 日期 */}
           <View style={styles.recentLeft}>
-            <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-            <Text style={styles.recentDate}>{item.date}</Text>
+            <Text style={[styles.recentName, { fontSize: fontSize.body }]} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+            <Text style={[styles.recentDate, { fontSize: fontSize.small }]}>{item.date}</Text>
           </View>
           {/* 时间段 */}
           <View style={styles.recentCenter}>
-            {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+            {item.timeSlot ? <Text style={[styles.recentTimeSlot, { fontSize: fontSize.h2 }]}>{item.timeSlot}</Text> : null}
           </View>
         </TouchableOpacity>
         {/* 金额 + 待上徽章 */}
         <View style={[styles.recentRight, styles.confirmRight]}>
-          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
+          <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
           <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
             <Text style={[styles.miniBadgeText, { color: Colors.primary, fontSize: fontSize.small }]}>待上</Text>
           </View>

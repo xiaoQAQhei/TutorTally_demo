@@ -151,7 +151,7 @@ const RecurringRulesScreen: React.FC = () => {
       />
       <GradientFAB icon="add" onPress={() => { resetForm(); setModalVisible(true); }} color={Colors.pending} />
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); resetForm(); }} title={editingRule ? '编辑周期规则' : '创建周期规则'}>
-        <Text style={styles.formLabel}>学生</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>学生</Text>
         <View style={styles.chipRow}>
           {students.map(s => (
             <TouchableOpacity key={s.id} style={[styles.chip, selectedStudentId === s.id && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedStudentId(s.id); loadSubjectsForStudent(s.id); }}>
@@ -171,7 +171,7 @@ const RecurringRulesScreen: React.FC = () => {
             </View>
           </>
         )}
-        <Text style={styles.formLabel}>星期</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>星期</Text>
         <View style={styles.chipRow}>
           {[1,2,3,4,5,6,7].map(d => (
             <TouchableOpacity key={d} style={[styles.weekdayChip, selectedWeekdays.includes(d) && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedWeekdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); }}>
@@ -179,7 +179,7 @@ const RecurringRulesScreen: React.FC = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={styles.formLabel}>频率</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>频率</Text>
         <View style={styles.chipRow}>
           {[{v:'1',l:'每周'},{v:'2',l:'隔周'}].map(o => (
             <TouchableOpacity key={o.v} style={[styles.chip, interval === o.v && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => setInterval(o.v)}>
@@ -187,7 +187,7 @@ const RecurringRulesScreen: React.FC = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={styles.formLabel}>时间段</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>时间段</Text>
         <TextInput style={styles.input} placeholder="如 14:00-16:00" value={timeSlot} onChangeText={setTimeSlot} placeholderTextColor={Colors.caption} />
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
@@ -199,9 +199,9 @@ const RecurringRulesScreen: React.FC = () => {
             <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="自动计算" placeholderTextColor={Colors.caption} />
           </View>
         </View>
-        <Text style={styles.formLabel}>开始日期</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>开始日期</Text>
         <TextInput style={styles.input} placeholder="如 2026-05-10" value={startDate} onChangeText={setStartDate} placeholderTextColor={Colors.caption} />
-        <Text style={styles.formLabel}>结束日期（可选）</Text>
+        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>结束日期（可选）</Text>
         <TextInput style={styles.input} placeholder="留空则持续生成" value={endDate} onChangeText={setEndDate} placeholderTextColor={Colors.caption} />
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
           <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingRule ? '更新规则' : '创建规则'}</Text>

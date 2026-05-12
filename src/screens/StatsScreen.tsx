@@ -218,7 +218,7 @@ const StatsScreen: React.FC = () => {
           </View>
           <View style={styles.statsBarDivider} />
           <View style={styles.statsBarItem}>
-            <Text style={[styles.statsBarValue, { color: Colors.paid }]}>¥{monthTotalStats.amount.toFixed(0)}</Text>
+            <Text style={[styles.statsBarValue, { color: Colors.paid, fontSize: fontSize.body }]}>¥{monthTotalStats.amount.toFixed(0)}</Text>
             <Text style={[styles.statsBarLabel, { fontSize: fontSize.small }]}>收入</Text>
           </View>
         </View>

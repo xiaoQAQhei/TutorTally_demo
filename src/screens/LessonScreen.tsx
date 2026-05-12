@@ -606,11 +606,11 @@ const LessonScreen: React.FC = () => {
                       activeOpacity={0.75}
                       onPress={() => setFilterStatus(opt.key)}
                     >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                      <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                         {opt.label}
                       </Text>
                       <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                        <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
+                        <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                           {count}
                         </Text>
                       </View>

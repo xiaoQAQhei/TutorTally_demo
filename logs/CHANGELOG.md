@@ -1,4 +1,10 @@
 ## [2026-05-12 17:43] 响应式系统重构 + 图标尺寸体系统一 + 全屏幕自适应收官
+## 2026-05-12 17:54 | auto: 05-12 17:54 | src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/StatsScreen.tsx 
+- src/screens/HomeScreen.tsx
+- src/screens/LessonScreen.tsx
+- src/screens/RecurringRulesScreen.tsx
+- src/screens/StatsScreen.tsx
+
 ## 2026-05-12 17:50 | auto: 05-12 17:50 | src/styles/theme.ts 
 - src/styles/theme.ts
 
