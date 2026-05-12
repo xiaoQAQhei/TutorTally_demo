@@ -68,7 +68,7 @@ export function getSubjectColor(subject: string): string {
   return DefaultSubjectColors[subject] || SubjectColorPalette[0];
 }
 
-// ── Base spacing (phone baseline, scaled from 375) ──────────────────
+// ── Spacing（手机基线，StyleSheet 直接用） ──────────────────
 export const Spacing = {
   xs: scale(4),
   sm: scale(8),
@@ -77,9 +77,20 @@ export const Spacing = {
   xl: scale(20),
   xxl: scale(24),
   xxxl: scale(32),
-} as const;
+};
 
-// ── Base font sizes (phone baseline) ────────────────────────────────
+// ── 平板间距（responsive.ts 根据断点选择） ────────────────
+export const TabletSpacing = {
+  xs: scale(6),
+  sm: scale(12),
+  md: scale(16),
+  lg: scale(20),
+  xl: scale(28),
+  xxl: scale(32),
+  xxxl: scale(40),
+};
+
+// ── 字号（手机基线） ──────────────────────────────────────
 export const FontSize = {
   h1: rem(28),
   h2: rem(22),
@@ -88,7 +99,30 @@ export const FontSize = {
   caption: rem(13),
   small: rem(11),
   amount: rem(20),
-} as const;
+};
+
+// ── 平板字号 ────────────────────────────────────────────
+export const TabletFontSize = {
+  h1: rem(32),
+  h2: rem(26),
+  h3: rem(20),
+  body: rem(17),
+  caption: rem(14),
+  small: rem(12),
+  amount: rem(24),
+};
+
+// ── 图标尺寸（手机基线） ────────────────────────────────
+export const IconSize = {
+  xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28,
+  container: { sm: 32, md: 42, lg: 56 },
+};
+
+// ── 平板图标尺寸 ────────────────────────────────────────
+export const TabletIconSize = {
+  xs: 18, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36,
+  container: { sm: 40, md: 48, lg: 60 },
+};
 
 export const FontWeight = {
   bold: '700' as const,
@@ -104,7 +138,7 @@ export const BorderRadius = {
   pill: moderateScale(24),
   iconContainer: moderateScale(14),
   full: 9999,
-} as const;
+};
 
 export const Shadows = {
   subtle: {
@@ -135,7 +169,7 @@ export const Shadows = {
     shadowRadius: 8,
     elevation: 4,
   },
-} as const;
+};
 
 export const StatusTransitions: Record<string, string[]> = {
   scheduled: ['completed', 'cancelled'],

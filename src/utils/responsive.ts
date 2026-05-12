@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Dimensions, PixelRatio, Platform, ScaledSize } from 'react-native';
+import { Spacing, TabletSpacing, FontSize, TabletFontSize, IconSize, TabletIconSize } from '../styles/theme';
 
 // ── Breakpoint system ──────────────────────────────────────────────
 export type Breakpoint = 'sm' | 'md' | 'lg';
@@ -82,25 +83,6 @@ export const MAX_CONTENT_WIDTH = maxContentWidth();
 
 // ── Reactive Hook ───────────────────────────────────────────────────
 
-/** Breakpoint-aware spacing — larger on tablets */
-export interface ResponsiveSpacing {
-  xs: number; sm: number; md: number; lg: number;
-  xl: number; xxl: number; xxxl: number;
-}
-
-/** Breakpoint-aware font sizes — larger on tablets */
-export interface ResponsiveFontSize {
-  h1: number; h2: number; h3: number;
-  body: number; caption: number; small: number; amount: number;
-}
-
-/** Breakpoint-aware icon sizes — larger on tablets */
-export interface ResponsiveIconSize {
-  xs: number; sm: number; md: number; lg: number; xl: number; xxl: number;
-  /** Icon container sizes */
-  container: { sm: number; md: number; lg: number };
-}
-
 export interface ResponsiveInfo {
   width: number;
   height: number;
@@ -113,11 +95,11 @@ export interface ResponsiveInfo {
   /** Safe horizontal padding for content containers */
   contentPaddingH: number;
   /** Breakpoint-aware spacing (replaces static Spacing on tablets) */
-  spacing: ResponsiveSpacing;
+  spacing: typeof Spacing;
   /** Breakpoint-aware font sizes (replaces static FontSize on tablets) */
-  fontSize: ResponsiveFontSize;
+  fontSize: typeof FontSize;
   /** Breakpoint-aware icon sizes */
-  iconSize: ResponsiveIconSize;
+  iconSize: typeof IconSize;
   /** width / height ratio */
   aspectRatio: number;
   /** aspectRatio < 0.52 — ultra-narrow like iPhone SE 1st gen (320x568) */
@@ -128,48 +110,16 @@ export interface ResponsiveInfo {
   isWide: boolean;
 }
 
-function buildSpacing(bp: Breakpoint, winWidth: number, aspectRatio: number): ResponsiveSpacing {
-  const s = (size: number) => (winWidth / BASE_WIDTH) * size;
-  // Narrow screens: slightly larger vertical spacing for breathing room
-  // Wide screens: slightly tighter vertical spacing
-  const arFactor = aspectRatio < 0.52 ? 1.12 : aspectRatio < 0.58 ? 1.06 : aspectRatio > 0.65 ? 0.92 : 1;
-  if (bp === 'lg') {
-    return {
-      xs: s(6 * arFactor), sm: s(12 * arFactor), md: s(16 * arFactor), lg: s(15 * arFactor),
-      xl: s(28 * arFactor), xxl: s(32 * arFactor), xxxl: s(40 * arFactor),
-    };
-  }
-  return {
-    xs: s(4 * arFactor), sm: s(8 * arFactor), md: s(12 * arFactor), lg: s(16 * arFactor),
-    xl: s(20 * arFactor), xxl: s(24 * arFactor), xxxl: s(32 * arFactor),
-  };
+function buildSpacing(bp: Breakpoint) {
+  return bp === 'lg' ? TabletSpacing : Spacing;
 }
 
-function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): ResponsiveFontSize {
-  const r = (size: number) => {
-    const ns = (winWidth / BASE_WIDTH) * size;
-    if (Platform.OS === 'ios') return Math.round(PixelRatio.roundToNearestPixel(ns));
-    return Math.round(PixelRatio.roundToNearestPixel(ns)) - 1;
-  };
-  // Narrow screens: slightly smaller fonts; wide screens: slightly larger
-  const arFactor = aspectRatio < 0.52 ? 0.90 : aspectRatio < 0.58 ? 0.95 : aspectRatio > 0.65 ? 1.08 : 1;
-  if (bp === 'lg') {
-    return {
-      h1: r(22 * arFactor), h2: r(26 * arFactor), h3: r(20 * arFactor),
-      body: r(17 * arFactor), caption: r(14 * arFactor), small: r(12 * arFactor), amount: r(24 * arFactor),
-    };
-  }
-  return {
-    h1: r(28 * arFactor), h2: r(22 * arFactor), h3: r(18 * arFactor),
-    body: r(15 * arFactor), caption: r(13 * arFactor), small: r(11 * arFactor), amount: r(20 * arFactor),
-  };
+function buildFontSize(bp: Breakpoint) {
+  return bp === 'lg' ? TabletFontSize : FontSize;
 }
 
-function buildIconSize(bp: Breakpoint): ResponsiveIconSize {
-  if (bp === 'lg') {
-    return { xs: 18, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36, container: { sm: 40, md: 48, lg: 60 } };
-  }
-  return { xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28, container: { sm: 32, md: 42, lg: 56 } };
+function buildIconSize(bp: Breakpoint) {
+  return bp === 'lg' ? TabletIconSize : IconSize;
 }
 
 let _responsiveCache: ResponsiveInfo | null = null;
@@ -192,8 +142,8 @@ function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
       bp === 'sm' ? 12 :
       bp === 'md' ? 16 :
       20,
-    spacing: buildSpacing(bp, win.width, aspectRatio),
-    fontSize: buildFontSize(bp, win.width, aspectRatio),
+    spacing: buildSpacing(bp),
+    fontSize: buildFontSize(bp),
     iconSize: buildIconSize(bp),
     aspectRatio,
     isUltraNarrow: aspectRatio < 0.52,

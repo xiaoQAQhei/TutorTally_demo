@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, useResponsive, ResponsiveFontSize } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, useResponsive } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
