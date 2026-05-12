@@ -584,7 +584,7 @@ const LessonScreen: React.FC = () => {
                   <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
-                  <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
                     <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                       {count}
                     </Text>
@@ -609,7 +609,7 @@ const LessonScreen: React.FC = () => {
                       <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                         {opt.label}
                       </Text>
-                      <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                      <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
                         <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                           {count}
                         </Text>
@@ -635,7 +635,7 @@ const LessonScreen: React.FC = () => {
                   <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
-                  <View style={[styles.filterCount, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
                     <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
                       {count}
                     </Text>
@@ -848,7 +848,6 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },                  // 选中态文字
   filterCount: {                                                                                    // 计数徽章
-    minWidth: scale(20), height: scale(20), borderRadius: scale(10),
     backgroundColor: Colors.divider,
     justifyContent: 'center', alignItems: 'center',
     paddingHorizontal: Spacing.xs,
