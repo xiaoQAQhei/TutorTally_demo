@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
+  View, Text, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import StatusBadge from '../components/StatusBadge';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
+  Colors, FontWeight, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
 import { useSlideManager, useShatterManager } from '../utils/animationHooks';
 import { ShredderStrip } from '../components/ShredderStrip';
@@ -57,6 +57,193 @@ const LessonScreen: React.FC = () => {
   const cardHeightRef = useRef<Map<number, number>>(new Map());
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+
+  // ── 响应式样式 ──
+  const styles = useMemo(() => ({
+    // ═══════════════ 页面容器 ═══════════════
+    container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
+    list: { paddingBottom: 100 },                                                                     // 列表底部留白
+
+    // ═══════════════ 筛选栏（状态标签 + 排序切换）═══════════════
+    filterRow: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    filterChip: {                                                                                     // 筛选标签（待上课/已下课 等）
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md,
+      borderRadius: BorderRadius.pill, borderWidth: 1.5,
+      borderColor: Colors.divider, backgroundColor: Colors.card,
+      gap: spacing.xs,
+    },
+    filterChipText: {
+      fontSize: fontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption,
+    },
+    filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },                  // 选中态文字
+    filterCount: {                                                                                    // 计数徽章
+      backgroundColor: Colors.divider,
+      justifyContent: 'center', alignItems: 'center',
+      paddingHorizontal: spacing.xs,
+    },
+    filterCountText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
+    segmentContainer: {                                                                               // 排序切换容器（全部/未收/已收）
+      flex: 2, flexDirection: 'row', borderRadius: BorderRadius.pill,
+      backgroundColor: Colors.card, borderWidth: 1.5, borderColor: Colors.divider,
+      overflow: 'hidden',
+    },
+    segmentBtn: {                                                                                     // 排序切换按钮
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      paddingVertical: spacing.sm + 2, gap: spacing.xs,
+    },
+    segmentDivider: { width: scale(1), backgroundColor: Colors.divider },                            // 按钮间分隔线
+    // ═══════════════ 课程卡片 ═══════════════
+    card: {
+      backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+      padding: spacing.lg, marginBottom: spacing.md,
+      position: 'relative' as const,
+    },
+    cardHeader: {                                                                                     // 卡片头部（头像+姓名 + 状态徽章）
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+      marginBottom: spacing.md,
+    },
+    cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },                 // 头部左侧（头像 + 姓名）
+    studentName: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },        // 学生名
+    subject: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },                       // 科目名
+    cardBody: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: spacing.md },          // 卡片内容区
+    infoRow: {                                                                                        // 信息行（日期时长 + 时间段）
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    infoLeft: { flexDirection: 'row', gap: spacing.md },                                              // 信息左侧（日期 + 时长）
+    infoItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },                        // 单个信息项（图标 + 文字）
+    infoText: { fontSize: fontSize.caption, color: Colors.body },
+
+    // ═══════════════ 时间段标签 ═══════════════
+    timeSlotBadge: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: BorderRadius.smallCard,
+      backgroundColor: Colors.primaryLight,
+    },
+    timeSlotBadgeText: {                                                                              // 时间段文字 "10:00-12:00"
+      fontSize: fontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
+    },
+    timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },                                          // 取消态时间段灰色背景
+    // ═══════════════ 取消动画（删除线 + 碎片）═══════════════
+    strikethroughOverlay: {                                                                           // 删除线覆盖层
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      justifyContent: 'center', alignItems: 'center', zIndex: 10,
+      overflow: 'visible',
+    },
+    strikethroughLine: {                                                                              // 删除线
+      position: 'absolute', left: -30, height: 2,
+      backgroundColor: '#9CA3AF',
+    },
+    shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 }, // 碎片覆盖层
+    shredStrip: {                                                                                     // 碎片条
+      position: 'absolute', top: 0, height: '100%',
+      overflow: 'hidden',
+    },
+    shredInner: {                                                                                     // 碎片内容
+      position: 'absolute',
+      top: 0,
+      backgroundColor: Colors.card,
+      padding: spacing.lg,
+      borderRadius: BorderRadius.card,
+    },
+    strikethroughLabel: {                                                                             // 删除线标签 "已取消"
+      fontSize: fontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
+      backgroundColor: '#F3F4F6', paddingHorizontal: spacing.md, paddingVertical: 2,
+      borderRadius: BorderRadius.pill, overflow: 'hidden',
+    },
+
+    // ═══════════════ 金额与备注 ═══════════════
+    amountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
+    amountText: { fontSize: fontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },     // 金额 "200元"
+    noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },                     // 备注行
+    noteText: { fontSize: fontSize.small, color: Colors.caption, flex: 1 },                           // 备注文字
+
+    // ═══════════════ 操作按钮（编辑 / 取消 / 删除）═══════════════
+    actions: {
+      flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.lg,
+      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+    },
+    actionButton: { padding: spacing.sm },                                                            // 单个操作按钮
+
+    // ═══════════════ 回到顶部按钮 ═══════════════
+    scrollTopBtn: {
+      position: 'absolute', bottom: 100, right: 30,
+      width: scale(44), height: scale(44), borderRadius: scale(22),
+      backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
+      justifyContent: 'center', alignItems: 'center',
+      ...Shadows.standard,
+    },
+    // ═══════════════ 确认弹窗 ═══════════════
+    confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
+    confirmBox: { backgroundColor: Colors.card, padding: spacing.xxl, width: '80%' },               // 弹窗容器
+    confirmTitle: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: spacing.md, textAlign: 'center' },
+    confirmMessage: { fontSize: fontSize.body, color: Colors.body, marginBottom: spacing.xl, textAlign: 'center' },
+    confirmButtons: { flexDirection: 'row', gap: spacing.md },                                       // 按钮行
+    confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+    confirmCancelText: { fontSize: fontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
+    confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+    confirmOkText: { fontSize: fontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
+
+    // ═══════════════ 表单（添加/编辑课程）═══════════════
+    datePickerButton: {                                                                               // 日期选择按钮
+      flexDirection: 'row', alignItems: 'center',
+      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      paddingHorizontal: spacing.md, backgroundColor: Colors.background,
+      gap: spacing.sm,
+    },
+    datePickerText: { flex: 1, fontSize: fontSize.body, color: Colors.title },                       // 日期文字
+    datePickerPlaceholder: { color: Colors.caption },                                                 // 日期占位符
+    formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md },
+    pickerButton: {                                                                                   // 选择器按钮（学生/时间段）
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      paddingHorizontal: spacing.md, backgroundColor: Colors.background,
+    },
+    pickerSelected: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },                 // 已选中状态
+    pickerText: { fontSize: fontSize.body, color: Colors.title, fontWeight: FontWeight.medium },     // 选中文字
+    pickerPlaceholder: { fontSize: fontSize.body, color: Colors.caption },                            // 占位文字
+    input: {                                                                                          // 文本输入框
+      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title,
+      backgroundColor: Colors.background,
+    },
+    textArea: { height: scale(80), paddingTop: spacing.md, textAlignVertical: 'top' },              // 多行文本框（备注）
+    formRow: { flexDirection: 'row', gap: spacing.md },                                               // 表单双列行
+    formHalf: { flex: 1 },                                                                            // 表单半列
+    rateInput: { textAlign: 'center', fontWeight: FontWeight.semiBold },                              // 课时费输入
+
+    // ═══════════════ 金额预览 ═══════════════
+    amountPreview: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      backgroundColor: Colors.paidLight, borderRadius: BorderRadius.button,
+      padding: spacing.lg, marginTop: spacing.md,
+    },
+    amountPreviewLabel: { fontSize: fontSize.body, color: Colors.body, fontWeight: FontWeight.medium }, // "预计课时费"
+    amountPreviewValue: { fontSize: fontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },    // 金额数字
+
+    // ═══════════════ 保存按钮 ═══════════════
+    saveButton: {
+      backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button,
+      justifyContent: 'center', alignItems: 'center', marginTop: spacing.xl,
+    },
+    saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold },
+
+    // ═══════════════ 学生选择列表项 ═══════════════
+    studentItem: {
+      flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md, borderRadius: BorderRadius.smallCard, gap: spacing.md,
+    },
+    studentItemActive: { backgroundColor: Colors.primaryLight },                                      // 选中态
+    studentItemInfo: { flex: 1 },                                                                     // 学生信息
+    studentItemName: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
+    studentItemSubject: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },           // 科目名
+  } as const), [spacing, fontSize, iconSize]);
+
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null);
   const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
@@ -356,8 +543,8 @@ const LessonScreen: React.FC = () => {
           <View style={styles.cardHeaderLeft}>
             {student && <StudentAvatar name={student.name} size={iconSize.avatar.md} />}
             <View>
-              <Text style={[styles.studentName, { fontSize: fontSize.h3 }]}>{student?.name || '未知学生'}</Text>
-              <Text style={[styles.subject, { fontSize: fontSize.small }]}>{student?.phone || ''}</Text>
+              <Text style={[styles.studentName]}>{student?.name || '未知学生'}</Text>
+              <Text style={[styles.subject]}>{student?.phone || ''}</Text>
             </View>
           </View>
           <StatusBadge
@@ -371,28 +558,28 @@ const LessonScreen: React.FC = () => {
             <View style={styles.infoLeft}>
               <View style={styles.infoItem}>
                 <Ionicons name="calendar-outline" size={iconSize.xs} color={Colors.caption} />
-                <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.date}</Text>
+                <Text style={[styles.infoText]}>{lesson.date}</Text>
               </View>
               <View style={styles.infoItem}>
                 <Ionicons name="hourglass-outline" size={iconSize.xs} color={Colors.caption} />
-                <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.duration}h</Text>
+                <Text style={[styles.infoText]}>{lesson.duration}h</Text>
               </View>
             </View>
             {lesson.timeSlot ? (
               <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
                 <Ionicons name="time-outline" size={iconSize.xl} color={showCancelAnim ? Colors.caption : Colors.primary} />
-                <Text style={[styles.timeSlotBadgeText, { fontSize: fontSize.h2 }, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
+                <Text style={[styles.timeSlotBadgeText, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
               </View>
             ) : null}
           </View>
           <View style={styles.amountRow}>
             <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.caption} />
-            <Text style={[styles.amountText, { fontSize: fontSize.amount }]}>{lesson.amount.toFixed(0)}元</Text>
+            <Text style={[styles.amountText]}>{lesson.amount.toFixed(0)}元</Text>
           </View>
           {lesson.notes ? (
             <View style={styles.noteRow}>
               <Ionicons name="document-text-outline" size={iconSize.xs} color={Colors.caption} />
-              <Text style={[styles.noteText, { fontSize: fontSize.small }]} numberOfLines={2}>{lesson.notes}</Text>
+              <Text style={[styles.noteText]} numberOfLines={2}>{lesson.notes}</Text>
             </View>
           ) : null}
           {showCancelAnim && interactive && (
@@ -403,7 +590,7 @@ const LessonScreen: React.FC = () => {
                   outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
                 }),
               }]} />
-              <Animated.Text style={[styles.strikethroughLabel, { fontSize: fontSize.caption }, {
+              <Animated.Text style={[styles.strikethroughLabel, {
                 opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
               }]}>已取消</Animated.Text>
             </View>
@@ -411,7 +598,7 @@ const LessonScreen: React.FC = () => {
           {showCancelAnim && !interactive && isCancelled && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
               <View style={[styles.strikethroughLine, { width: cancelData.width > 0 ? cancelData.width + 20 : 400 }]} />
-              <Text style={[styles.strikethroughLabel, { fontSize: fontSize.caption }]}>已取消</Text>
+              <Text style={[styles.strikethroughLabel]}>已取消</Text>
             </View>
           )}
         </View>
@@ -516,8 +703,8 @@ const LessonScreen: React.FC = () => {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
           height: collapseAnim,
-          padding: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.lg], extrapolate: 'clamp' }),
-          marginBottom: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, Spacing.md], extrapolate: 'clamp' }),
+          padding: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
+          marginBottom: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
           overflow: 'hidden',
         } : null]}
         ref={(el) => { if (el) cardRefs.current.set(lessonId, el); }}
@@ -581,11 +768,11 @@ const LessonScreen: React.FC = () => {
                   activeOpacity={0.75}
                   onPress={() => setFilterStatus(opt.key)}
                 >
-                  <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
                   <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
+                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
                       {count}
                     </Text>
                   </View>
@@ -606,11 +793,11 @@ const LessonScreen: React.FC = () => {
                       activeOpacity={0.75}
                       onPress={() => setFilterStatus(opt.key)}
                     >
-                      <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
                         {opt.label}
                       </Text>
                       <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                        <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
+                        <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
                           {count}
                         </Text>
                       </View>
@@ -632,11 +819,11 @@ const LessonScreen: React.FC = () => {
                   activeOpacity={0.75}
                   onPress={() => setFilterStatus(opt.key)}
                 >
-                  <Text style={[styles.filterChipText, { fontSize: fontSize.caption }, active && styles.filterChipTextActive]}>
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
                     {opt.label}
                   </Text>
                   <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, { fontSize: fontSize.small }, active && { color: Colors.white }]}>
+                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
                       {count}
                     </Text>
                   </View>
@@ -702,32 +889,32 @@ const LessonScreen: React.FC = () => {
       })()}
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>选择学生</Text>
+        <Text style={[styles.formLabel]}>选择学生</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
               <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={iconSize.avatar.sm} />
-              <Text style={[styles.pickerText, { fontSize: fontSize.body }]}>{getStudent(selectedStudentId)?.name}</Text>
+              <Text style={[styles.pickerText]}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
-            <Text style={[styles.pickerPlaceholder, { fontSize: fontSize.body }]}>请选择学生</Text>
+            <Text style={[styles.pickerPlaceholder]}>请选择学生</Text>
           )}
           <Ionicons name="chevron-down" size={iconSize.lg} color={Colors.caption} />
         </TouchableOpacity>
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课日期</Text>
+        <Text style={[styles.formLabel]}>上课日期</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)} activeOpacity={0.7}>
           <Ionicons name="calendar-outline" size={iconSize.md} color={Colors.primary} />
-          <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !date && styles.datePickerPlaceholder]}>
+          <Text style={[styles.datePickerText, !date && styles.datePickerPlaceholder]}>
             {date || '选择日期'}
           </Text>
           <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
         </TouchableOpacity>
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课时段</Text>
+        <Text style={[styles.formLabel]}>上课时段</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)} activeOpacity={0.7}>
           <Ionicons name="time-outline" size={iconSize.md} color={Colors.primary} />
-          <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !timeSlot && styles.datePickerPlaceholder]}>
+          <Text style={[styles.datePickerText, !timeSlot && styles.datePickerPlaceholder]}>
             {timeSlot || '选择时段'}
           </Text>
           <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
@@ -735,11 +922,11 @@ const LessonScreen: React.FC = () => {
 
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
-            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时（小时）</Text>
+            <Text style={[styles.formLabel]}>课时（小时）</Text>
             <TextInput style={styles.input} placeholder="如 1.5" value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
           </View>
           <View style={styles.formHalf}>
-            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时费（元/小时）</Text>
+            <Text style={[styles.formLabel]}>课时费（元/小时）</Text>
             <TextInput
               style={[styles.input, styles.rateInput]}
               placeholder="如 75"
@@ -752,15 +939,15 @@ const LessonScreen: React.FC = () => {
         </View>
 
         <View style={styles.amountPreview}>
-          <Text style={[styles.amountPreviewLabel, { fontSize: fontSize.body }]}>预计课时费</Text>
-          <Text style={[styles.amountPreviewValue, { fontSize: fontSize.h2 }]}>{calculateAmount().toFixed(0)}元</Text>
+          <Text style={[styles.amountPreviewLabel]}>预计课时费</Text>
+          <Text style={[styles.amountPreviewValue]}>{calculateAmount().toFixed(0)}元</Text>
         </View>
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>备注（可选）</Text>
+        <Text style={[styles.formLabel]}>备注（可选）</Text>
         <TextInput style={[styles.input, styles.textArea]} placeholder="添加备注..." value={notes} onChangeText={setNotes} multiline placeholderTextColor={Colors.caption} />
 
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingLesson ? '更新课程' : '添加课程'}</Text>
+          <Text style={[styles.saveButtonText]}>{editingLesson ? '更新课程' : '添加课程'}</Text>
         </TouchableOpacity>
       </BottomSheet>
 
@@ -790,8 +977,8 @@ const LessonScreen: React.FC = () => {
             >
               <StudentAvatar name={s.name} size={iconSize.avatar.md} />
               <View style={styles.studentItemInfo}>
-                <Text style={[styles.studentItemName, { fontSize: fontSize.body }, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
-                <Text style={[styles.studentItemSubject, { fontSize: fontSize.small }]}>{s.phone || ''}</Text>
+                <Text style={[styles.studentItemName, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
+                <Text style={[styles.studentItemSubject]}>{s.phone || ''}</Text>
               </View>
               {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={iconSize.lg} color={Colors.primary} />}
             </TouchableOpacity>
@@ -809,14 +996,14 @@ const LessonScreen: React.FC = () => {
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
           <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
-            <Text style={[styles.confirmTitle, { fontSize: fontSize.h3 }]}>{confirmDialog.title}</Text>
-            <Text style={[styles.confirmMessage, { fontSize: fontSize.body }]}>{confirmDialog.message}</Text>
+            <Text style={[styles.confirmTitle]}>{confirmDialog.title}</Text>
+            <Text style={[styles.confirmMessage]}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
-                <Text style={[styles.confirmCancelText, { fontSize: fontSize.body }]}>取消</Text>
+                <Text style={[styles.confirmCancelText]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
-                <Text style={[styles.confirmOkText, { fontSize: fontSize.body }]}>确定</Text>
+                <Text style={[styles.confirmOkText]}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -825,190 +1012,5 @@ const LessonScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  // ═══════════════ 页面容器 ═══════════════
-  container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },                                                                     // 列表底部留白
-
-  // ═══════════════ 筛选栏（状态标签 + 排序切换）═══════════════
-  filterRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  filterChip: {                                                                                     // 筛选标签（待上课/已下课 等）
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.pill, borderWidth: 1.5,
-    borderColor: Colors.divider, backgroundColor: Colors.card,
-    gap: Spacing.xs,
-  },
-  filterChipText: {
-    fontSize: FontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption,
-  },
-  filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },                  // 选中态文字
-  filterCount: {                                                                                    // 计数徽章
-    backgroundColor: Colors.divider,
-    justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: Spacing.xs,
-  },
-  filterCountText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
-  segmentContainer: {                                                                               // 排序切换容器（全部/未收/已收）
-    flex: 2, flexDirection: 'row', borderRadius: BorderRadius.pill,
-    backgroundColor: Colors.card, borderWidth: 1.5, borderColor: Colors.divider,
-    overflow: 'hidden',
-  },
-  segmentBtn: {                                                                                     // 排序切换按钮
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: Spacing.sm + 2, gap: Spacing.xs,
-  },
-  segmentDivider: { width: scale(1), backgroundColor: Colors.divider },                            // 按钮间分隔线
-  // ═══════════════ 课程卡片 ═══════════════
-  card: {
-    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
-    padding: Spacing.lg, marginBottom: Spacing.md,
-    position: 'relative' as const,
-  },
-  cardHeader: {                                                                                     // 卡片头部（头像+姓名 + 状态徽章）
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-  },
-  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },                 // 头部左侧（头像 + 姓名）
-  studentName: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },        // 学生名
-  subject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                       // 科目名
-  cardBody: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },          // 卡片内容区
-  infoRow: {                                                                                        // 信息行（日期时长 + 时间段）
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  infoLeft: { flexDirection: 'row', gap: Spacing.md },                                              // 信息左侧（日期 + 时长）
-  infoItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },                        // 单个信息项（图标 + 文字）
-  infoText: { fontSize: FontSize.caption, color: Colors.body },
-
-  // ═══════════════ 时间段标签 ═══════════════
-  timeSlotBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.smallCard,
-    backgroundColor: Colors.primaryLight,
-  },
-  timeSlotBadgeText: {                                                                              // 时间段文字 "10:00-12:00"
-    fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
-  },
-  timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },                                          // 取消态时间段灰色背景
-  // ═══════════════ 取消动画（删除线 + 碎片）═══════════════
-  strikethroughOverlay: {                                                                           // 删除线覆盖层
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center', alignItems: 'center', zIndex: 10,
-    overflow: 'visible',
-  },
-  strikethroughLine: {                                                                              // 删除线
-    position: 'absolute', left: -30, height: 2,
-    backgroundColor: '#9CA3AF',
-  },
-  shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 }, // 碎片覆盖层
-  shredStrip: {                                                                                     // 碎片条
-    position: 'absolute', top: 0, height: '100%',
-    overflow: 'hidden',
-  },
-  shredInner: {                                                                                     // 碎片内容
-    position: 'absolute',
-    top: 0,
-    backgroundColor: Colors.card,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.card,
-  },
-  strikethroughLabel: {                                                                             // 删除线标签 "已取消"
-    fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
-    backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
-    borderRadius: BorderRadius.pill, overflow: 'hidden',
-  },
-
-  // ═══════════════ 金额与备注 ═══════════════
-  amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
-  amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },     // 金额 "200元"
-  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },                     // 备注行
-  noteText: { fontSize: FontSize.small, color: Colors.caption, flex: 1 },                           // 备注文字
-
-  // ═══════════════ 操作按钮（编辑 / 取消 / 删除）═══════════════
-  actions: {
-    flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg,
-    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
-  },
-  actionButton: { padding: Spacing.sm },                                                            // 单个操作按钮
-
-  // ═══════════════ 回到顶部按钮 ═══════════════
-  scrollTopBtn: {
-    position: 'absolute', bottom: 100, right: 30,
-    width: scale(44), height: scale(44), borderRadius: scale(22),
-    backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
-    justifyContent: 'center', alignItems: 'center',
-    ...Shadows.standard,
-  },
-  // ═══════════════ 确认弹窗 ═══════════════
-  confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },               // 弹窗容器
-  confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
-  confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
-  confirmButtons: { flexDirection: 'row', gap: Spacing.md },                                       // 按钮行
-  confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
-  confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
-  confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
-  confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
-
-  // ═══════════════ 表单（添加/编辑课程）═══════════════
-  datePickerButton: {                                                                               // 日期选择按钮
-    flexDirection: 'row', alignItems: 'center',
-    height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
-    paddingHorizontal: Spacing.md, backgroundColor: Colors.background,
-    gap: Spacing.sm,
-  },
-  datePickerText: { flex: 1, fontSize: FontSize.body, color: Colors.title },                       // 日期文字
-  datePickerPlaceholder: { color: Colors.caption },                                                 // 日期占位符
-  formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  pickerButton: {                                                                                   // 选择器按钮（学生/时间段）
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
-    paddingHorizontal: Spacing.md, backgroundColor: Colors.background,
-  },
-  pickerSelected: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },                 // 已选中状态
-  pickerText: { fontSize: FontSize.body, color: Colors.title, fontWeight: FontWeight.medium },     // 选中文字
-  pickerPlaceholder: { fontSize: FontSize.body, color: Colors.caption },                            // 占位文字
-  input: {                                                                                          // 文本输入框
-    height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
-    paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title,
-    backgroundColor: Colors.background,
-  },
-  textArea: { height: scale(80), paddingTop: Spacing.md, textAlignVertical: 'top' },              // 多行文本框（备注）
-  formRow: { flexDirection: 'row', gap: Spacing.md },                                               // 表单双列行
-  formHalf: { flex: 1 },                                                                            // 表单半列
-  rateInput: { textAlign: 'center', fontWeight: FontWeight.semiBold },                              // 课时费输入
-
-  // ═══════════════ 金额预览 ═══════════════
-  amountPreview: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: Colors.paidLight, borderRadius: BorderRadius.button,
-    padding: Spacing.lg, marginTop: Spacing.md,
-  },
-  amountPreviewLabel: { fontSize: FontSize.body, color: Colors.body, fontWeight: FontWeight.medium }, // "预计课时费"
-  amountPreviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },    // 金额数字
-
-  // ═══════════════ 保存按钮 ═══════════════
-  saveButton: {
-    backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button,
-    justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
-  },
-  saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
-
-  // ═══════════════ 学生选择列表项 ═══════════════
-  studentItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md, borderRadius: BorderRadius.smallCard, gap: Spacing.md,
-  },
-  studentItemActive: { backgroundColor: Colors.primaryLight },                                      // 选中态
-  studentItemInfo: { flex: 1 },                                                                     // 学生信息
-  studentItemName: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
-  studentItemSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },           // 科目名
-});
 
 export default LessonScreen;
