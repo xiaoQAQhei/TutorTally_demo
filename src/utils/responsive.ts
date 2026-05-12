@@ -169,9 +169,9 @@ function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
     bp,
     isTablet: isTabletDevice,
     isSmallPhone: win.width < BP_SM_MAX,
-    // Dynamic maxContentWidth: 75% of screen on tablet landscape, 600 on tablet portrait
+    // 62% of screen width on tablets, capped at 560
     maxContentWidth: isTabletDevice
-      ? Math.round(Math.min(win.width * 0.75, 800))
+      ? Math.round(Math.min(win.width * 0.62, 560))
       : win.width,
     fontScale: win.fontScale ?? PixelRatio.getFontScale(),
     orientation: win.width > win.height ? 'landscape' : 'portrait',
@@ -200,7 +200,7 @@ Dimensions.addEventListener('change', ({ window: win }) => {
   // Update the static MAX_CONTENT_WIDTH constant
   const isTabletDevice = _window.width >= BP_MD_MAX;
   (MAX_CONTENT_WIDTH as number) = isTabletDevice
-    ? Math.round(Math.min(_window.width * 0.75, 800))
+    ? Math.round(Math.min(_window.width * 0.62, 560))
     : _window.width;
   notifyListeners();
 });

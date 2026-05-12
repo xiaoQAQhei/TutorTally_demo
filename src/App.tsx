@@ -55,7 +55,8 @@ const App: React.FC = () => {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             const [active, inactive] = TAB_ICONS[route.name] || ['help-circle', 'help-circle-outline'];
-            return <Ionicons name={(focused ? active : inactive) as any} size={size} color={color} />;
+            const iconSize = isTablet ? Math.max(size, 28) : size;
+            return <Ionicons name={(focused ? active : inactive) as any} size={iconSize} color={color} />;
           },
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.caption,

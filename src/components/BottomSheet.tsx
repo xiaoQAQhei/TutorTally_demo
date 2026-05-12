@@ -18,7 +18,8 @@ interface BottomSheetProps {
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, children, heightFactor = 0.82, scrollable = true }) => {
   const { height: screenH } = useWindowDimensions();
-  const { isTablet } = useResponsive();
+  const { isTablet, maxContentWidth } = useResponsive();
+  const sheetWidth = isTablet ? maxContentWidth : undefined;
   const handleW = scale(isTablet ? 48 : 36);
   const handleH = verticalScale(4);
   const closeBtnSize = scale(isTablet ? 44 : 36);
@@ -57,7 +58,14 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ visible, onClose, title, chil
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         </Animated.View>
-        <Animated.View style={[styles.sheet, { height: sheetHeight, transform: [{ translateY }] }]}>
+        <Animated.View style={[styles.sheet, { height: sheetHeight, transform: [{ translateY }] },
+          sheetWidth ? {
+            width: sheetWidth,
+            alignSelf: 'center',
+            borderBottomLeftRadius: BorderRadius.card + 4,
+            borderBottomRightRadius: BorderRadius.card + 4,
+          } : null,
+        ]}>
           <View style={styles.handleContainer}>
             <View style={[styles.handle, { width: handleW, height: handleH }]} />
           </View>

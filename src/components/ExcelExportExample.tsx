@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
 import {
   exportAllToExcel,
@@ -10,13 +10,10 @@ import {
   ExportOptions,
   ExportProgress,
 } from '../utils/export';
-import { useResponsive, scale, verticalScale, rem, vw, vh } from '../utils/responsive';
-import { Colors, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 
 export const ExcelExportExample: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState<ExportProgress | null>(null);
-  const { fontSize, spacing, isTablet, isNarrow, isUltraNarrow, isWide, aspectRatio, maxContentWidth } = useResponsive();
 
   const handleProgressUpdate = (progressInfo: ExportProgress) => {
     setProgress(progressInfo);

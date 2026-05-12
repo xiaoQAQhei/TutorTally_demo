@@ -32,10 +32,7 @@ const StatsScreen: React.FC = () => {
   const [chartCardWidth, setChartCardWidth] = useState(0);
   const { maxContentWidth, isTablet, spacing, fontSize } = useResponsive();
 
-  const chartAvail = chartCardWidth > 0 ? chartCardWidth - Spacing.lg * 2 : 280;
-  const chartBarW = Math.floor(chartAvail / 12);
-  const chartGap = chartBarW;
-  const chartInitial = Math.floor(chartBarW / 2);
+  const chartAvail = chartCardWidth > 0 ? chartCardWidth - spacing.lg * 2 : 280;
 
   useFocusEffect(useCallback(() => { loadStats(); }, []));
 
@@ -117,6 +114,11 @@ const StatsScreen: React.FC = () => {
     }
     return months;
   }, [allLessons, selectedMonth]);
+
+  const unitW = chartAvail / (chartData.length * 2);
+  const chartBarW = Math.floor(unitW);
+  const chartGap = Math.floor(unitW);
+  const chartInitial = Math.floor(unitW / 2);
 
   const monthTotalStats = useMemo(() => {
     const uniqueStudents = new Set(monthFilteredStats.map((s) => s.student.id));
@@ -236,7 +238,7 @@ const StatsScreen: React.FC = () => {
                 ) : undefined,
               }))}
               barWidth={chartBarW}
-              height={isTablet ? 160 : 120}
+              height={isTablet ? Math.max(chartBarW * 8, 120) : 120}
               maxValue={chartMax}
               stepValue={chartStep}
               noOfSections={noOfSections}

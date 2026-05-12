@@ -30,7 +30,8 @@ const MONTH_NAMES: Record<string, string> = {
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const { maxContentWidth, spacing, fontSize } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
+  const icLg = isTablet ? 26 : 20;
 
   useEffect(() => {
     if (student) {
@@ -71,7 +72,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="chevron-back" size={24} color={Colors.title} />
+            <Ionicons name="chevron-back" size={icLg} color={Colors.title} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={[styles.headerTitle, { fontSize: fontSize.h3 }]}>{student.name}</Text>
@@ -143,7 +144,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="document-text-outline" size={48} color={Colors.caption} />
+              <Ionicons name="document-text-outline" size={isTablet ? 56 : 48} color={Colors.caption} />
               <Text style={[styles.emptyText, { fontSize: fontSize.body }]}>暂无课程记录</Text>
             </View>
           }

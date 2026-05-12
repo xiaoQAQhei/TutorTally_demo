@@ -113,6 +113,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
   const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
+  const icSm = isTablet ? 18 : 14;
+  const icLg = isTablet ? 26 : 20;
   const { opacity, translateY } = useFadeIn();
 
   const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
@@ -154,7 +156,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
             <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
-              <Ionicons name="checkmark-circle" size={14} color={morphBadgeColor} />
+              <Ionicons name="checkmark-circle" size={icSm} color={morphBadgeColor} />
               <Text style={[styles.confirmBadgeText, { color: morphBadgeColor, fontSize: fontSize.small }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
@@ -212,7 +214,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
           <TouchableOpacity style={styles.refreshButton} onPress={loadData} activeOpacity={0.7}>
-            <Ionicons name="refresh" size={22} color={Colors.title} />
+            <Ionicons name="refresh" size={icLg} color={Colors.title} />
           </TouchableOpacity>
         </View>
 
@@ -301,14 +303,14 @@ const QuickActionButton: React.FC<{
   fontSize: ResponsiveFontSize;
 }> = ({ item, onPress, fontSize }) => {
   const { scale: bounceScale, bounce } = useBounce(onPress);
-  const { isTablet, isUltraNarrow } = useResponsive();
+  const { isTablet, isUltraNarrow, spacing } = useResponsive();
   const iconSize = isTablet ? 28 : isUltraNarrow ? 18 : 22;
   const iconContainerSize = scale(isTablet ? 48 : isUltraNarrow ? 32 : 40);
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={bounce}
-      style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? Spacing.xl : isUltraNarrow ? Spacing.sm : Spacing.lg }]}
+      style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? spacing.xl : isUltraNarrow ? spacing.sm : spacing.lg }]}
     >
       <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
         <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2 }]}>
