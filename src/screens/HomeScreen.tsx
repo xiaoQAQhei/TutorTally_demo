@@ -144,18 +144,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={[styles.colorBar, { backgroundColor: morphBorderColor }]} />
           <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
             <View style={styles.recentLeft}>
-              <Text style={[styles.recentName, { fontSize: fontSize.body }]} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-              <Text style={[styles.recentDate, { fontSize: fontSize.small }]}>{item.date}</Text>
+              <Text style={[styles.recentName]} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+              <Text style={[styles.recentDate]}>{item.date}</Text>
             </View>
             <View style={styles.recentCenter}>
-              {item.timeSlot ? <Text style={[styles.recentTimeSlot, { fontSize: fontSize.h2 }]}>{item.timeSlot}</Text> : null}
+              {item.timeSlot ? <Text style={[styles.recentTimeSlot]}>{item.timeSlot}</Text> : null}
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
-            <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
+            <Text style={[styles.recentAmount]}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
               <Ionicons name="checkmark-circle" size={iconSize.xs} color={morphBadgeColor} />
-              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor, fontSize: fontSize.small }]}>{morphBadgeLabel}</Text>
+              <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -174,12 +174,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.recentDate}>{item.date}</Text>
         </View>
         <View style={styles.recentCenter}>
-          {item.timeSlot ? <Text style={[styles.recentTimeSlot, { fontSize: fontSize.h2 }]}>{item.timeSlot}</Text> : null}
+          {item.timeSlot ? <Text style={[styles.recentTimeSlot]}>{item.timeSlot}</Text> : null}
         </View>
         <View style={styles.recentRight}>
-          <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
+          <Text style={[styles.recentAmount]}>{item.amount.toFixed(0)}元</Text>
           <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
-            <Text style={[styles.miniBadgeText, { color: Colors.primary, fontSize: fontSize.small }]}>待上</Text>
+            <Text style={[styles.miniBadgeText, { color: Colors.primary }]}>待上</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -188,24 +188,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
-      <Text style={[styles.sectionTitle, { fontSize: fontSize.h3 }]}>今日待上课</Text>
+      <Text style={[styles.sectionTitle]}>今日待上课</Text>
       <TouchableOpacity onPress={() => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
       }}>
-        <Text style={[styles.viewAll, { fontSize: fontSize.caption }]}>查看全部</Text>
+        <Text style={[styles.viewAll]}>查看全部</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={[styles.container, { maxWidth: maxContentWidth, paddingHorizontal: spacing.xl }]}>
+    <View style={styles.container}>
       <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { fontSize: fontSize.h1 }]}>🙂你好，老师</Text>
-            <Text style={[styles.date, { fontSize: fontSize.caption }]}>
+            <Text style={styles.greeting}>🙂你好，老师</Text>
+            <Text style={styles.date}>
               {new Date().toLocaleDateString('zh-CN', {
                 year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
               })}
@@ -277,14 +277,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
           <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
-            <Text style={[styles.confirmTitle, { fontSize: fontSize.h3 }]}>{confirmDialog.title}</Text>
-            <Text style={[styles.confirmMessage, { fontSize: fontSize.body }]}>{confirmDialog.message}</Text>
+            <Text style={[styles.confirmTitle]}>{confirmDialog.title}</Text>
+            <Text style={[styles.confirmMessage]}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
-                <Text style={[styles.confirmCancelText, { fontSize: fontSize.body }]}>取消</Text>
+                <Text style={[styles.confirmCancelText]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
-                <Text style={[styles.confirmOkText, { fontSize: fontSize.body }]}>确定</Text>
+                <Text style={[styles.confirmOkText]}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -311,7 +311,7 @@ const QuickActionButton: React.FC<{
         <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2, marginBottom: spacing.xs }]}>
           <Ionicons name={item.icon as any} size={iconSize.xl} color={item.color} />
         </View>
-        <Text style={[styles.quickActionLabel, { fontSize: fontSize.small }]}>{item.label}</Text>
+        <Text style={[styles.quickActionLabel]}>{item.label}</Text>
       </Animated.View>
     </TouchableOpacity>
   );
