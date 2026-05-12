@@ -1,4 +1,7 @@
 ## [2026-05-12 17:43] 响应式系统重构 + 图标尺寸体系统一 + 全屏幕自适应收官
+## 2026-05-12 17:50 | auto: 05-12 17:50 | src/styles/theme.ts 
+- src/styles/theme.ts
+
 ## 2026-05-12 17:47 | auto: 05-12 17:47 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 
