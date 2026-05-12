@@ -300,7 +300,6 @@ const QuickActionButton: React.FC<{
 }> = ({ item, onPress }) => {
   const { scale: bounceScale, bounce } = useBounce(onPress);
   const { isTablet, isUltraNarrow, spacing, fontSize, iconSize } = useResponsive();
-  const iconContainerSize = scale(isTablet ? 48 : isUltraNarrow ? 32 : 40);
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -308,7 +307,7 @@ const QuickActionButton: React.FC<{
       style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? spacing.xl : isUltraNarrow ? spacing.sm : spacing.lg }]}
     >
       <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
-        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2, marginBottom: spacing.xs }]}>
+        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconSize.container.md, height: iconSize.container.md, borderRadius: iconSize.container.md / 2, marginBottom: spacing.xs }]}>
           <Ionicons name={item.icon as any} size={iconSize.xl} color={item.color} />
         </View>
         <Text style={[styles.quickActionLabel]}>{item.label}</Text>

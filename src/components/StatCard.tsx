@@ -24,8 +24,6 @@ const StatCard: React.FC<StatCardProps> = ({
   const { scale, scaleDown, scaleUp } = useScale();
   const { isTablet, fontSize, iconSize } = useResponsive();
 
-  const iconBox = moderateScale(isTablet ? 48 : 42);
-
   const content = (
     <Animated.View
       style={[
@@ -34,7 +32,7 @@ const StatCard: React.FC<StatCardProps> = ({
         { opacity, transform: [{ translateY }] },
       ]}
     >
-      <View style={[styles.iconContainer, { backgroundColor: color + '18', width: iconBox, height: iconBox }]}>
+      <View style={[styles.iconContainer, { backgroundColor: color + '18', width: iconSize.container.md, height: iconSize.container.md }]}>
         <Ionicons name={icon as any} size={iconSize.lg} color={color} />
       </View>
       <Text style={[styles.label, { fontSize: fontSize.caption }]}>{label}</Text>
