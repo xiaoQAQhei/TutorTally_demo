@@ -146,8 +146,8 @@ function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): R
   const arFactor = aspectRatio < 0.52 ? 0.90 : aspectRatio < 0.58 ? 0.95 : aspectRatio > 0.65 ? 1.08 : 1;
   if (bp === 'lg') {
     return {
-      h1: r(32 * arFactor), h2: r(26 * arFactor), h3: r(20 * arFactor),
-      body: r(17 * arFactor), caption: r(14 * arFactor), small: r(12 * arFactor), amount: r(24 * arFactor),
+      h1: r(20 * arFactor), h2: r(16 * arFactor), h3: r(12 * arFactor),
+      body: r(9 * arFactor), caption: r(7 * arFactor), small: r(5 * arFactor), amount: r(12 * arFactor),
     };
   }
   return {

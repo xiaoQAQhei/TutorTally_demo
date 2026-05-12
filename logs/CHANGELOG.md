@@ -1,4 +1,7 @@
 ## [2026-05-11 18:23] 全面响应式优化：宽高比感知 + 全屏文本响应式字体 + 硬编码像素值消除
+## 2026-05-12 15:20 | auto: 05-12 15:20 | src/utils/responsive.ts 
+- src/utils/responsive.ts
+
 ## 2026-05-12 15:14 | auto: 05-12 15:14 | src/screens/HomeScreen.tsx 
 - src/screens/HomeScreen.tsx
 
