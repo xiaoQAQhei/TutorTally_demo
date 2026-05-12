@@ -1,141 +1,16 @@
-## [2026-05-11 18:23] 全面响应式优化：宽高比感知 + 全屏文本响应式字体 + 硬编码像素值消除
-## 2026-05-12 17:43 | auto: 05-12 17:43 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:40 | auto: 05-12 17:40 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:32 | auto: 05-12 17:32 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:31 | auto: 05-12 17:31 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:31 | auto: 05-12 17:31 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:30 | auto: 05-12 17:30 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:28 | auto: 05-12 17:28 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 17:26 | auto: 05-12 17:26 | src/screens/HomeScreen.tsx src/styles/theme.ts src/utils/responsive.ts 
-- src/screens/HomeScreen.tsx
-- src/styles/theme.ts
-- src/utils/responsive.ts
-
-## 2026-05-12 17:07 | auto: 05-12 17:07 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 17:05 | auto: 05-12 17:05 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 17:04 | auto: 05-12 17:04 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 16:58 | auto: 05-12 16:58 | src/styles/theme.ts 
-- src/styles/theme.ts
-
-## 2026-05-12 16:52 | auto: 05-12 16:52 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 16:48 | auto: 05-12 16:48 | src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/SettingsScreen.tsx src/screens/StatsScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx src/utils/responsive.ts 
-- src/screens/LessonScreen.tsx
-- src/screens/RecurringRulesScreen.tsx
-- src/screens/SettingsScreen.tsx
-- src/screens/StatsScreen.tsx
-- src/screens/StudentBillingDetailScreen.tsx
-- src/screens/StudentScreen.tsx
-- src/utils/responsive.ts
-
-## 2026-05-12 16:36 | auto: 05-12 16:36 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 16:30 | auto: 05-12 16:30 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 16:15 | auto: 05-12 16:15 | src/components/StatCard.tsx src/screens/HomeScreen.tsx src/utils/responsive.ts 
-- src/components/StatCard.tsx
-- src/screens/HomeScreen.tsx
-- src/utils/responsive.ts
-
-## 2026-05-12 16:06 | auto: 05-12 16:06 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 15:59 | auto: 05-12 15:59 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 15:53 | auto: 05-12 15:53 | src/App.tsx src/components/GradientFAB.tsx src/components/StatCard.tsx src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx src/utils/responsive.ts 
-- src/App.tsx
-- src/components/GradientFAB.tsx
-- src/components/StatCard.tsx
-- src/screens/HomeScreen.tsx
-- src/screens/LessonScreen.tsx
-- src/screens/RecurringRulesScreen.tsx
-- src/screens/StudentBillingDetailScreen.tsx
-- src/screens/StudentScreen.tsx
-- src/utils/responsive.ts
-
-## 2026-05-12 15:40 | auto: 05-12 15:40 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 15:37 | auto: 05-12 15:37 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 15:24 | auto: 05-12 15:24 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 15:20 | auto: 05-12 15:20 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 15:14 | auto: 05-12 15:14 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 15:10 | auto: 05-12 15:10 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 14:57 | auto: 05-12 14:57 | src/screens/HomeScreen.tsx 
-- src/screens/HomeScreen.tsx
-
-## 2026-05-12 14:56 | auto: 05-12 14:56 | src/utils/responsive.ts 
-- src/utils/responsive.ts
-
-## 2026-05-12 14:45 | auto: 05-12 14:45 | src/App.tsx src/components/BottomSheet.tsx src/components/ExcelExportExample.tsx src/components/StatCard.tsx src/screens/HomeScreen.tsx src/screens/LessonScreen.tsx src/screens/RecurringRulesScreen.tsx src/screens/StatsScreen.tsx src/screens/StudentBillingDetailScreen.tsx src/screens/StudentScreen.tsx src/utils/responsive.ts android/ 
-- src/App.tsx
-- src/components/BottomSheet.tsx
-- src/components/ExcelExportExample.tsx
-- src/components/StatCard.tsx
-- src/screens/HomeScreen.tsx
-- src/screens/LessonScreen.tsx
-- src/screens/RecurringRulesScreen.tsx
-- src/screens/StatsScreen.tsx
-- src/screens/StudentBillingDetailScreen.tsx
-- src/screens/StudentScreen.tsx
-- src/utils/responsive.ts
-- android/
-
-## 2026-05-11 18:31 | auto: 05-11 18:31 | src/components/ExcelExportExample.tsx src/utils/__tests__/ 
-- src/components/ExcelExportExample.tsx
-- src/utils/__tests__/
-
-## 2026-05-11 18:29 | auto: 05-11 18:29 | "export_example_全量.xlsx" "export_example_按学生_李小明.xlsx" "export_example_按学生_王雨涵.xlsx" "export_example_按学生_陈子豪.xlsx" "export_example_按月_2026-05.xlsx" src/utils/export.ts 
-- "export_example_全量.xlsx"
-- "export_example_按学生_李小明.xlsx"
-- "export_example_按学生_王雨涵.xlsx"
-- "export_example_按学生_陈子豪.xlsx"
-- "export_example_按月_2026-05.xlsx"
-- src/utils/export.ts
-
-## 2026-05-11 18:26 | auto: 05-11 18:26 | logs/CHANGELOG.md 
+## [2026-05-12 17:43] 响应式系统重构 + 图标尺寸体系统一 + 全屏幕自适应收官
+## 2026-05-12 17:47 | auto: 05-12 17:47 | logs/CHANGELOG.md 
 - logs/CHANGELOG.md
 
-- responsive.ts 新增 aspectRatio/isUltraNarrow/isWide 字段，buildFontSize/buildSpacing 接入宽高比加权，新增 adaptSize() 工具函数
-- 7 个屏幕 150+ 处静态 FontSize.xxx 切换为响应式 fontSize.xxx 内联覆盖
-- TimeRangePicker/BottomSheet/CalendarPicker 等组件 20+ 处硬编码 px 值替换为 scale/verticalScale
-- QuickActionButton/GradientFAB 图标尺寸按窄屏/平板自适应
-- StatsScreen statsBar 溢出修复、StatCard 文本截断保护
-  - 文件: src/utils/responsive.ts, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/components/BottomSheet.tsx, src/components/CalendarPicker.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx, src/components/TimeRangePicker.tsx
+- **theme.ts 全面重构**：移除 `getSpacing()` / `getFontSize()` 等断点感知函数，改为导出静态 `TabletSpacing` / `TabletFontSize` 常量；新增 `IconSize` / `TabletIconSize` 图标尺寸体系；平板 TabletSpacing 整体缩小（比手机更紧凑），TabletFontSize 整体缩小以适配平板视觉密度；移除 `as const` 断言使常量可变导出
+- **responsive.ts 精简**：移除 `buildSpacing()` / `buildFontSize()` 中基于宽高比加权的动态缩放算法，改为直接从 theme.ts 引用静态常量；移除已废弃的 `ResponsiveSpacing` / `ResponsiveFontSize` 接口，新增 `iconSize: typeof IconSize` 字段；`maxContentWidth` 改为直接等于屏幕宽度，不再对平板做 75% 宽度限制
+- **全屏幕统一 iconSize 体系**：HomeScreen / LessonScreen / StatsScreen / RecurringRulesScreen / StudentScreen / StudentBillingDetailScreen / SettingsScreen 所有 Ionicons 图标 size 从硬编码数值（14/18/20/22/25 等）切换为 `iconSize.xs/md/lg/xl`
+- **组件图标统一**：GradientFAB 移除 isTablet/isUltraNarrow 条件判断，统一使用 `iconSize.xl`；StatCard 图标容器/图标尺寸改用 `iconSize.container.md` / `iconSize.lg`，label/value 字号改为响应式 `fontSize.caption` / `fontSize.h2`；App.tsx TabBar 图标改用 `iconSize.lg`
+- **HomeScreen 结构重构**：移除 container 的 maxWidth/paddingHorizontal inline 样式，全部走 StyleSheet；待确认下课和待上课卡片统一为色条 + 可点击内容区 + 金额和状态徽章的结构；timeSlotBadge padding 从 Spacing.md 缩小为 Spacing.xs；QuickActionButton 不再接收 fontSize prop 改用内联 useResponsive()
+- **BottomSheet 平板居中**：平板上 BottomSheet 宽度限制为 `maxContentWidth` 并 `alignSelf: 'center'`，不再全屏宽度
+- **StatsScreen 图表自适应改进**：柱状图 barW/gap/initial 计算移至 useMemo 内使用响应式 `spacing.lg`；平板高度改为 `Math.max(chartBarW * 8, 120)` 动态计算
+- **全屏幕添加 StyleSheet 注释**：所有 7 个屏幕统一用 ═ 分隔区块、// 描述每段样式作用，提升代码可读性
+  - 文件: src/styles/theme.ts, src/utils/responsive.ts, src/App.tsx, src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/StatsScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/components/BottomSheet.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx
 
 ## [2026-05-11 16:42] Excel 导出添加行高设置，根据字体大小分类配置
 ## 2026-05-11 18:24 | auto: 05-11 18:24 | "export_example_全量.xlsx" scripts/gen_sample_xlsx.js "export_example_按学生_李小明.xlsx" "export_example_按学生_王雨涵.xlsx" "export_example_按学生_陈子豪.xlsx" 
