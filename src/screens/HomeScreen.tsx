@@ -206,7 +206,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { fontSize: fontSize.h1 }]}>🙂你好，老师</Text>
+            <Text style={styles.greeting}>🙂你好，老师</Text>
             <Text style={[styles.date, { fontSize: fontSize.caption }]}>
               {new Date().toLocaleDateString('zh-CN', {
                 year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
