@@ -108,7 +108,7 @@ export const TabletFontSize = {
   h3: rem(13),
   body: rem(10),
   caption: rem(8),
-  small: rem(6),
+  small: rem(8),
   amount: rem(15),
 };
 
