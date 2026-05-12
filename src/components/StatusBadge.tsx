@@ -3,6 +3,7 @@ import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LessonStatusColors, StatusTransitions, FontSize, FontWeight, BorderRadius, Spacing } from '../styles/theme';
 import { LessonStatus } from '../models';
+import { useResponsive } from '../utils/responsive';
 
 const StatusIcons: Record<string, 'book' | 'time' | 'checkmark-circle' | 'close-circle' | 'wallet'> = {
   scheduled: 'book', completed: 'time', pendingPayment: 'wallet', paid: 'checkmark-circle', cancelled: 'close-circle',
@@ -15,6 +16,7 @@ interface StatusBadgeProps {
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
+  const { iconSize } = useResponsive();
   const scale = useRef(new Animated.Value(1)).current;
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
@@ -35,7 +37,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
   return (
     <TouchableOpacity activeOpacity={tappable ? 0.75 : 1} onPress={handleTap} disabled={!tappable}>
       <Animated.View style={[styles.badge, { backgroundColor: colors.bg, transform: [{ scale }] }]}>
-        <Ionicons name={icon} size={14} color={colors.text} />
+        <Ionicons name={icon} size={iconSize.xs} color={colors.text} />
         <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
       </Animated.View>
     </TouchableOpacity>

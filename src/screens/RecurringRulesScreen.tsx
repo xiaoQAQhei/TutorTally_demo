@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { RecurringRule, Student, StudentSubject, Lesson } from '../models';
@@ -8,7 +8,7 @@ import BottomSheet from '../components/BottomSheet';
 import GradientFAB from '../components/GradientFAB';
 import Toast from '../components/Toast';
 import EmptyState from '../components/EmptyState';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
+import { Colors, FontWeight, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
 import { useResponsive, scale } from '../utils/responsive';
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
@@ -106,31 +106,66 @@ const RecurringRulesScreen: React.FC = () => {
     setAmount(''); setStartDate(''); setEndDate(''); setNotes(''); setSubjects([]);
   };
 
+  // 响应式样式：依赖 spacing / fontSize / iconSize 动态计算
+  const styles = useMemo(() => ({
+    // ═══════════════ 页面容器 ═══════════════
+    container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
+    list: { paddingBottom: 100, padding: spacing.xl },
+    // ═══════════════ 规则卡片 ═══════════════
+    card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.lg, marginBottom: spacing.md } as const,
+    cardHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: spacing.md } as const,
+    ruleStudent: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title } as const,
+    ruleSubtext: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 } as const,
+    // ═══════════════ 一键生成按钮 ═══════════════
+    generateBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: Colors.paid, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: BorderRadius.pill, gap: 4 } as const,
+    generateBtnText: { fontSize: fontSize.small, color: Colors.white, fontWeight: FontWeight.semiBold } as const,
+    // ═══════════════ 星期标签 ═══════════════
+    weekdayRow: { flexDirection: 'row' as const, gap: spacing.xs, marginBottom: spacing.sm } as const,
+    weekdayDot: { width: scale(30), height: scale(30), borderRadius: scale(15), backgroundColor: Colors.divider, justifyContent: 'center' as const, alignItems: 'center' as const } as const,
+    weekdayDotText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption } as const,
+    // ═══════════════ 规则信息 ═══════════════
+    ruleInfo: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: spacing.md } as const,
+    ruleInfoText: { fontSize: fontSize.caption, color: Colors.body } as const,
+    // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
+    actions: { flexDirection: 'row' as const, justifyContent: 'flex-end' as const, gap: spacing.lg, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider } as const,
+    // ═══════════════ 表单 ═══════════════
+    formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md } as const,
+    chipRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm, marginBottom: spacing.xs } as const,
+    chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background } as const,
+    chipText: { fontSize: fontSize.caption, color: Colors.body } as const,
+    weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center' as const, alignItems: 'center' as const } as const,
+    input: { height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title, backgroundColor: Colors.background } as const,
+    formRow: { flexDirection: 'row' as const, gap: spacing.md } as const,
+    formHalf: { flex: 1 } as const,
+    saveButton: { backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button, justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl } as const,
+    saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold } as const,
+  } as const), [spacing, fontSize, iconSize]);
+
   const renderRule = ({ item }: { item: RecurringRule }) => {
     const weekdays = JSON.parse(item.weekdays || '[]') as number[];
     return (
       <View style={[styles.card, Shadows.standard]}>
         <View style={styles.cardHeader}>
           <View>
-            <Text style={[styles.ruleStudent, { fontSize: fontSize.h3 }]}>{getStudentName(item.studentId)}</Text>
-            <Text style={[styles.ruleSubtext, { fontSize: fontSize.small }]}>{getSubjectName(item.studentSubjectId) || '未指定科目'}</Text>
+            <Text style={styles.ruleStudent}>{getStudentName(item.studentId)}</Text>
+            <Text style={styles.ruleSubtext}>{getSubjectName(item.studentSubjectId) || '未指定科目'}</Text>
           </View>
           <TouchableOpacity onPress={() => handleGenerate(item)}>
             <View style={styles.generateBtn}>
               <Ionicons name="flash" size={iconSize.xs} color={Colors.white} />
-              <Text style={[styles.generateBtnText, { fontSize: fontSize.small }]}>生成</Text>
+              <Text style={styles.generateBtnText}>生成</Text>
             </View>
           </TouchableOpacity>
         </View>
         <View style={styles.weekdayRow}>
           {[1,2,3,4,5,6,7].map(d => (
             <View key={d} style={[styles.weekdayDot, weekdays.includes(d) && { backgroundColor: Colors.primary }]}>
-              <Text style={[styles.weekdayDotText, { fontSize: fontSize.small }, weekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
+              <Text style={[styles.weekdayDotText, weekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
             </View>
           ))}
         </View>
         <View style={styles.ruleInfo}>
-          <Text style={[styles.ruleInfoText, { fontSize: fontSize.caption }]}>{item.timeSlot} · {item.duration}h · {item.interval === 2 ? '隔周' : '每周'}</Text>
+          <Text style={styles.ruleInfoText}>{item.timeSlot} · {item.duration}h · {item.interval === 2 ? '隔周' : '每周'}</Text>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => { setEditingRule(item); setSelectedStudentId(item.studentId); loadSubjectsForStudent(item.studentId); setSelectedSubjectId(item.studentSubjectId || null); setSelectedWeekdays(JSON.parse(item.weekdays)); setInterval(item.interval.toString()); setTimeSlot(item.timeSlot); setDuration(item.duration.toString()); setAmount(item.amount?.toString() || ''); setStartDate(item.startDate); setEndDate(item.endDate || ''); setNotes(item.notes || ''); setModalVisible(true); }}>
@@ -146,110 +181,70 @@ const RecurringRulesScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
-      <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={[styles.list, { padding: spacing.xl }]}
+      <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={styles.list}
         ListEmptyComponent={<EmptyState icon="repeat-outline" title="没有周期规则" subtitle="创建规则自动排课" buttonLabel="创建规则" onButtonPress={() => { resetForm(); setModalVisible(true); }} />}
       />
       <GradientFAB icon="add" onPress={() => { resetForm(); setModalVisible(true); }} color={Colors.pending} />
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); resetForm(); }} title={editingRule ? '编辑周期规则' : '创建周期规则'}>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>学生</Text>
+        <Text style={styles.formLabel}>学生</Text>
         <View style={styles.chipRow}>
           {students.map(s => (
             <TouchableOpacity key={s.id} style={[styles.chip, selectedStudentId === s.id && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedStudentId(s.id); loadSubjectsForStudent(s.id); }}>
-              <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedStudentId === s.id && { color: Colors.white }]}>{s.name}</Text>
+              <Text style={[styles.chipText, selectedStudentId === s.id && { color: Colors.white }]}>{s.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
         {subjects.length > 0 && (
           <>
-            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>科目</Text>
+            <Text style={styles.formLabel}>科目</Text>
             <View style={styles.chipRow}>
               {subjects.map(sub => (
                 <TouchableOpacity key={sub.id} style={[styles.chip, selectedSubjectId === sub.id && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => setSelectedSubjectId(sub.id)}>
-                  <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedSubjectId === sub.id && { color: Colors.white }]}>{sub.subject}</Text>
+                  <Text style={[styles.chipText, selectedSubjectId === sub.id && { color: Colors.white }]}>{sub.subject}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </>
         )}
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>星期</Text>
+        <Text style={styles.formLabel}>星期</Text>
         <View style={styles.chipRow}>
           {[1,2,3,4,5,6,7].map(d => (
             <TouchableOpacity key={d} style={[styles.weekdayChip, selectedWeekdays.includes(d) && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => { setSelectedWeekdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]); }}>
-              <Text style={[styles.chipText, { fontSize: fontSize.caption }, selectedWeekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
+              <Text style={[styles.chipText, selectedWeekdays.includes(d) && { color: Colors.white }]}>{WEEKDAY_LABELS[d-1]}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>频率</Text>
+        <Text style={styles.formLabel}>频率</Text>
         <View style={styles.chipRow}>
           {[{v:'1',l:'每周'},{v:'2',l:'隔周'}].map(o => (
             <TouchableOpacity key={o.v} style={[styles.chip, interval === o.v && { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => setInterval(o.v)}>
-              <Text style={[styles.chipText, { fontSize: fontSize.caption }, interval === o.v && { color: Colors.white }]}>{o.l}</Text>
+              <Text style={[styles.chipText, interval === o.v && { color: Colors.white }]}>{o.l}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>时间段</Text>
+        <Text style={styles.formLabel}>时间段</Text>
         <TextInput style={styles.input} placeholder="如 14:00-16:00" value={timeSlot} onChangeText={setTimeSlot} placeholderTextColor={Colors.caption} />
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
-            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>课时（小时）</Text>
+            <Text style={styles.formLabel}>课时（小时）</Text>
             <TextInput style={styles.input} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
           </View>
           <View style={styles.formHalf}>
-            <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>费用（可选）</Text>
+            <Text style={styles.formLabel}>费用（可选）</Text>
             <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="自动计算" placeholderTextColor={Colors.caption} />
           </View>
         </View>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>开始日期</Text>
+        <Text style={styles.formLabel}>开始日期</Text>
         <TextInput style={styles.input} placeholder="如 2026-05-10" value={startDate} onChangeText={setStartDate} placeholderTextColor={Colors.caption} />
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>结束日期（可选）</Text>
+        <Text style={styles.formLabel}>结束日期（可选）</Text>
         <TextInput style={styles.input} placeholder="留空则持续生成" value={endDate} onChangeText={setEndDate} placeholderTextColor={Colors.caption} />
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingRule ? '更新规则' : '创建规则'}</Text>
+          <Text style={styles.saveButtonText}>{editingRule ? '更新规则' : '创建规则'}</Text>
         </TouchableOpacity>
       </BottomSheet>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  // ═══════════════ 页面容器 ═══════════════
-  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },                                                                     // 列表底部留白
-
-  // ═══════════════ 规则卡片 ═══════════════
-  card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }, // 卡片头部（学生名 + 生成按钮）
-  ruleStudent: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },        // 学生名
-  ruleSubtext: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                   // 科目名
-
-  // ═══════════════ 一键生成按钮 ═══════════════
-  generateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.paid, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, gap: 4 },
-  generateBtnText: { fontSize: FontSize.small, color: Colors.white, fontWeight: FontWeight.semiBold },
-
-  // ═══════════════ 星期标签 ═══════════════
-  weekdayRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm },
-  weekdayDot: { width: scale(30), height: scale(30), borderRadius: scale(15), backgroundColor: Colors.divider, justifyContent: 'center', alignItems: 'center' },
-  weekdayDotText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
-
-  // ═══════════════ 规则信息 ═══════════════
-  ruleInfo: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  ruleInfoText: { fontSize: FontSize.caption, color: Colors.body },                                 // 时间段 · 时长 · 频率
-
-  // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg, marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider },
-
-  // ═══════════════ 表单 ═══════════════
-  formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xs },   // 选项标签行（科目/星期）
-  chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background },
-  chipText: { fontSize: FontSize.caption, color: Colors.body },
-  weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
-  input: { height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title, backgroundColor: Colors.background },
-  formRow: { flexDirection: 'row', gap: Spacing.md },                                               // 表单双列行
-  formHalf: { flex: 1 },                                                                            // 表单半列
-  saveButton: { backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button, justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl },
-  saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
-});
 
 export default RecurringRulesScreen;

@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: Colors.divider, justifyContent: 'center', alignItems: 'center',
   },
-  content: { flex: 1, padding: Spacing.xl },
+  content: { flex: 1, paddingHorizontal: Spacing.xl,paddingBottom: Spacing.lg },
 });
 
 export default BottomSheet;

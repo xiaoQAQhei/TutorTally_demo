@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
+import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import Toast from '../components/Toast';
 import { useAction } from '../contexts/ActionContext';
 import { exportAllToExcel } from '../utils/export';
@@ -47,45 +47,76 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
     { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => onNavigateToRecurringRules?.(), color: '#AF52DE' },
   ];
 
+  const styles = useMemo(() => ({
+    // ═══════════════ 页面容器 ═══════════════
+    container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
+    list: { padding: spacing.xl },                                                                    // 列表滚动内边距
+
+    // ═══════════════ 分组标题 ═══════════════
+    sectionTitle: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.caption, marginBottom: spacing.md, marginTop: spacing.xl, textTransform: 'uppercase' as const },
+
+    // ═══════════════ 菜单项 ═══════════════
+    menuItem: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.lg, marginBottom: spacing.md, gap: spacing.md },
+    iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center' as const, alignItems: 'center' as const }, // 菜单图标容器
+    menuText: { flex: 1 },                                                                            // 菜单文字区域
+    menuLabel: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },    // 菜单标题
+    menuSub: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },                       // 菜单副标题
+
+    // ═══════════════ 关于卡片 ═══════════════
+    aboutCard: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.xl, alignItems: 'center' as const },
+    aboutApp: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },           // App 名称
+    aboutDesc: { fontSize: fontSize.small, color: Colors.caption, marginTop: spacing.xs },            // App 描述
+    aboutDivider: { width: 40, height: 1, backgroundColor: Colors.divider, marginVertical: spacing.md },
+
+    // ═══════════════ 导出弹窗 ═══════════════
+    overlay: { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center' as const, alignItems: 'center' as const },
+    exportModal: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.xl, width: '80%' as const, maxWidth: 400 },
+    modalTitle: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: spacing.lg, textAlign: 'center' as const },
+    exportOption: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider },
+    exportOptionText: { fontSize: fontSize.body, color: Colors.title },
+    cancelBtn: { marginTop: spacing.lg, alignItems: 'center' as const, paddingVertical: spacing.sm },         // 取消按钮
+    cancelBtnText: { fontSize: fontSize.body, color: Colors.caption },
+  }), [spacing, fontSize]);
+
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
-      <ScrollView contentContainerStyle={[styles.list, { paddingHorizontal: spacing.xl }]} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>数据管理</Text>
+      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionTitle}>数据管理</Text>
         {menuItems.map((item, i) => (
           <TouchableOpacity key={i} style={[styles.menuItem, Shadows.subtle]} activeOpacity={0.7} onPress={item.onPress}>
             <View style={[styles.iconBox, { backgroundColor: item.color + '14' }]}>
               <Ionicons name={item.icon as any} size={22} color={item.color} />
             </View>
             <View style={styles.menuText}>
-              <Text style={[styles.menuLabel, { fontSize: fontSize.body }]}>{item.label}</Text>
-              <Text style={[styles.menuSub, { fontSize: fontSize.small }]}>{item.subtitle}</Text>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Text style={styles.menuSub}>{item.subtitle}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={Colors.caption} />
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>偏好设置</Text>
+        <Text style={styles.sectionTitle}>偏好设置</Text>
         <View style={[styles.menuItem, Shadows.subtle]}>
           <View style={styles.menuText}>
-            <Text style={[styles.menuLabel, { fontSize: fontSize.body }]}>状态变更前提醒</Text>
-            <Text style={[styles.menuSub, { fontSize: fontSize.small }]}>切换状态时是否需要弹窗确认</Text>
+            <Text style={styles.menuLabel}>状态变更前提醒</Text>
+            <Text style={styles.menuSub}>切换状态时是否需要弹窗确认</Text>
           </View>
           <Switch value={confirmBeforeChange} onValueChange={toggleConfirmBeforeChange} trackColor={{ false: Colors.divider, true: Colors.primary }} />
         </View>
 
-        <Text style={[styles.sectionTitle, { fontSize: fontSize.caption, marginTop: Spacing.xl }]}>关于</Text>
+        <Text style={styles.sectionTitle}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
-          <Text style={[styles.aboutApp, { fontSize: fontSize.h3 }]}>家教账单 v1.0</Text>
-          <Text style={[styles.aboutDesc, { fontSize: fontSize.small }]}>个人离线家教课程账单管理工具</Text>
+          <Text style={styles.aboutApp}>家教账单 v1.0</Text>
+          <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>
           <View style={styles.aboutDivider} />
-          <Text style={[styles.aboutDesc, { fontSize: fontSize.small }]}>数据安全：所有数据仅存储在您的设备上</Text>
+          <Text style={styles.aboutDesc}>数据安全：所有数据仅存储在您的设备上</Text>
         </View>
       </ScrollView>
 
       {exportMode && (
         <View style={styles.overlay}>
           <View style={[styles.exportModal, Shadows.floating]}>
-            <Text style={[styles.modalTitle, { fontSize: fontSize.h3 }]}>选择导出范围</Text>
+            <Text style={styles.modalTitle}>选择导出范围</Text>
             {[
               { key: 'all' as ExportMode, label: '全部数据', icon: 'server-outline' },
               { key: 'month' as ExportMode, label: '按月份', icon: 'calendar-outline' },
@@ -93,11 +124,11 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
             ].map(opt => (
               <TouchableOpacity key={opt.key} style={styles.exportOption} onPress={() => handleExport(opt.key)}>
                 <Ionicons name={opt.icon as any} size={20} color={Colors.primary} />
-                <Text style={[styles.exportOptionText, { fontSize: fontSize.body }]}>{opt.label}</Text>
+                <Text style={styles.exportOptionText}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setExportMode(null)}>
-              <Text style={[styles.cancelBtnText, { fontSize: fontSize.body }]}>取消</Text>
+              <Text style={styles.cancelBtnText}>取消</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -107,36 +138,5 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  // ═══════════════ 页面容器 ═══════════════
-  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { padding: Spacing.xl },                                                                    // 列表滚动内边距
-
-  // ═══════════════ 分组标题 ═══════════════
-  sectionTitle: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.caption, marginBottom: Spacing.md, textTransform: 'uppercase' },
-
-  // ═══════════════ 菜单项 ═══════════════
-  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md, gap: Spacing.md },
-  iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center', alignItems: 'center' }, // 菜单图标容器
-  menuText: { flex: 1 },                                                                            // 菜单文字区域
-  menuLabel: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },    // 菜单标题
-  menuSub: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                       // 菜单副标题
-
-  // ═══════════════ 关于卡片 ═══════════════
-  aboutCard: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, alignItems: 'center' },
-  aboutApp: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },           // App 名称
-  aboutDesc: { fontSize: FontSize.small, color: Colors.caption, marginTop: Spacing.xs },            // App 描述
-  aboutDivider: { width: 40, height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.md },
-
-  // ═══════════════ 导出弹窗 ═══════════════
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center' },
-  exportModal: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, width: '80%', maxWidth: 400 },
-  modalTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.lg, textAlign: 'center' },
-  exportOption: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  exportOptionText: { fontSize: FontSize.body, color: Colors.title },
-  cancelBtn: { marginTop: Spacing.lg, alignItems: 'center', paddingVertical: Spacing.sm },         // 取消按钮
-  cancelBtnText: { fontSize: FontSize.body, color: Colors.caption },
-});
 
 export default SettingsScreen;

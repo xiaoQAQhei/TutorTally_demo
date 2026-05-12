@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Student, StudentSubject } from '../models';
@@ -10,13 +10,91 @@ import Toast from '../components/Toast';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
-  SubjectColorPalette,
+  Colors, FontWeight, BorderRadius, Shadows,
+  SubjectColorPalette, DefaultSubjectColors,
 } from '../styles/theme';
 import { useResponsive, scale } from '../utils/responsive';
 
 const StudentScreen: React.FC = () => {
   const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
+
+  // ═══════════════ 样式 ═══════════════
+  const styles = useMemo(() => ({
+    // ═══════════════ 页面容器 ═══════════════
+    container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
+    list: { paddingBottom: 100 },                                                                     // 列表底部留白（给 FAB 让位）
+
+    // ═══════════════ 学生卡片 ═══════════════
+    card: {
+      backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+      padding: spacing.lg, marginBottom: spacing.md,marginHorizontal: spacing.md,
+    },
+    cardMain: { flexDirection: 'row' as const, alignItems: 'center' as const },                      // 卡片主体（头像 + 信息）
+    info: { flex: 1, marginLeft: spacing.md },                                                       // 学生信息区
+    name: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: 4 }, // 学生名
+
+    // ═══════════════ 科目标签 ═══════════════
+    subjectTags: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.xs, marginTop: spacing.sm },
+    subjectTag: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs, borderRadius: BorderRadius.pill },
+    subjectTagText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold },                   // 科目名
+    subjectTagRate: { fontSize: fontSize.small, color: Colors.caption },                             // 课时费
+    subjectDot: { width: scale(8), height: scale(8), borderRadius: scale(4) },                      // 科目颜色圆点
+
+    // ═══════════════ 联系方式 ═══════════════
+    phoneRow: {
+      flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs,
+      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+    },
+    phoneText: { fontSize: fontSize.caption, color: Colors.caption },                                 // 电话文字
+    addressRow: {
+      flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs,
+      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+    },
+    addressText: { fontSize: fontSize.caption, color: Colors.caption, flex: 1 },                      // 地址文字
+
+    // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
+    actions: {
+      flexDirection: 'row' as const, justifyContent: 'flex-end' as const, gap: spacing.lg,
+      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+    },
+    actionButton: { padding: spacing.sm },                                                           // 单个操作按钮
+
+    // ═══════════════ 表单 ═══════════════
+    formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md },
+    input: {
+      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title,
+      backgroundColor: Colors.background,
+    },
+    subjectEditRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm, marginBottom: spacing.sm }, // 科目编辑行
+    subjectInput: { flex: 1.5 },                                                                     // 科目名输入框（占 1.5 份）
+    rateInput: { flex: 1 },                                                                          // 课时费输入框（占 1 份）
+    addSubjectBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs, paddingVertical: spacing.sm }, // 添加科目按钮
+    addSubjectText: { fontSize: fontSize.caption, color: Colors.primary, fontWeight: FontWeight.medium },
+    subjectChip: {                                                                                   // 科目选择标签
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: BorderRadius.pill, alignItems: 'center' as const, justifyContent: 'center' as const,
+    },
+    subjectChipText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold },                  // 科目选择文字
+
+    // ═══════════════ 确认弹窗 ═══════════════
+    confirmOverlay: { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center' as const, alignItems: 'center' as const, zIndex: 200 },
+    confirmBox: { backgroundColor: Colors.card, padding: spacing.xxl, width: '80%' as const, borderRadius: BorderRadius.card },
+    confirmTitle: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: spacing.md, textAlign: 'center' as const },
+    confirmMessage: { fontSize: fontSize.body, color: Colors.body, marginBottom: spacing.xl, textAlign: 'center' as const },
+    confirmButtons: { flexDirection: 'row' as const, gap: spacing.md },
+    confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center' as const, alignItems: 'center' as const },
+    confirmCancelText: { fontSize: fontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
+    confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center' as const, alignItems: 'center' as const },
+    confirmOkText: { fontSize: fontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
+
+    saveButton: {
+      backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,
+      justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl,
+    },
+    saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold },
+  } as const), [spacing, fontSize, iconSize]);
+
   const [students, setStudents] = useState<Student[]>([]);
   const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -26,6 +104,8 @@ const StudentScreen: React.FC = () => {
   const [address, setAddress] = useState('');
   const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const [pickingSubject, setPickingSubject] = useState<number | null>(null); // 正在选择科目的索引，null=不选
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
   useFocusEffect(useCallback(() => { loadStudents(); }, []));
 
@@ -85,7 +165,19 @@ const StudentScreen: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => { await deleteStudent(id); loadStudents(); };
+  const handleDelete = async (id: number) => {
+    await deleteStudent(id);
+    loadStudents();
+    setConfirmDialog(null);
+  };
+  const confirmDelete = (id: number, name: string) => {
+    setConfirmDialog({
+      visible: true,
+      title: '删除学生',
+      message: `确定要删除"${name}"吗？该学生的所有课程记录也将被删除。`,
+      onConfirm: () => handleDelete(id),
+    });
+  };
 
   const openAddModal = () => {
     setEditingStudent(null);
@@ -103,13 +195,13 @@ const StudentScreen: React.FC = () => {
         <View style={styles.cardMain}>
           <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={iconSize.avatar.lg} />
           <View style={styles.info}>
-            <Text style={[styles.name, { fontSize: fontSize.h3 }]}>{item.name}</Text>
+            <Text style={styles.name}>{item.name}</Text>
             <View style={styles.subjectTags}>
               {subs.map(sub => (
                 <View key={sub.id} style={[styles.subjectTag, { backgroundColor: (sub.color || SubjectColorPalette[0]) + '18' }]}>
                   <View style={[styles.subjectDot, { backgroundColor: sub.color || SubjectColorPalette[0] }]} />
-                  <Text style={[styles.subjectTagText, { color: sub.color || SubjectColorPalette[0], fontSize: fontSize.small }]}>{sub.subject}</Text>
-                  <Text style={[styles.subjectTagRate, { fontSize: fontSize.small }]}>{sub.hourlyRate}元/h</Text>
+                  <Text style={[styles.subjectTagText, { color: sub.color || SubjectColorPalette[0] }]}>{sub.subject}</Text>
+                  <Text style={styles.subjectTagRate}>{sub.hourlyRate}元/h</Text>
                 </View>
               ))}
             </View>
@@ -118,20 +210,20 @@ const StudentScreen: React.FC = () => {
         {item.phone ? (
           <View style={styles.phoneRow}>
             <Ionicons name="call-outline" size={iconSize.xs} color={Colors.caption} />
-            <Text style={[styles.phoneText, { fontSize: fontSize.caption }]}>{item.phone}</Text>
+            <Text style={styles.phoneText}>{item.phone}</Text>
           </View>
         ) : null}
         {item.address ? (
           <View style={styles.addressRow}>
             <Ionicons name="location-outline" size={iconSize.xs} color={Colors.caption} />
-            <Text style={[styles.addressText, { fontSize: fontSize.caption }]} numberOfLines={1}>{item.address}</Text>
+            <Text style={styles.addressText} numberOfLines={1}>{item.address}</Text>
           </View>
         ) : null}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
             <Ionicons name="pencil" size={iconSize.md} color={Colors.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => confirmDelete(item.id, item.name)}>
             <Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} />
           </TouchableOpacity>
         </View>
@@ -145,7 +237,7 @@ const StudentScreen: React.FC = () => {
         data={students}
         renderItem={renderStudent}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[styles.list, { padding: spacing.xl }]}
+        contentContainerStyle={styles.list}
         ListEmptyComponent={
           <EmptyState
             icon="people-outline"
@@ -160,19 +252,20 @@ const StudentScreen: React.FC = () => {
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.paid} />
 
       <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingStudent(null); }} title={editingStudent ? '编辑学生' : '添加学生'}>
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>学生姓名</Text>
+        <Text style={styles.formLabel}>学生姓名</Text>
         <TextInput style={styles.input} placeholder="输入姓名" value={name} onChangeText={setName} placeholderTextColor={Colors.caption} />
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>科目与课时费</Text>
+        <Text style={styles.formLabel}>科目与课时费</Text>
         {editSubjects.map((sub, idx) => (
           <View key={idx} style={styles.subjectEditRow}>
-            <TextInput
-              style={[styles.input, styles.subjectInput]}
-              placeholder="科目名"
-              value={sub.subject}
-              onChangeText={(v) => { const arr = [...editSubjects]; arr[idx] = { ...arr[idx], subject: v }; setEditSubjects(arr); }}
-              placeholderTextColor={Colors.caption}
-            />
+            <TouchableOpacity
+              style={[styles.input, styles.subjectInput, { justifyContent: 'center' as const }]}
+              onPress={() => setPickingSubject(idx)}
+            >
+              <Text style={[sub.subject ? { color: Colors.title, fontSize: fontSize.body } : { color: Colors.caption, fontSize: fontSize.body }, { fontWeight: sub.subject ? FontWeight.medium : FontWeight.regular }]}>
+                {sub.subject || '选择科目'}
+              </Text>
+            </TouchableOpacity>
             <TextInput
               style={[styles.input, styles.rateInput]}
               placeholder="元/h"
@@ -188,23 +281,72 @@ const StudentScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         ))}
+        {/* ── 科目选择面板 ── */}
+        {pickingSubject !== null && (
+          <View style={{ flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm, marginBottom: spacing.md }}>
+            {Object.entries(DefaultSubjectColors).map(([subject, color]) => (
+              <TouchableOpacity
+                key={subject}
+                style={[styles.subjectChip, { backgroundColor: color + '18' }]}
+                onPress={() => {
+                  const arr = [...editSubjects];
+                  arr[pickingSubject] = { ...arr[pickingSubject], subject, color };
+                  setEditSubjects(arr);
+                  setPickingSubject(null);
+                }}
+              >
+                <Text style={[styles.subjectChipText, { color }]}>{subject}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.subjectChip, { borderWidth: 1, borderColor: Colors.divider, borderStyle: 'dashed' as const }]}
+              onPress={() => {
+                const arr = [...editSubjects];
+                arr[pickingSubject] = { ...arr[pickingSubject], subject: '', color: SubjectColorPalette[pickingSubject % SubjectColorPalette.length] };
+                setEditSubjects(arr);
+                setPickingSubject(null);
+              }}
+            >
+              <Ionicons name="create-outline" size={iconSize.xs} color={Colors.caption} />
+              <Text style={[styles.subjectChipText, { color: Colors.caption }]}>手动输入</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <TouchableOpacity style={styles.addSubjectBtn} onPress={() => {
           setEditSubjects([...editSubjects, { subject: '', hourlyRate: '', color: SubjectColorPalette[editSubjects.length % SubjectColorPalette.length] }]);
         }}>
           <Ionicons name="add-circle-outline" size={iconSize.lg} color={Colors.primary} />
-          <Text style={[styles.addSubjectText, { fontSize: fontSize.caption }]}>添加科目</Text>
+          <Text style={styles.addSubjectText}>添加科目</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>联系电话（可选）</Text>
+        <Text style={styles.formLabel}>联系电话（可选）</Text>
         <TextInput style={styles.input} placeholder="输入电话" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={Colors.caption} />
 
-        <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课地址（可选）</Text>
+        <Text style={styles.formLabel}>上课地址（可选）</Text>
         <TextInput style={styles.input} placeholder="如 幸福小区3号楼201" value={address} onChangeText={setAddress} placeholderTextColor={Colors.caption} />
 
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
-          <Text style={[styles.saveButtonText, { fontSize: fontSize.body }]}>{editingStudent ? '更新学生' : '添加学生'}</Text>
+          <Text style={styles.saveButtonText}>{editingStudent ? '更新学生' : '添加学生'}</Text>
         </TouchableOpacity>
       </BottomSheet>
+
+      {/* ── 确认弹窗 ── */}
+      {confirmDialog?.visible && (
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
+                <Text style={styles.confirmCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmOkBtn} onPress={confirmDialog.onConfirm}>
+                <Text style={styles.confirmOkText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       <Toast
         visible={toast.visible}
@@ -215,64 +357,5 @@ const StudentScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  // ═══════════════ 页面容器 ═══════════════
-  container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },                                                                     // 列表底部留白（给 FAB 让位）
-
-  // ═══════════════ 学生卡片 ═══════════════
-  card: {
-    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
-    padding: Spacing.lg, marginBottom: Spacing.md,
-  },
-  cardMain: { flexDirection: 'row', alignItems: 'center' },                                         // 卡片主体（头像 + 信息）
-  info: { flex: 1, marginLeft: Spacing.md },                                                        // 学生信息区
-  name: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: 4 }, // 学生名
-
-  // ═══════════════ 科目标签 ═══════════════
-  subjectTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: Spacing.sm },
-  subjectTag: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingHorizontal: Spacing.sm + 2, paddingVertical: Spacing.xs, borderRadius: BorderRadius.pill },
-  subjectTagText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },                    // 科目名
-  subjectTagRate: { fontSize: FontSize.small, color: Colors.caption },                              // 课时费
-  subjectDot: { width: 8, height: 8, borderRadius: 4 },                                             // 科目颜色圆点
-
-  // ═══════════════ 联系方式 ═══════════════
-  phoneRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
-    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
-  },
-  phoneText: { fontSize: FontSize.caption, color: Colors.caption },                                  // 电话文字
-  addressRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
-    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
-  },
-  addressText: { fontSize: FontSize.caption, color: Colors.caption, flex: 1 },                       // 地址文字
-
-  // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
-  actions: {
-    flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg,
-    marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
-  },
-  actionButton: { padding: Spacing.sm },                                                            // 单个操作按钮
-
-  // ═══════════════ 表单 ═══════════════
-  formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  input: {
-    height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
-    paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title,
-    backgroundColor: Colors.background,
-  },
-  subjectEditRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm }, // 科目编辑行
-  subjectInput: { flex: 1.5 },                                                                      // 科目名输入框（占 1.5 份）
-  rateInput: { flex: 1 },                                                                           // 课时费输入框（占 1 份）
-  addSubjectBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.sm }, // 添加科目按钮
-  addSubjectText: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.medium },
-  saveButton: {
-    backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,
-    justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
-  },
-  saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
-});
 
 export default StudentScreen;

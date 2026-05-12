@@ -29,7 +29,7 @@ const StatCard: React.FC<StatCardProps> = ({
       style={[
         styles.card,
         Shadows.subtle,
-        { opacity, transform: [{ translateY }] },
+        { opacity, transform: [{ translateY }], padding: Spacing.lg },
       ]}
     >
       <View style={[styles.iconContainer, { backgroundColor: color + '18', width: iconSize.container.md, height: iconSize.container.md }]}>

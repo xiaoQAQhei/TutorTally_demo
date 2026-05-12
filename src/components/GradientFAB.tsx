@@ -5,6 +5,12 @@ import { Colors, Shadows, BorderRadius } from '../styles/theme';
 import { usePulse, useBounce } from '../styles/animations';
 import { useResponsive, moderateScale } from '../utils/responsive';
 
+// ── FAB 位置常量（供其他组件同步定位用） ──
+export const FAB_BASE_SIZE = 60;           // 按钮基准尺寸（moderateScale 缩放）
+export const FAB_BOTTOM_PHONE = 24;        // 手机底部间距
+export const FAB_BOTTOM_TABLET = 32;       // 平板底部间距
+export const FAB_RIGHT_TABLET = 24;       // 平板右侧间距
+
 interface GradientFABProps {
   icon?: string;
   onPress: () => void;
@@ -22,8 +28,8 @@ const GradientFAB: React.FC<GradientFABProps> = ({
   const { scale, bounce } = useBounce(onPress);
   const { isTablet, isUltraNarrow, contentPaddingH, iconSize } = useResponsive();
 
-  const btnSize = moderateScale(60);
-  const defaultPos = { bottom: isTablet ? 32 : 24, right: isTablet ? 24 : contentPaddingH + 4 };
+  const btnSize = moderateScale(FAB_BASE_SIZE);
+  const defaultPos = { bottom: isTablet ? FAB_BOTTOM_TABLET : FAB_BOTTOM_PHONE, right: isTablet ? 24 : contentPaddingH + 4 };
   const pos = position ?? defaultPos;
 
   return (

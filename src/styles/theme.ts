@@ -81,7 +81,7 @@ export const Spacing = {
 
 // ── 平板间距（responsive.ts 根据断点选择，当前与手机一致） ──
 export const TabletSpacing = {
-  xs: scale(-1),
+  xs: scale(2),
   sm: scale(3),
   md: scale(7),
   lg: scale(11),
@@ -101,7 +101,7 @@ export const FontSize = {
   amount: rem(20),
 };
 
-// ── 平板字号（当前与手机一致） ────────────────────────────
+// ── 平板字号 ────────────────────────────
 export const TabletFontSize = {
   h1: rem(23),
   h2: rem(17),
@@ -114,17 +114,27 @@ export const TabletFontSize = {
 
 // ── 图标尺寸（手机基线） ────────────────────────────────
 export const IconSize = {
-  xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28,
-  container: { sm: 32, md: 42, lg: 56 },
-  avatar: { sm: 28, md: 40, lg: 48 },
-  badge: { size: 20, radius: 10 },
+  xs: 14,              // 小图标(日历/沙漏/文档/电话/定位/confirmBadge→checkmark)
+  sm: 16,              // 下拉箭头(chevron-down)
+  md: 18,              // 编辑(pencil)/删除(trash)/取消(close-circle)
+  lg: 20,              // 钱包/刷新/返回(chevron-back)/checkmark-circle
+  xl: 25,              // 时间段(time-outline)
+  xxl: 28,             // 快捷操作按钮/FAB
+  container: { sm: 32, md: 42, lg: 56 },     // 图标背景容器 sm=超窄屏  md=常规  lg=平板
+  avatar: { sm: 28, md: 50, lg: 48 },         // 学生头像 sm=选择列表  md=课程卡片  lg=学生管理页
+  badge: { size: 20, radius: 10 },            // 筛选栏计数徽章
 };
 
-// ── 平板图标尺寸（当前与手机一致） ──────────────────────────
+// ── 平板图标尺寸（responsive.ts 根据断点选择） ──────────────
 export const TabletIconSize = {
-  xs: 34, sm: 36, md: 38, lg: 40, xl: 45, xxl: 48,
+  xs: 25,
+  sm: 36,
+  md: 38,
+  lg: 40,
+  xl: 45,
+  xxl: 48,
   container: { sm: 52, md: 62, lg: 76 },
-  avatar: { sm: 32, md: 44, lg: 52 },
+  avatar: { sm: 32, md: 80, lg: 52 },
   badge: { size: 24, radius: 12 },
 };
 

@@ -465,4 +465,24 @@ function seedMockData() {
       notes: '', createdAt: now, _uuid: uid(),
     });
   }
+
+  // ── 额外 10 条模拟课程（不同时段、金额、含备注） ──
+  const extraStudents = [s1, s2, s3, s1, s2, s3, s1, s2, s3, s1];
+  const extraSubjects = [sub1, sub2, sub3, sub1, sub2, sub3, sub1, sub2, sub3, sub1];
+  const extraDates = ['2026-05-11', '2026-05-12', '2026-05-13', '2026-05-14', '2026-05-16', '2026-05-17', '2026-05-19', '2026-05-21', '2026-05-22', '2026-05-23'];
+  const extraTimeSlots = ['08:00-10:00', '09:00-11:00', '10:00-12:00', '13:00-15:00', '14:00-16:00', '15:00-17:00', '16:00-18:00', '17:00-19:00', '18:00-20:00', '19:00-21:00'];
+  const extraDurations = [2, 2.5, 1.5, 2, 3, 2, 2, 1.5, 2, 2];
+  const extraNotes = ['复习三角函数', '单词听写练习', '牛顿定律习题', '', '完形填空专项', '电路分析', '', '化学方程式', '数列求和', '阅读理解'];
+  for (let i = 0; i < 10; i++) {
+    const student = extraStudents[i];
+    const subj = extraSubjects[i];
+    const status: LessonStatus = i < 2 ? 'scheduled' : (i < 4 ? 'completed' : (i < 7 ? 'pendingPayment' : 'paid'));
+    mockLessons.push({
+      id: mockIdCounter++, studentId: student.id, studentSubjectId: subj.id,
+      date: extraDates[i], timeSlot: extraTimeSlots[i],
+      duration: extraDurations[i], amount: Math.round(subj.hourlyRate * extraDurations[i]),
+      status, confirmedAt: status !== 'scheduled' ? now : null,
+      notes: extraNotes[i], createdAt: now, _uuid: uid(),
+    });
+  }
 }

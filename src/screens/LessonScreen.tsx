@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
 import { addLesson, getAllLessons, updateLesson, deleteLesson, setLessonStatus, getAllStudents, getSubjectsByStudentId, addPayment, getPaymentsByLessonId } from '../database';
 import { useAction } from '../contexts/ActionContext';
-import GradientFAB from '../components/GradientFAB';
+import GradientFAB, { FAB_BASE_SIZE, FAB_BOTTOM_PHONE, FAB_BOTTOM_TABLET, FAB_RIGHT_TABLET } from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
 import CalendarPicker from '../components/CalendarPicker';
 import TimeRangePicker from '../components/TimeRangePicker';
@@ -20,7 +20,7 @@ import {
 } from '../styles/theme';
 import { useSlideManager, useShatterManager } from '../utils/animationHooks';
 import { ShredderStrip } from '../components/ShredderStrip';
-import { scale, useResponsive } from '../utils/responsive';
+import { scale, moderateScale, useResponsive } from '../utils/responsive';
 
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
@@ -51,7 +51,7 @@ const LessonScreen: React.FC = () => {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, contentPaddingH } = useResponsive();
   const itemHeightRef = useRef(180);
   const cardWidthRef = useRef<Map<number, number>>(new Map());
   const cardHeightRef = useRef<Map<number, number>>(new Map());
@@ -166,16 +166,18 @@ const LessonScreen: React.FC = () => {
     // ═══════════════ 操作按钮（编辑 / 取消 / 删除）═══════════════
     actions: {
       flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.lg,
-      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+      marginTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
     },
     actionButton: { padding: spacing.sm },                                                            // 单个操作按钮
 
     // ═══════════════ 回到顶部按钮 ═══════════════
     scrollTopBtn: {
-      position: 'absolute', bottom: 100, right: 30,
+      position: 'absolute' as const,
+      bottom: (isTablet ? FAB_BOTTOM_TABLET*2 : FAB_BOTTOM_PHONE) + FAB_BASE_SIZE + spacing.md, // FAB底部 + 按钮高度 + 间距
+      right: (isTablet ? FAB_RIGHT_TABLET : contentPaddingH + 4) + Math.round((moderateScale(FAB_BASE_SIZE) - scale(44)) / 2), // FAB右侧 + 居中偏移
       width: scale(44), height: scale(44), borderRadius: scale(22),
       backgroundColor: '#E5E7EB', borderWidth: 1, borderColor: '#D1D5DB',
-      justifyContent: 'center', alignItems: 'center',
+      justifyContent: 'center' as const, alignItems: 'center' as const,
       ...Shadows.standard,
     },
     // ═══════════════ 确认弹窗 ═══════════════
@@ -242,7 +244,7 @@ const LessonScreen: React.FC = () => {
     studentItemInfo: { flex: 1 },                                                                     // 学生信息
     studentItemName: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
     studentItemSubject: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },           // 科目名
-  } as const), [spacing, fontSize, iconSize]);
+  } as const), [spacing, fontSize, iconSize, isTablet, contentPaddingH]);
 
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null);
