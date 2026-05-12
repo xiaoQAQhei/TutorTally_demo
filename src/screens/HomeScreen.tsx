@@ -336,8 +336,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.card, alignItems: 'center',
   },
   quickActionIcon: {
-    width: scale(40), height: scale(40), borderRadius: scale(20),
-    justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.xs,
+    justifyContent: 'center', alignItems: 'center',
   },
   quickActionLabel: {
     fontSize: FontSize.small, color: Colors.body, fontWeight: FontWeight.medium,
