@@ -81,13 +81,13 @@ export const Spacing = {
 
 // ── 平板间距（responsive.ts 根据断点选择，当前与手机一致） ──
 export const TabletSpacing = {
-  xs: scale(9),
-  sm: scale(13),
-  md: scale(17),
-  lg: scale(21),
-  xl: scale(25),
-  xxl: scale(29),
-  xxxl: scale(37),
+  xs: scale(-1),
+  sm: scale(3),
+  md: scale(7),
+  lg: scale(11),
+  xl: scale(15),
+  xxl: scale(19),
+  xxxl: scale(27),
 };
 
 // ── 字号（手机基线） ──────────────────────────────────────
