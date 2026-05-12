@@ -354,7 +354,7 @@ const LessonScreen: React.FC = () => {
       <>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            {student && <StudentAvatar name={student.name} size={40} />}
+            {student && <StudentAvatar name={student.name} size={iconSize.avatar.md} />}
             <View>
               <Text style={[styles.studentName, { fontSize: fontSize.h3 }]}>{student?.name || '未知学生'}</Text>
               <Text style={[styles.subject, { fontSize: fontSize.small }]}>{student?.phone || ''}</Text>
@@ -706,7 +706,7 @@ const LessonScreen: React.FC = () => {
         <TouchableOpacity style={styles.pickerButton} onPress={() => setShowStudentPicker(true)}>
           {selectedStudentId ? (
             <View style={styles.pickerSelected}>
-              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={28} />
+              <StudentAvatar name={getStudent(selectedStudentId)?.name || ''} size={iconSize.avatar.sm} />
               <Text style={[styles.pickerText, { fontSize: fontSize.body }]}>{getStudent(selectedStudentId)?.name}</Text>
             </View>
           ) : (
@@ -788,7 +788,7 @@ const LessonScreen: React.FC = () => {
               style={[styles.studentItem, selectedStudentId === s.id && styles.studentItemActive]}
               onPress={() => { setSelectedStudentId(s.id); setShowStudentPicker(false); }}
             >
-              <StudentAvatar name={s.name} size={40} />
+              <StudentAvatar name={s.name} size={iconSize.avatar.md} />
               <View style={styles.studentItemInfo}>
                 <Text style={[styles.studentItemName, { fontSize: fontSize.body }, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
                 <Text style={[styles.studentItemSubject, { fontSize: fontSize.small }]}>{s.phone || ''}</Text>

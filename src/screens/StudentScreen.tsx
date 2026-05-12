@@ -101,7 +101,7 @@ const StudentScreen: React.FC = () => {
     return (
       <View style={[styles.card, Shadows.standard]}>
         <View style={styles.cardMain}>
-          <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={48} />
+          <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={iconSize.avatar.lg} />
           <View style={styles.info}>
             <Text style={[styles.name, { fontSize: fontSize.h3 }]}>{item.name}</Text>
             <View style={styles.subjectTags}>

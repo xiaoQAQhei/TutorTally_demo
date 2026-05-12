@@ -116,12 +116,14 @@ export const TabletFontSize = {
 export const IconSize = {
   xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28,
   container: { sm: 32, md: 42, lg: 56 },
+  avatar: { sm: 28, md: 40, lg: 48 },
 };
 
 // ── 平板图标尺寸（当前与手机一致） ──────────────────────────
 export const TabletIconSize = {
   xs: 34, sm: 36, md: 38, lg: 40, xl: 45, xxl: 48,
   container: { sm: 52, md: 62, lg: 76 },
+  avatar: { sm: 32, md: 44, lg: 52 },
 };
 
 export const FontWeight = {
