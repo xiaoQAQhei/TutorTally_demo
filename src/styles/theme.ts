@@ -120,8 +120,8 @@ export const IconSize = {
 
 // ── 平板图标尺寸（当前与手机一致） ──────────────────────────
 export const TabletIconSize = {
-  xs: 24, sm: 26, md: 28, lg: 30, xl: 35, xxl: 38,
-  container: { sm: 42, md: 52, lg: 66 },
+  xs: 34, sm: 36, md: 38, lg: 40, xl: 45, xxl: 48,
+  container: { sm: 52, md: 62, lg: 76 },
 };
 
 export const FontWeight = {
