@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, useResponsive, ResponsiveFontSize } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, useResponsive } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -224,7 +224,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <QuickActionButton
               key={item.screen + index}
               item={item}
-              fontSize={fontSize}
               onPress={() => {
                 if (item.action) setPendingAction(item.action);
                 navigation.navigate(item.screen);
@@ -300,10 +299,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 const QuickActionButton: React.FC<{
   item: typeof QUICK_ACTIONS[0];
   onPress: () => void;
-  fontSize: ResponsiveFontSize;
-}> = ({ item, onPress, fontSize }) => {
+}> = ({ item, onPress }) => {
   const { scale: bounceScale, bounce } = useBounce(onPress);
-  const { isTablet, isUltraNarrow, spacing } = useResponsive();
+  const { isTablet, isUltraNarrow, spacing, fontSize } = useResponsive();
   const iconSize = isTablet ? 28 : isUltraNarrow ? 18 : 22;
   const iconContainerSize = scale(isTablet ? 48 : isUltraNarrow ? 32 : 40);
   return (
