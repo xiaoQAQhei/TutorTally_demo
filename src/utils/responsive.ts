@@ -135,7 +135,7 @@ function buildSpacing(bp: Breakpoint, winWidth: number, aspectRatio: number): Re
   const arFactor = aspectRatio < 0.52 ? 1.12 : aspectRatio < 0.58 ? 1.06 : aspectRatio > 0.65 ? 0.92 : 1;
   if (bp === 'lg') {
     return {
-      xs: s(6 * arFactor), sm: s(12 * arFactor), md: s(16 * arFactor), lg: s(20 * arFactor),
+      xs: s(6 * arFactor), sm: s(12 * arFactor), md: s(16 * arFactor), lg: s(15 * arFactor),
       xl: s(28 * arFactor), xxl: s(32 * arFactor), xxxl: s(40 * arFactor),
     };
   }
@@ -167,7 +167,7 @@ function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): R
 
 function buildIconSize(bp: Breakpoint): ResponsiveIconSize {
   if (bp === 'lg') {
-    return { xs: 10, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36, container: { sm: 40, md: 48, lg: 60 } };
+    return { xs: 18, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36, container: { sm: 40, md: 48, lg: 60 } };
   }
   return { xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28, container: { sm: 32, md: 42, lg: 56 } };
 }
