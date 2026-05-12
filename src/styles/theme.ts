@@ -81,13 +81,13 @@ export const Spacing = {
 
 // ── 平板间距（responsive.ts 根据断点选择，当前与手机一致） ──
 export const TabletSpacing = {
-  xs: scale(4),
-  sm: scale(8),
-  md: scale(12),
-  lg: scale(16),
-  xl: scale(20),
-  xxl: scale(24),
-  xxxl: scale(32),
+  xs: scale(2),
+  sm: scale(4),
+  md: scale(6),
+  lg: scale(8),
+  xl: scale(10),
+  xxl: scale(12),
+  xxxl: scale(16),
 };
 
 // ── 字号（手机基线） ──────────────────────────────────────
@@ -103,13 +103,13 @@ export const FontSize = {
 
 // ── 平板字号（当前与手机一致） ────────────────────────────
 export const TabletFontSize = {
-  h1: rem(28),
-  h2: rem(22),
-  h3: rem(18),
-  body: rem(15),
-  caption: rem(13),
-  small: rem(11),
-  amount: rem(20),
+  h1: rem(14),
+  h2: rem(11),
+  h3: rem(9),
+  body: rem(7),
+  caption: rem(6),
+  small: rem(5),
+  amount: rem(10),
 };
 
 // ── 图标尺寸（手机基线） ────────────────────────────────
@@ -120,8 +120,8 @@ export const IconSize = {
 
 // ── 平板图标尺寸（当前与手机一致） ──────────────────────────
 export const TabletIconSize = {
-  xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28,
-  container: { sm: 32, md: 42, lg: 56 },
+  xs: 7, sm: 8, md: 9, lg: 10, xl: 12, xxl: 14,
+  container: { sm: 16, md: 21, lg: 28 },
 };
 
 export const FontWeight = {
