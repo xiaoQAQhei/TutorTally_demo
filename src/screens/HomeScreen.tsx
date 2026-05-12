@@ -269,7 +269,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.overviewSmall}>
             <StatCard
               icon="flash"
-              label="今日课程收益"
+              label="今日预计收益"
               value={`${todayEarnings.toFixed(0)}元`}
               color={Colors.primary}
             />
