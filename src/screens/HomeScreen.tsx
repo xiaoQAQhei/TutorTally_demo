@@ -7,7 +7,7 @@ import { getAllLessons, getAllStudents, setLessonStatus } from '../database';
 import StatCard from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { useFadeIn, useBounce } from '../styles/animations';
-import { vw, scale, verticalScale, rem, useResponsive } from '../utils/responsive';
+import { vw, scale, verticalScale, rem, useResponsive, ResponsiveFontSize } from '../utils/responsive';
 import { useAction } from '../contexts/ActionContext';
 import {
   Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows,
@@ -141,18 +141,22 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           opacity: isMorphing ? so : 1,
           transform: [{ translateX: sx }],
         }]}>
+          {/* 左侧色条 */}
           <View style={[styles.colorBar, { backgroundColor: morphBorderColor }]} />
           <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
+            {/* 学生名 + 日期 */}
             <View style={styles.recentLeft}>
-              <Text style={[styles.recentName]} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-              <Text style={[styles.recentDate]}>{item.date}</Text>
+              <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+              <Text style={styles.recentDate}>{item.date}</Text>
             </View>
+            {/* 时间段 */}
             <View style={styles.recentCenter}>
-              {item.timeSlot ? <Text style={[styles.recentTimeSlot]}>{item.timeSlot}</Text> : null}
+              {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
             </View>
           </TouchableOpacity>
+          {/* 金额 + 确认徽章 */}
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
-            <Text style={[styles.recentAmount]}>{item.amount.toFixed(0)}元</Text>
+            <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
               <Ionicons name="checkmark-circle" size={iconSize.xs} color={morphBadgeColor} />
               <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
@@ -163,37 +167,39 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     return (
-      <TouchableOpacity
-        style={[styles.recentItem, !isLast && styles.recentItemBorder]}
-        activeOpacity={0.6}
-        onPress={navigateToLesson}
-      >
+      <View style={[styles.recentItem, !isLast && styles.recentItemBorder]}>
+        {/* 左侧色条 */}
         <View style={[styles.colorBar, { backgroundColor: Colors.primary }]} />
-        <View style={styles.recentLeft}>
-          <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
-          <Text style={styles.recentDate}>{item.date}</Text>
-        </View>
-        <View style={styles.recentCenter}>
-          {item.timeSlot ? <Text style={[styles.recentTimeSlot]}>{item.timeSlot}</Text> : null}
-        </View>
-        <View style={styles.recentRight}>
-          <Text style={[styles.recentAmount]}>{item.amount.toFixed(0)}元</Text>
+        <TouchableOpacity style={styles.recentContentLeft} activeOpacity={0.6} onPress={navigateToLesson}>
+          {/* 学生名 + 日期 */}
+          <View style={styles.recentLeft}>
+            <Text style={styles.recentName} numberOfLines={1}>{student?.name || '未知学生'}</Text>
+            <Text style={styles.recentDate}>{item.date}</Text>
+          </View>
+          {/* 时间段 */}
+          <View style={styles.recentCenter}>
+            {item.timeSlot ? <Text style={styles.recentTimeSlot}>{item.timeSlot}</Text> : null}
+          </View>
+        </TouchableOpacity>
+        {/* 金额 + 待上徽章 */}
+        <View style={[styles.recentRight, styles.confirmRight]}>
+          <Text style={styles.recentAmount}>{item.amount.toFixed(0)}元</Text>
           <View style={[styles.miniBadge, { backgroundColor: Colors.primaryLight }]}>
             <Text style={[styles.miniBadgeText, { color: Colors.primary }]}>待上</Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
   const renderListHeader = () => (
     <View style={styles.sectionHeaderRow}>
-      <Text style={[styles.sectionTitle]}>今日待上课</Text>
+      <Text style={styles.sectionTitle}>今日待上课</Text>
       <TouchableOpacity onPress={() => {
         setPendingFilter('upcoming');
         navigation.navigate('Lessons');
       }}>
-        <Text style={[styles.viewAll]}>查看全部</Text>
+        <Text style={styles.viewAll}>查看全部</Text>
       </TouchableOpacity>
     </View>
   );
@@ -201,7 +207,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
-        {/* Header */}
+        {/* ===== 顶部栏 ===== */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>🙂你好，老师</Text>
@@ -216,7 +222,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Quick Actions */}
+        {/* ===== 快捷操作按钮 ===== */}
         <View style={styles.quickActionsRow}>
           {QUICK_ACTIONS.map((item, index) => (
             <QuickActionButton
@@ -230,7 +236,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           ))}
         </View>
 
-        {/* Upcoming Lessons - independently scrollable */}
+        {/* ===== 今日课程列表 ===== */}
         <FlatList
           data={recentLessons}
           renderItem={renderLessonItem}
@@ -249,7 +255,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           }
         />
 
-        {/* Overview Cards */}
+        {/* ===== 底部统计卡片 ===== */}
         <View style={styles.overviewRow}>
           <View style={styles.overviewLarge}>
             <StatCard
@@ -274,17 +280,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Animated.View>
 
+      {/* ===== 确认弹窗 ===== */}
       {confirmDialog && (
         <View style={styles.confirmOverlay}>
           <View style={[styles.confirmBox, Shadows.floating, { borderRadius: BorderRadius.card, maxWidth: isTablet ? 500 : 400 }]}>
-            <Text style={[styles.confirmTitle]}>{confirmDialog.title}</Text>
-            <Text style={[styles.confirmMessage]}>{confirmDialog.message}</Text>
+            <Text style={styles.confirmTitle}>{confirmDialog.title}</Text>
+            <Text style={styles.confirmMessage}>{confirmDialog.message}</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmDialog(null)}>
-                <Text style={[styles.confirmCancelText]}>取消</Text>
+                <Text style={styles.confirmCancelText}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmOkBtn} onPress={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>
-                <Text style={[styles.confirmOkText]}>确定</Text>
+                <Text style={styles.confirmOkText}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -307,63 +314,68 @@ const QuickActionButton: React.FC<{
       style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? spacing.xl : isUltraNarrow ? spacing.sm : spacing.lg }]}
     >
       <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
+        {/* 图标容器 */}
         <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconSize.container.md, height: iconSize.container.md, borderRadius: iconSize.container.md / 2, marginBottom: spacing.xs }]}>
           <Ionicons name={item.icon as any} size={iconSize.xl} color={item.color} />
         </View>
-        <Text style={[styles.quickActionLabel]}>{item.label}</Text>
+        {/* 按钮标签 */}
+        <Text style={styles.quickActionLabel}>{item.label}</Text>
       </Animated.View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 整个页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.xl, paddingTop: Spacing.sm, width: '100%', alignSelf: 'center' },
+
+  // ═══════════════ 顶部栏（问候语 + 刷新按钮）═══════════════
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.lg, gap: Spacing.md,
   },
-  greeting: { fontSize: FontSize.h1, fontWeight: FontWeight.bold, color: Colors.title },
-  date: { fontSize: FontSize.caption, color: Colors.caption, marginTop: Spacing.xs },
-  refreshButton: {
+  greeting: { fontSize: FontSize.h1, fontWeight: FontWeight.bold, color: Colors.title },        // 问候文字 "🙂你好，老师"
+  date: { fontSize: FontSize.caption, color: Colors.caption, marginTop: Spacing.xs },             // 日期文字
+  refreshButton: {                                                                                // 刷新按钮
     width: scale(44), height: scale(44), borderRadius: scale(22),
     backgroundColor: Colors.card, justifyContent: 'center', alignItems: 'center',
     ...Shadows.subtle,
   },
-  quickActionsRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg },
-  quickAction: {
+
+  // ═══════════════ 快捷操作按钮（添加学生 / 记录课程 / 查看统计）═══════════════
+  quickActionsRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg },          // 三个按钮的容器
+  quickAction: {                                                                                  // 单个按钮
     flex: 1, paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.card, alignItems: 'center',
   },
-  quickActionIcon: {
-    justifyContent: 'center', alignItems: 'center',
-  },
-  quickActionLabel: {
-    fontSize: FontSize.small, color: Colors.body, fontWeight: FontWeight.medium,
-  },
+  quickActionIcon: { justifyContent: 'center', alignItems: 'center' },                            // 图标容器（尺寸走 inline）
+  quickActionLabel: { fontSize: FontSize.small, color: Colors.body, fontWeight: FontWeight.medium }, // 按钮标签文字
+
+  // ═══════════════ 今日课程列表 ═══════════════
   lessonList: { flex: 1 },
-  sectionHeaderRow: {
+  sectionHeaderRow: {                                                                             // "今日待上课" 标题行
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.md,
   },
-  sectionTitle: {
-    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
-  },
-  viewAll: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.semiBold },
-  recentItem: {
+  sectionTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },      // "今日待上课" 文字
+  viewAll: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.semiBold },// "查看全部" 文字
+
+  // ═══════════════ 课程卡片 ═══════════════
+  recentItem: {                                                                                   // 单张卡片
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: Spacing.lg, paddingVertical: Spacing.lg,
     backgroundColor: Colors.card,
   },
-  recentItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  colorBar: { width: scale(4), height: scale(40), borderRadius: scale(2), marginRight: Spacing.md },
-  recentLeft: { maxWidth: scale(80) },
-  recentName: {
+  recentItemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },                  // 卡片之间分割线
+  colorBar: { width: scale(4), height: scale(40), borderRadius: scale(2), marginRight: Spacing.md }, // 左侧色条
+  recentLeft: { maxWidth: scale(80) },                                                            // 学生名+日期区域（限宽防过长）
+  recentName: {                                                                                   // 学生名
     fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title,
     marginBottom: 2,
   },
-  recentDate: { fontSize: FontSize.small, color: Colors.caption },
-  recentCenter: { flex: 1, alignItems: 'center' },
-  recentTimeSlot: {
+  recentDate: { fontSize: FontSize.small, color: Colors.caption },                                // 日期
+  recentCenter: { flex: 1, alignItems: 'center' },                                                // 时间段容器
+  recentTimeSlot: {                                                                               // 时间段标签（如 "10:00-12:00"）
     fontSize: FontSize.h2,
     fontWeight: FontWeight.bold,
     color: Colors.primary,
@@ -373,34 +385,40 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.smallCard,
     overflow: 'hidden',
   },
-  recentRight: { alignItems: 'flex-end' },
-  recentAmount: {
+  recentContentLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },                     // 卡片左侧可点击区域（学生名+时间段）
+
+  // ═══════════════ 卡片右侧（金额 + 状态徽章）═══════════════
+  recentRight: { alignItems: 'flex-end' },                                                        // 右侧常规布局
+  recentAmount: {                                                                                 // 金额文字 "200元"
     fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: 4,
   },
-  miniBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.pill },
-  miniBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },
-  recentContentLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  confirmRight: {
+  confirmRight: {                                                                                 // 确认下课版右侧
     alignItems: 'flex-end', paddingVertical: Spacing.sm, paddingLeft: Spacing.lg,
   },
-  confirmBadge: {
+  miniBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.pill }, // "待上" 徽章
+  miniBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },
+  confirmBadge: {                                                                                 // "确认下课" / "待收款" 徽章
     flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
     paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: BorderRadius.pill, backgroundColor: '#FEE2E2',
   },
   confirmBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.danger },
-  overviewRow: {
+
+  // ═══════════════ 底部统计卡片 ═══════════════
+  overviewRow: {                                                                                  // 统计卡片容器
     flexDirection: 'row', gap: Spacing.md,
     marginTop: Spacing.md, marginBottom: Spacing.md,
   },
-  overviewLarge: { flex: 0.55 },
-  overviewSmall: { flex: 0.45 },
+  overviewLarge: { flex: 0.55 },                                                                  // 左侧卡片（待收款）占 55%
+  overviewSmall: { flex: 0.45 },                                                                  // 右侧卡片（今日收益）占 45%
+
+  // ═══════════════ 确认弹窗 ═══════════════
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },
+  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },               // 弹窗容器
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
-  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },                                       // 按钮行
   confirmCancelBtn: { flex: 1, height: scale(48), borderRadius: scale(24), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
   confirmOkBtn: { flex: 1, height: scale(48), borderRadius: scale(24), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
