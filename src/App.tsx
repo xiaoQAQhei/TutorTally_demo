@@ -26,7 +26,7 @@ const TAB_ICONS: Record<string, [string, string]> = {
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { isTablet, fontSize, spacing } = useResponsive();
+  const { isTablet, fontSize, spacing, iconSize } = useResponsive();
 
   useEffect(() => {
     const setupDatabase = async () => {
@@ -55,8 +55,7 @@ const App: React.FC = () => {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             const [active, inactive] = TAB_ICONS[route.name] || ['help-circle', 'help-circle-outline'];
-            const iconSize = isTablet ? Math.max(size, 28) : size;
-            return <Ionicons name={(focused ? active : inactive) as any} size={iconSize} color={color} />;
+            return <Ionicons name={(focused ? active : inactive) as any} size={iconSize.lg} color={color} />;
           },
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.caption,

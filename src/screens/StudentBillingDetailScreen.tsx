@@ -30,8 +30,7 @@ const MONTH_NAMES: Record<string, string> = {
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
-  const icLg = isTablet ? 26 : 20;
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
 
   useEffect(() => {
     if (student) {
@@ -72,7 +71,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="chevron-back" size={icLg} color={Colors.title} />
+            <Ionicons name="chevron-back" size={iconSize.lg} color={Colors.title} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={[styles.headerTitle, { fontSize: fontSize.h3 }]}>{student.name}</Text>

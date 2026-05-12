@@ -14,9 +14,7 @@ import { useResponsive, scale } from '../utils/responsive';
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 const RecurringRulesScreen: React.FC = () => {
-  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
-  const icSm = isTablet ? 18 : 14;
-  const icMd = isTablet ? 22 : 18;
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
@@ -119,7 +117,7 @@ const RecurringRulesScreen: React.FC = () => {
           </View>
           <TouchableOpacity onPress={() => handleGenerate(item)}>
             <View style={styles.generateBtn}>
-              <Ionicons name="flash" size={icSm} color={Colors.white} />
+              <Ionicons name="flash" size={iconSize.xs} color={Colors.white} />
               <Text style={[styles.generateBtnText, { fontSize: fontSize.small }]}>生成</Text>
             </View>
           </TouchableOpacity>
@@ -136,10 +134,10 @@ const RecurringRulesScreen: React.FC = () => {
         </View>
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => { setEditingRule(item); setSelectedStudentId(item.studentId); loadSubjectsForStudent(item.studentId); setSelectedSubjectId(item.studentSubjectId || null); setSelectedWeekdays(JSON.parse(item.weekdays)); setInterval(item.interval.toString()); setTimeSlot(item.timeSlot); setDuration(item.duration.toString()); setAmount(item.amount?.toString() || ''); setStartDate(item.startDate); setEndDate(item.endDate || ''); setNotes(item.notes || ''); setModalVisible(true); }}>
-            <Ionicons name="pencil" size={icMd} color={Colors.primary} />
+            <Ionicons name="pencil" size={iconSize.md} color={Colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { deleteRecurringRule(item.id); loadData(); }}>
-            <Ionicons name="trash-outline" size={icMd} color={Colors.danger} />
+            <Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} />
           </TouchableOpacity>
         </View>
       </View>

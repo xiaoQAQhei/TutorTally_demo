@@ -20,10 +20,9 @@ const GradientFAB: React.FC<GradientFABProps> = ({
 }) => {
   const { pulse } = usePulse();
   const { scale, bounce } = useBounce(onPress);
-  const { isTablet, isUltraNarrow, contentPaddingH } = useResponsive();
+  const { isTablet, isUltraNarrow, contentPaddingH, iconSize } = useResponsive();
 
   const btnSize = moderateScale(60);
-  const iconSize = isTablet ? 32 : isUltraNarrow ? 24 : 28;
   const defaultPos = { bottom: isTablet ? 32 : 24, right: isTablet ? 24 : contentPaddingH + 4 };
   const pos = position ?? defaultPos;
 
@@ -43,7 +42,7 @@ const GradientFAB: React.FC<GradientFABProps> = ({
         activeOpacity={0.9}
         onPress={bounce}
       >
-        <Ionicons name={icon as any} size={iconSize} color={Colors.white} />
+        <Ionicons name={icon as any} size={iconSize.xl} color={Colors.white} />
       </TouchableOpacity>
     </Animated.View>
   );

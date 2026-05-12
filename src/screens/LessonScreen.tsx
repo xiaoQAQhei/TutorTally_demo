@@ -51,12 +51,7 @@ const LessonScreen: React.FC = () => {
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const highlightAnim = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
-  const icSm = isTablet ? 18 : 14;
-  const icSm2 = isTablet ? 20 : 16;
-  const icMd = isTablet ? 22 : 18;
-  const icLg = isTablet ? 26 : 20;
-  const icXl = isTablet ? 30 : 25;
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
   const itemHeightRef = useRef(180);
   const cardWidthRef = useRef<Map<number, number>>(new Map());
   const cardHeightRef = useRef<Map<number, number>>(new Map());
@@ -375,28 +370,28 @@ const LessonScreen: React.FC = () => {
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
               <View style={styles.infoItem}>
-                <Ionicons name="calendar-outline" size={icSm} color={Colors.caption} />
+                <Ionicons name="calendar-outline" size={iconSize.xs} color={Colors.caption} />
                 <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.date}</Text>
               </View>
               <View style={styles.infoItem}>
-                <Ionicons name="hourglass-outline" size={icSm} color={Colors.caption} />
+                <Ionicons name="hourglass-outline" size={iconSize.xs} color={Colors.caption} />
                 <Text style={[styles.infoText, { fontSize: fontSize.caption }]}>{lesson.duration}h</Text>
               </View>
             </View>
             {lesson.timeSlot ? (
               <View style={[styles.timeSlotBadge, showCancelAnim && styles.timeSlotBadgeCancelled]}>
-                <Ionicons name="time-outline" size={icXl} color={showCancelAnim ? Colors.caption : Colors.primary} />
+                <Ionicons name="time-outline" size={iconSize.xl} color={showCancelAnim ? Colors.caption : Colors.primary} />
                 <Text style={[styles.timeSlotBadgeText, { fontSize: fontSize.h2 }, showCancelAnim && { color: Colors.caption }]}>{lesson.timeSlot}</Text>
               </View>
             ) : null}
           </View>
           <View style={styles.amountRow}>
-            <Ionicons name="wallet-outline" size={icLg} color={Colors.caption} />
+            <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.caption} />
             <Text style={[styles.amountText, { fontSize: fontSize.amount }]}>{lesson.amount.toFixed(0)}元</Text>
           </View>
           {lesson.notes ? (
             <View style={styles.noteRow}>
-              <Ionicons name="document-text-outline" size={icSm} color={Colors.caption} />
+              <Ionicons name="document-text-outline" size={iconSize.xs} color={Colors.caption} />
               <Text style={[styles.noteText, { fontSize: fontSize.small }]} numberOfLines={2}>{lesson.notes}</Text>
             </View>
           ) : null}
@@ -424,32 +419,32 @@ const LessonScreen: React.FC = () => {
           {(lesson.status !== 'paid' && lesson.status !== 'cancelled') && (
             interactive ? (
               <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(lesson)}>
-                <Ionicons name="pencil" size={icMd} color={Colors.primary} />
+                <Ionicons name="pencil" size={iconSize.md} color={Colors.primary} />
               </TouchableOpacity>
             ) : (
               <View style={styles.actionButton}>
-                <Ionicons name="pencil" size={icMd} color={Colors.primary} />
+                <Ionicons name="pencil" size={iconSize.md} color={Colors.primary} />
               </View>
             )
           )}
           {lesson.status === 'scheduled' && !isClassEnded(lesson) && (
             interactive ? (
               <TouchableOpacity style={styles.actionButton} onPress={() => handleCancelLesson(lesson)}>
-                <Ionicons name="close-circle-outline" size={icMd} color={Colors.pending} />
+                <Ionicons name="close-circle-outline" size={iconSize.md} color={Colors.pending} />
               </TouchableOpacity>
             ) : (
               <View style={styles.actionButton}>
-                <Ionicons name="close-circle-outline" size={icMd} color={Colors.pending} />
+                <Ionicons name="close-circle-outline" size={iconSize.md} color={Colors.pending} />
               </View>
             )
           )}
           {interactive && shatterMgr.activeId === null ? (
             <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(lesson.id)}>
-              <Ionicons name="trash-outline" size={icMd} color={Colors.danger} />
+              <Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} />
             </TouchableOpacity>
           ) : (
             <View style={styles.actionButton}>
-              <Ionicons name="trash-outline" size={icMd} color={interactive ? Colors.caption : Colors.danger} />
+              <Ionicons name="trash-outline" size={iconSize.md} color={interactive ? Colors.caption : Colors.danger} />
             </View>
           )}
         </View>
@@ -672,7 +667,7 @@ const LessonScreen: React.FC = () => {
           activeOpacity={0.7}
           onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
         >
-          <Ionicons name="arrow-up" size={icLg} color={Colors.primary} />
+          <Ionicons name="arrow-up" size={iconSize.lg} color={Colors.primary} />
         </TouchableOpacity>
       )}
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.primary} />
@@ -717,25 +712,25 @@ const LessonScreen: React.FC = () => {
           ) : (
             <Text style={[styles.pickerPlaceholder, { fontSize: fontSize.body }]}>请选择学生</Text>
           )}
-          <Ionicons name="chevron-down" size={icLg} color={Colors.caption} />
+          <Ionicons name="chevron-down" size={iconSize.lg} color={Colors.caption} />
         </TouchableOpacity>
 
         <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课日期</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)} activeOpacity={0.7}>
-          <Ionicons name="calendar-outline" size={icMd} color={Colors.primary} />
+          <Ionicons name="calendar-outline" size={iconSize.md} color={Colors.primary} />
           <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !date && styles.datePickerPlaceholder]}>
             {date || '选择日期'}
           </Text>
-          <Ionicons name="chevron-down" size={icSm2} color={Colors.caption} />
+          <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
         </TouchableOpacity>
 
         <Text style={[styles.formLabel, { fontSize: fontSize.caption }]}>上课时段</Text>
         <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)} activeOpacity={0.7}>
-          <Ionicons name="time-outline" size={icMd} color={Colors.primary} />
+          <Ionicons name="time-outline" size={iconSize.md} color={Colors.primary} />
           <Text style={[styles.datePickerText, { fontSize: fontSize.body }, !timeSlot && styles.datePickerPlaceholder]}>
             {timeSlot || '选择时段'}
           </Text>
-          <Ionicons name="chevron-down" size={icSm2} color={Colors.caption} />
+          <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
         </TouchableOpacity>
 
         <View style={styles.formRow}>
@@ -798,7 +793,7 @@ const LessonScreen: React.FC = () => {
                 <Text style={[styles.studentItemName, { fontSize: fontSize.body }, selectedStudentId === s.id && { color: Colors.primary }]}>{s.name}</Text>
                 <Text style={[styles.studentItemSubject, { fontSize: fontSize.small }]}>{s.phone || ''}</Text>
               </View>
-              {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={icLg} color={Colors.primary} />}
+              {selectedStudentId === s.id && <Ionicons name="checkmark-circle" size={iconSize.lg} color={Colors.primary} />}
             </TouchableOpacity>
           ))}
         </BottomSheet>

@@ -94,6 +94,11 @@ export interface ResponsiveFontSize {
   body: number; caption: number; small: number; amount: number;
 }
 
+/** Breakpoint-aware icon sizes — larger on tablets */
+export interface ResponsiveIconSize {
+  xs: number; sm: number; md: number; lg: number; xl: number; xxl: number;
+}
+
 export interface ResponsiveInfo {
   width: number;
   height: number;
@@ -109,6 +114,8 @@ export interface ResponsiveInfo {
   spacing: ResponsiveSpacing;
   /** Breakpoint-aware font sizes (replaces static FontSize on tablets) */
   fontSize: ResponsiveFontSize;
+  /** Breakpoint-aware icon sizes */
+  iconSize: ResponsiveIconSize;
   /** width / height ratio */
   aspectRatio: number;
   /** aspectRatio < 0.52 — ultra-narrow like iPhone SE 1st gen (320x568) */
@@ -156,6 +163,13 @@ function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): R
   };
 }
 
+function buildIconSize(bp: Breakpoint): ResponsiveIconSize {
+  if (bp === 'lg') {
+    return { xs: 18, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36 };
+  }
+  return { xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28 };
+}
+
 let _responsiveCache: ResponsiveInfo | null = null;
 let _listeners = new Set<() => void>();
 
@@ -178,6 +192,7 @@ function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
       20,
     spacing: buildSpacing(bp, win.width, aspectRatio),
     fontSize: buildFontSize(bp, win.width, aspectRatio),
+    iconSize: buildIconSize(bp),
     aspectRatio,
     isUltraNarrow: aspectRatio < 0.52,
     isNarrow: aspectRatio < 0.58 && aspectRatio >= 0.52,

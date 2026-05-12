@@ -22,9 +22,8 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const { opacity, translateY } = useFadeIn();
   const { scale, scaleDown, scaleUp } = useScale();
-  const { isTablet, fontSize } = useResponsive();
+  const { isTablet, fontSize, iconSize } = useResponsive();
 
-  const iconSize = isTablet ? 26 : 22;
   const iconBox = moderateScale(isTablet ? 48 : 42);
 
   const content = (
@@ -36,7 +35,7 @@ const StatCard: React.FC<StatCardProps> = ({
       ]}
     >
       <View style={[styles.iconContainer, { backgroundColor: color + '18', width: iconBox, height: iconBox }]}>
-        <Ionicons name={icon as any} size={iconSize} color={color} />
+        <Ionicons name={icon as any} size={iconSize.lg} color={color} />
       </View>
       <Text style={[styles.label, { fontSize: fontSize.caption }]}>{label}</Text>
       <Text style={[styles.value, { color: Colors.title, fontSize: fontSize.h2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>

@@ -112,9 +112,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
-  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
-  const icSm = isTablet ? 18 : 14;
-  const icLg = isTablet ? 26 : 20;
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
   const { opacity, translateY } = useFadeIn();
 
   const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
@@ -156,7 +154,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.confirmRight} activeOpacity={0.7} onPress={() => handleConfirmPayment(item.id)}>
             <Text style={[styles.recentAmount, { fontSize: fontSize.body }]}>{item.amount.toFixed(0)}元</Text>
             <View style={[styles.confirmBadge, { backgroundColor: morphBadgeBg }]}>
-              <Ionicons name="checkmark-circle" size={icSm} color={morphBadgeColor} />
+              <Ionicons name="checkmark-circle" size={iconSize.xs} color={morphBadgeColor} />
               <Text style={[styles.confirmBadgeText, { color: morphBadgeColor, fontSize: fontSize.small }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
@@ -214,7 +212,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
           <TouchableOpacity style={styles.refreshButton} onPress={loadData} activeOpacity={0.7}>
-            <Ionicons name="refresh" size={icLg} color={Colors.title} />
+            <Ionicons name="refresh" size={iconSize.lg} color={Colors.title} />
           </TouchableOpacity>
         </View>
 
@@ -301,8 +299,7 @@ const QuickActionButton: React.FC<{
   onPress: () => void;
 }> = ({ item, onPress }) => {
   const { scale: bounceScale, bounce } = useBounce(onPress);
-  const { isTablet, isUltraNarrow, spacing, fontSize } = useResponsive();
-  const iconSize = isTablet ? 28 : isUltraNarrow ? 18 : 22;
+  const { isTablet, isUltraNarrow, spacing, fontSize, iconSize } = useResponsive();
   const iconContainerSize = scale(isTablet ? 48 : isUltraNarrow ? 32 : 40);
   return (
     <TouchableOpacity
@@ -312,7 +309,7 @@ const QuickActionButton: React.FC<{
     >
       <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
         <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2, marginBottom: spacing.xs }]}>
-          <Ionicons name={item.icon as any} size={iconSize} color={item.color} />
+          <Ionicons name={item.icon as any} size={iconSize.xl} color={item.color} />
         </View>
         <Text style={[styles.quickActionLabel, { fontSize: fontSize.small }]}>{item.label}</Text>
       </Animated.View>

@@ -16,10 +16,7 @@ import {
 import { useResponsive, scale } from '../utils/responsive';
 
 const StudentScreen: React.FC = () => {
-  const { maxContentWidth, spacing, fontSize, isTablet } = useResponsive();
-  const icSm = isTablet ? 18 : 14;
-  const icMd = isTablet ? 22 : 18;
-  const icLg = isTablet ? 26 : 20;
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
   const [students, setStudents] = useState<Student[]>([]);
   const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
@@ -120,22 +117,22 @@ const StudentScreen: React.FC = () => {
         </View>
         {item.phone ? (
           <View style={styles.phoneRow}>
-            <Ionicons name="call-outline" size={icSm} color={Colors.caption} />
+            <Ionicons name="call-outline" size={iconSize.xs} color={Colors.caption} />
             <Text style={[styles.phoneText, { fontSize: fontSize.caption }]}>{item.phone}</Text>
           </View>
         ) : null}
         {item.address ? (
           <View style={styles.addressRow}>
-            <Ionicons name="location-outline" size={icSm} color={Colors.caption} />
+            <Ionicons name="location-outline" size={iconSize.xs} color={Colors.caption} />
             <Text style={[styles.addressText, { fontSize: fontSize.caption }]} numberOfLines={1}>{item.address}</Text>
           </View>
         ) : null}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
-            <Ionicons name="pencil" size={icMd} color={Colors.primary} />
+            <Ionicons name="pencil" size={iconSize.md} color={Colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id)}>
-            <Ionicons name="trash-outline" size={icMd} color={Colors.danger} />
+            <Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -187,14 +184,14 @@ const StudentScreen: React.FC = () => {
             <TouchableOpacity onPress={() => {
               if (editSubjects.length > 1) setEditSubjects(editSubjects.filter((_, i) => i !== idx));
             }}>
-              <Ionicons name="close-circle" size={icLg} color={editSubjects.length > 1 ? Colors.danger : Colors.divider} />
+              <Ionicons name="close-circle" size={iconSize.lg} color={editSubjects.length > 1 ? Colors.danger : Colors.divider} />
             </TouchableOpacity>
           </View>
         ))}
         <TouchableOpacity style={styles.addSubjectBtn} onPress={() => {
           setEditSubjects([...editSubjects, { subject: '', hourlyRate: '', color: SubjectColorPalette[editSubjects.length % SubjectColorPalette.length] }]);
         }}>
-          <Ionicons name="add-circle-outline" size={icLg} color={Colors.primary} />
+          <Ionicons name="add-circle-outline" size={iconSize.lg} color={Colors.primary} />
           <Text style={[styles.addSubjectText, { fontSize: fontSize.caption }]}>添加科目</Text>
         </TouchableOpacity>
 
