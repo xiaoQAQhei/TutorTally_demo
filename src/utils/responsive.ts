@@ -167,7 +167,7 @@ function buildFontSize(bp: Breakpoint, winWidth: number, aspectRatio: number): R
 
 function buildIconSize(bp: Breakpoint): ResponsiveIconSize {
   if (bp === 'lg') {
-    return { xs: 18, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36, container: { sm: 40, md: 48, lg: 60 } };
+    return { xs: 10, sm: 20, md: 22, lg: 26, xl: 30, xxl: 36, container: { sm: 40, md: 48, lg: 60 } };
   }
   return { xs: 14, sm: 16, md: 18, lg: 20, xl: 25, xxl: 28, container: { sm: 32, md: 42, lg: 56 } };
 }

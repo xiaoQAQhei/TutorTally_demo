@@ -827,13 +827,16 @@ const LessonScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },
+  list: { paddingBottom: 100 },                                                                     // 列表底部留白
+
+  // ═══════════════ 筛选栏（状态标签 + 排序切换）═══════════════
   filterRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  filterChip: {
+  filterChip: {                                                                                     // 筛选标签（待上课/已下课 等）
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.pill, borderWidth: 1.5,
@@ -843,89 +846,99 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: FontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption,
   },
-  filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },
-  filterCount: {
+  filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },                  // 选中态文字
+  filterCount: {                                                                                    // 计数徽章
     minWidth: scale(20), height: scale(20), borderRadius: scale(10),
     backgroundColor: Colors.divider,
     justifyContent: 'center', alignItems: 'center',
     paddingHorizontal: Spacing.xs,
   },
   filterCountText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
-  segmentContainer: {
+  segmentContainer: {                                                                               // 排序切换容器（全部/未收/已收）
     flex: 2, flexDirection: 'row', borderRadius: BorderRadius.pill,
     backgroundColor: Colors.card, borderWidth: 1.5, borderColor: Colors.divider,
     overflow: 'hidden',
   },
-  segmentBtn: {
+  segmentBtn: {                                                                                     // 排序切换按钮
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: Spacing.sm + 2, gap: Spacing.xs,
   },
-  segmentDivider: { width: scale(1), backgroundColor: Colors.divider },
+  segmentDivider: { width: scale(1), backgroundColor: Colors.divider },                            // 按钮间分隔线
+  // ═══════════════ 课程卡片 ═══════════════
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
     position: 'relative' as const,
   },
-  cardHeader: {
+  cardHeader: {                                                                                     // 卡片头部（头像+姓名 + 状态徽章）
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: Spacing.md,
   },
-  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  studentName: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
-  subject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
-  cardBody: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  infoRow: {
+  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },                 // 头部左侧（头像 + 姓名）
+  studentName: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },        // 学生名
+  subject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                       // 科目名
+  cardBody: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },          // 卡片内容区
+  infoRow: {                                                                                        // 信息行（日期时长 + 时间段）
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  infoLeft: { flexDirection: 'row', gap: Spacing.md },
-  infoItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  infoLeft: { flexDirection: 'row', gap: Spacing.md },                                              // 信息左侧（日期 + 时长）
+  infoItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },                        // 单个信息项（图标 + 文字）
   infoText: { fontSize: FontSize.caption, color: Colors.body },
+
+  // ═══════════════ 时间段标签 ═══════════════
   timeSlotBadge: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2,
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.smallCard,
     backgroundColor: Colors.primaryLight,
   },
-  timeSlotBadgeText: {
+  timeSlotBadgeText: {                                                                              // 时间段文字 "10:00-12:00"
     fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary,
   },
-  timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },
-  strikethroughOverlay: {
+  timeSlotBadgeCancelled: { backgroundColor: '#F3F4F6' },                                          // 取消态时间段灰色背景
+  // ═══════════════ 取消动画（删除线 + 碎片）═══════════════
+  strikethroughOverlay: {                                                                           // 删除线覆盖层
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'center', alignItems: 'center', zIndex: 10,
     overflow: 'visible',
   },
-  strikethroughLine: {
+  strikethroughLine: {                                                                              // 删除线
     position: 'absolute', left: -30, height: 2,
     backgroundColor: '#9CA3AF',
   },
-  shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 },
-  shredStrip: {
+  shatterOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'visible', zIndex: 20 }, // 碎片覆盖层
+  shredStrip: {                                                                                     // 碎片条
     position: 'absolute', top: 0, height: '100%',
     overflow: 'hidden',
   },
-  shredInner: {
+  shredInner: {                                                                                     // 碎片内容
     position: 'absolute',
     top: 0,
     backgroundColor: Colors.card,
     padding: Spacing.lg,
     borderRadius: BorderRadius.card,
   },
-  strikethroughLabel: {
+  strikethroughLabel: {                                                                             // 删除线标签 "已取消"
     fontSize: FontSize.caption, color: '#6B7280', fontWeight: FontWeight.semiBold,
     backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: 2,
     borderRadius: BorderRadius.pill, overflow: 'hidden',
   },
+
+  // ═══════════════ 金额与备注 ═══════════════
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
-  amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
-  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },
-  noteText: { fontSize: FontSize.small, color: Colors.caption, flex: 1 },
+  amountText: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },     // 金额 "200元"
+  noteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.xs },                     // 备注行
+  noteText: { fontSize: FontSize.small, color: Colors.caption, flex: 1 },                           // 备注文字
+
+  // ═══════════════ 操作按钮（编辑 / 取消 / 删除）═══════════════
   actions: {
     flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg,
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
-  actionButton: { padding: Spacing.sm },
+  actionButton: { padding: Spacing.sm },                                                            // 单个操作按钮
+
+  // ═══════════════ 回到顶部按钮 ═══════════════
   scrollTopBtn: {
     position: 'absolute', bottom: 100, right: 30,
     width: scale(44), height: scale(44), borderRadius: scale(22),
@@ -933,61 +946,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     ...Shadows.standard,
   },
+  // ═══════════════ 确认弹窗 ═══════════════
   confirmOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center', zIndex: 200 },
-  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },
+  confirmBox: { backgroundColor: Colors.card, padding: Spacing.xxl, width: '80%' },               // 弹窗容器
   confirmTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.md, textAlign: 'center' },
   confirmMessage: { fontSize: FontSize.body, color: Colors.body, marginBottom: Spacing.xl, textAlign: 'center' },
-  confirmButtons: { flexDirection: 'row', gap: Spacing.md },
+  confirmButtons: { flexDirection: 'row', gap: Spacing.md },                                       // 按钮行
   confirmCancelBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   confirmCancelText: { fontSize: FontSize.body, color: Colors.caption, fontWeight: FontWeight.medium },
   confirmOkBtn: { flex: 1, height: scale(46), borderRadius: scale(23), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   confirmOkText: { fontSize: FontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
-  datePickerButton: {
+
+  // ═══════════════ 表单（添加/编辑课程）═══════════════
+  datePickerButton: {                                                                               // 日期选择按钮
     flexDirection: 'row', alignItems: 'center',
     height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
     paddingHorizontal: Spacing.md, backgroundColor: Colors.background,
     gap: Spacing.sm,
   },
-  datePickerText: { flex: 1, fontSize: FontSize.body, color: Colors.title },
-  datePickerPlaceholder: { color: Colors.caption },
+  datePickerText: { flex: 1, fontSize: FontSize.body, color: Colors.title },                       // 日期文字
+  datePickerPlaceholder: { color: Colors.caption },                                                 // 日期占位符
   formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  pickerButton: {
+  pickerButton: {                                                                                   // 选择器按钮（学生/时间段）
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
     paddingHorizontal: Spacing.md, backgroundColor: Colors.background,
   },
-  pickerSelected: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  pickerText: { fontSize: FontSize.body, color: Colors.title, fontWeight: FontWeight.medium },
-  pickerPlaceholder: { fontSize: FontSize.body, color: Colors.caption },
-  input: {
+  pickerSelected: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },                 // 已选中状态
+  pickerText: { fontSize: FontSize.body, color: Colors.title, fontWeight: FontWeight.medium },     // 选中文字
+  pickerPlaceholder: { fontSize: FontSize.body, color: Colors.caption },                            // 占位文字
+  input: {                                                                                          // 文本输入框
     height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
     paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title,
     backgroundColor: Colors.background,
   },
-  textArea: { height: scale(80), paddingTop: Spacing.md, textAlignVertical: 'top' },
-  formRow: { flexDirection: 'row', gap: Spacing.md },
-  formHalf: { flex: 1 },
-  rateInput: { textAlign: 'center', fontWeight: FontWeight.semiBold },
+  textArea: { height: scale(80), paddingTop: Spacing.md, textAlignVertical: 'top' },              // 多行文本框（备注）
+  formRow: { flexDirection: 'row', gap: Spacing.md },                                               // 表单双列行
+  formHalf: { flex: 1 },                                                                            // 表单半列
+  rateInput: { textAlign: 'center', fontWeight: FontWeight.semiBold },                              // 课时费输入
+
+  // ═══════════════ 金额预览 ═══════════════
   amountPreview: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: Colors.paidLight, borderRadius: BorderRadius.button,
     padding: Spacing.lg, marginTop: Spacing.md,
   },
-  amountPreviewLabel: { fontSize: FontSize.body, color: Colors.body, fontWeight: FontWeight.medium },
-  amountPreviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },
+  amountPreviewLabel: { fontSize: FontSize.body, color: Colors.body, fontWeight: FontWeight.medium }, // "预计课时费"
+  amountPreviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.paid },    // 金额数字
+
+  // ═══════════════ 保存按钮 ═══════════════
   saveButton: {
     backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button,
     justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl,
   },
   saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
+
+  // ═══════════════ 学生选择列表项 ═══════════════
   studentItem: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md, borderRadius: BorderRadius.smallCard, gap: Spacing.md,
   },
-  studentItemActive: { backgroundColor: Colors.primaryLight },
-  studentItemInfo: { flex: 1 },
+  studentItemActive: { backgroundColor: Colors.primaryLight },                                      // 选中态
+  studentItemInfo: { flex: 1 },                                                                     // 学生信息
   studentItemName: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
-  studentItemSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
+  studentItemSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },           // 科目名
 });
 
 export default LessonScreen;

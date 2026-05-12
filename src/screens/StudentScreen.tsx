@@ -217,45 +217,56 @@ const StudentScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },
+  list: { paddingBottom: 100 },                                                                     // 列表底部留白（给 FAB 让位）
+
+  // ═══════════════ 学生卡片 ═══════════════
   card: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
   },
-  cardMain: { flexDirection: 'row', alignItems: 'center' },
-  info: { flex: 1, marginLeft: Spacing.md },
-  name: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: 4 },
+  cardMain: { flexDirection: 'row', alignItems: 'center' },                                         // 卡片主体（头像 + 信息）
+  info: { flex: 1, marginLeft: Spacing.md },                                                        // 学生信息区
+  name: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: 4 }, // 学生名
+
+  // ═══════════════ 科目标签 ═══════════════
   subjectTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: Spacing.sm },
   subjectTag: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingHorizontal: Spacing.sm + 2, paddingVertical: Spacing.xs, borderRadius: BorderRadius.pill },
-  subjectTagText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },
-  subjectTagRate: { fontSize: FontSize.small, color: Colors.caption },
-  subjectDot: { width: 8, height: 8, borderRadius: 4 },
+  subjectTagText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },                    // 科目名
+  subjectTagRate: { fontSize: FontSize.small, color: Colors.caption },                              // 课时费
+  subjectDot: { width: 8, height: 8, borderRadius: 4 },                                             // 科目颜色圆点
+
+  // ═══════════════ 联系方式 ═══════════════
   phoneRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
-  phoneText: { fontSize: FontSize.caption, color: Colors.caption },
+  phoneText: { fontSize: FontSize.caption, color: Colors.caption },                                  // 电话文字
   addressRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
-  addressText: { fontSize: FontSize.caption, color: Colors.caption, flex: 1 },
+  addressText: { fontSize: FontSize.caption, color: Colors.caption, flex: 1 },                       // 地址文字
+
+  // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
   actions: {
     flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg,
     marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
   },
-  actionButton: { padding: Spacing.sm },
+  actionButton: { padding: Spacing.sm },                                                            // 单个操作按钮
+
+  // ═══════════════ 表单 ═══════════════
   formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
   input: {
     height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
     paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title,
     backgroundColor: Colors.background,
   },
-  subjectEditRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
-  subjectInput: { flex: 1.5 },
-  rateInput: { flex: 1 },
-  addSubjectBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.sm },
+  subjectEditRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm }, // 科目编辑行
+  subjectInput: { flex: 1.5 },                                                                      // 科目名输入框（占 1.5 份）
+  rateInput: { flex: 1 },                                                                           // 课时费输入框（占 1 份）
+  addSubjectBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.sm }, // 添加科目按钮
   addSubjectText: { fontSize: FontSize.caption, color: Colors.primary, fontWeight: FontWeight.medium },
   saveButton: {
     backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,

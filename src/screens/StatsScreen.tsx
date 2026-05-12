@@ -347,119 +347,118 @@ const StatsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100 },                                                            // 滚动区域底部留白
 
-  // Month selector
+  // ═══════════════ 月份选择器 ═══════════════
   monthSelector: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     marginBottom: Spacing.xl, gap: Spacing.lg,
   },
-  monthArrow: {
+  monthArrow: {                                                                                     // 左右箭头按钮
     width: scale(36), height: scale(36), borderRadius: scale(18),
     backgroundColor: Colors.primaryLight,
     justifyContent: 'center', alignItems: 'center',
   },
-  monthLabel: {
+  monthLabel: {                                                                                     // 月份文字 "2026年5月"
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
     minWidth: 120, textAlign: 'center',
   },
 
-  // Compact stats bar
+  // ═══════════════ 顶部统计条（4 项数据）═══════════════
   statsBar: {
     flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch',
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     paddingVertical: Spacing.md, marginBottom: Spacing.xl,
   },
-  statsBarItem: { flex: 1, flexBasis: 0, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs },
-  statsBarValue: {
+  statsBarItem: { flex: 1, flexBasis: 0, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs }, // 单个统计项
+  statsBarValue: {                                                                                  // 统计数值
     fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: 2,
   },
-  statsBarLabel: { fontSize: FontSize.small, color: Colors.caption },
-  statsBarDivider: {
+  statsBarLabel: { fontSize: FontSize.small, color: Colors.caption },                              // 统计标签
+  statsBarDivider: {                                                                                // 项之间竖线分隔
     width: 1, height: 28, backgroundColor: Colors.divider, alignSelf: 'center',
   },
 
-  // Chart
+  // ═══════════════ 收入柱状图 ═══════════════
   chartCard: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.xl,
   },
-  chartTitle: {
+  chartTitle: {                                                                                     // 图表标题
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: Spacing.md,
   },
   chartWrap: { overflow: 'hidden' },
-  barTopLabel: {
+  barTopLabel: {                                                                                    // 柱顶金额标签
     fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.primary,
     marginBottom: 2,
   },
 
-  // Monthly overview
+  // ═══════════════ 月度概览卡片（进度条 + 统计）═══════════════
   overviewCard: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.xl, marginBottom: Spacing.xl,
   },
-  overviewTitle: {
+  overviewTitle: {                                                                                  // "本月收款概览"
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: Spacing.lg,
   },
-  progressTrack: {
+  progressTrack: {                                                                                  // 进度条轨道
     height: 8, backgroundColor: Colors.pendingBg, borderRadius: 4,
     marginBottom: Spacing.xl, overflow: 'hidden',
   },
-  progressFill: {
+  progressFill: {                                                                                   // 进度条填充
     height: '100%', backgroundColor: Colors.paid, borderRadius: 4,
   },
-  overviewRow: {
+  overviewRow: {                                                                                    // 概览数据行
     flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center',
     gap: Spacing.sm,
   },
-  overviewItem: { alignItems: 'center' },
-  overviewLabel: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
-  overviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary },
-  overviewDetail: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
-  overviewDivider: { width: 1, height: 32, backgroundColor: Colors.divider },
+  overviewItem: { alignItems: 'center' },                                                           // 单个概览项
+  overviewLabel: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                // 标签
+  overviewValue: { fontSize: FontSize.h2, fontWeight: FontWeight.bold, color: Colors.primary },    // 数值
+  overviewDetail: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },                    // 明细
+  overviewDivider: { width: 1, height: 32, backgroundColor: Colors.divider },                      // 项之间分隔
 
-  // Section title
+  // ═══════════════ 分区标题 ═══════════════
   sectionTitle: {
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: Spacing.md,
   },
 
-  // Student cards
+  // ═══════════════ 学生账单卡片 ═══════════════
   studentCard: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.card,
     padding: Spacing.lg, marginBottom: Spacing.md,
   },
-  studentCardLast: { marginBottom: 0 },
-  studentHeader: {
+  studentCardLast: { marginBottom: 0 },                                                             // 最后一张卡片去掉下边距
+  studentHeader: {                                                                                  // 卡片头部（学生名 + 待收标签）
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  studentInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  studentDot: { width: 10, height: 10, borderRadius: 5 },
-  studentName: {
-    fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title,
-  },
-  studentSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 1 },
-  pendingTag: {
+  studentInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },                     // 学生信息（圆点 + 名字）
+  studentDot: { width: 10, height: 10, borderRadius: 5 },                                           // 学生颜色圆点
+  studentName: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title },
+  studentSubject: { fontSize: FontSize.small, color: Colors.caption, marginTop: 1 },               // 科目名
+  pendingTag: {                                                                                     // "待收" 标签
     backgroundColor: Colors.dangerBg, paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: BorderRadius.pill,
   },
   pendingTagText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.danger },
-  studentStats: { marginBottom: Spacing.md },
-  studentStatText: { fontSize: FontSize.caption, color: Colors.caption },
-  studentAmounts: {
+  studentStats: { marginBottom: Spacing.md },                                                       // 学生统计文字区域
+  studentStatText: { fontSize: FontSize.caption, color: Colors.caption },                           // "共 N 课时 · N 小时"
+  studentAmounts: {                                                                                 // 金额三列
     flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around',
     paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
     gap: Spacing.sm,
   },
-  amountCol: { alignItems: 'center' },
-  amountColLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: 2 },
-  amountColValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title },
-  emptyMonth: {
+  amountCol: { alignItems: 'center' },                                                              // 单列金额
+  amountColLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: 2 },            // 列标签（合计/已收/待收）
+  amountColValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, color: Colors.title }, // 列金额
+  emptyMonth: {                                                                                     // 空状态
     fontSize: FontSize.caption, color: Colors.caption,
     textAlign: 'center', paddingVertical: Spacing.xxl,
   },

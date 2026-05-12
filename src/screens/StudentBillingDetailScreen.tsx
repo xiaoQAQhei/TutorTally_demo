@@ -154,27 +154,34 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
+
+  // ═══════════════ 顶部栏 ═══════════════
   header: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.card, paddingTop: 50, paddingBottom: Spacing.md,
     paddingHorizontal: Spacing.lg, ...Shadows.subtle,
   },
-  closeBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
-  headerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  subjectDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.xs },
-  headerSub: { fontSize: FontSize.small, color: Colors.caption },
+  closeBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },              // 返回按钮
+  headerCenter: { flex: 1, alignItems: 'center' },                                                   // 顶部居中区域
+  headerTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },         // 学生名
+  headerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },                        // 科目行
+  subjectDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.xs },                     // 科目颜色点
+  headerSub: { fontSize: FontSize.small, color: Colors.caption },                                    // 科目名
   scrollContent: { paddingBottom: 40 },
+
+  // ═══════════════ 汇总卡片（三列数字）═══════════════
   summaryRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
   summaryCard: {
     flex: 1, borderRadius: BorderRadius.smallCard,
     padding: Spacing.md, alignItems: 'center',
   },
-  summaryLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: Spacing.xs },
-  summaryValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, marginBottom: 2 },
-  summarySub: { fontSize: FontSize.small, color: Colors.caption },
+  summaryLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: Spacing.xs },      // 标签（合计/已收/待收）
+  summaryValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, marginBottom: 2 },        // 金额数字
+  summarySub: { fontSize: FontSize.small, color: Colors.caption },                                   // 副数字（课时数）
+
+  // ═══════════════ 分月列表 ═══════════════
   sectionTitle: {
     fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
     marginBottom: Spacing.md,
@@ -188,26 +195,32 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider,
     marginBottom: Spacing.sm,
   },
-  monthLabel: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title },
-  monthStats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  monthStat: { fontSize: FontSize.small, color: Colors.caption },
-  monthSep: { fontSize: FontSize.small, color: Colors.divider },
-  monthAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
+  monthLabel: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title },       // 月份标题
+  monthStats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },                      // 月份统计行
+  monthStat: { fontSize: FontSize.small, color: Colors.caption },                                   // 统计数字
+  monthSep: { fontSize: FontSize.small, color: Colors.divider },                                    // 分隔符
+  monthAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },                        // 月份合计金额
+
+  // ═══════════════ 课程行 ═══════════════
   lessonRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: Spacing.sm,
   },
-  lessonLeft: { flex: 1 },
-  lessonDate: { fontSize: FontSize.caption, color: Colors.title, fontWeight: FontWeight.medium },
-  lessonNotes: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
-  lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  lessonDuration: { fontSize: FontSize.small, color: Colors.caption },
-  lessonAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
+  lessonLeft: { flex: 1 },                                                                          // 课程左侧（日期 + 备注）
+  lessonDate: { fontSize: FontSize.caption, color: Colors.title, fontWeight: FontWeight.medium },   // 日期
+  lessonNotes: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                   // 备注
+  lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },                     // 课程右侧（时长 + 金额）
+  lessonDuration: { fontSize: FontSize.small, color: Colors.caption },                              // 时长
+  lessonAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },  // 金额
+
+  // ═══════════════ 状态徽章 ═══════════════
   inlineBadgeBase: {
     paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: BorderRadius.pill,
   },
   inlineBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },
+
+  // ═══════════════ 空状态 ═══════════════
   emptyState: { padding: 40, alignItems: 'center' },
   emptyText: { fontSize: FontSize.body, color: Colors.caption, marginTop: Spacing.md },
 });

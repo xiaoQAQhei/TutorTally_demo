@@ -213,28 +213,41 @@ const RecurringRulesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { paddingBottom: 100 },
+  list: { paddingBottom: 100 },                                                                     // 列表底部留白
+
+  // ═══════════════ 规则卡片 ═══════════════
   card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  ruleStudent: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
-  ruleSubtext: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }, // 卡片头部（学生名 + 生成按钮）
+  ruleStudent: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },        // 学生名
+  ruleSubtext: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                   // 科目名
+
+  // ═══════════════ 一键生成按钮 ═══════════════
   generateBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.paid, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, gap: 4 },
   generateBtnText: { fontSize: FontSize.small, color: Colors.white, fontWeight: FontWeight.semiBold },
+
+  // ═══════════════ 星期标签 ═══════════════
   weekdayRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm },
   weekdayDot: { width: scale(30), height: scale(30), borderRadius: scale(15), backgroundColor: Colors.divider, justifyContent: 'center', alignItems: 'center' },
   weekdayDotText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
+
+  // ═══════════════ 规则信息 ═══════════════
   ruleInfo: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  ruleInfoText: { fontSize: FontSize.caption, color: Colors.body },
+  ruleInfoText: { fontSize: FontSize.caption, color: Colors.body },                                 // 时间段 · 时长 · 频率
+
+  // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.lg, marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider },
+
+  // ═══════════════ 表单 ═══════════════
   formLabel: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xs },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xs },   // 选项标签行（科目/星期）
   chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background },
   chipText: { fontSize: FontSize.caption, color: Colors.body },
   weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   input: { height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: Spacing.md, fontSize: FontSize.body, color: Colors.title, backgroundColor: Colors.background },
-  formRow: { flexDirection: 'row', gap: Spacing.md },
-  formHalf: { flex: 1 },
+  formRow: { flexDirection: 'row', gap: Spacing.md },                                               // 表单双列行
+  formHalf: { flex: 1 },                                                                            // 表单半列
   saveButton: { backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button, justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl },
   saveButtonText: { color: Colors.white, fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
 });

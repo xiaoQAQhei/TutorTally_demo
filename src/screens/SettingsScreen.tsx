@@ -109,24 +109,33 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
 };
 
 const styles = StyleSheet.create({
+  // ═══════════════ 页面容器 ═══════════════
   container: { flex: 1, backgroundColor: Colors.background, width: '100%', alignSelf: 'center' },
-  list: { padding: Spacing.xl },
+  list: { padding: Spacing.xl },                                                                    // 列表滚动内边距
+
+  // ═══════════════ 分组标题 ═══════════════
   sectionTitle: { fontSize: FontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.caption, marginBottom: Spacing.md, textTransform: 'uppercase' },
+
+  // ═══════════════ 菜单项 ═══════════════
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.lg, marginBottom: Spacing.md, gap: Spacing.md },
-  iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center', alignItems: 'center' },
-  menuText: { flex: 1 },
-  menuLabel: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
-  menuSub: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
+  iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center', alignItems: 'center' }, // 菜单图标容器
+  menuText: { flex: 1 },                                                                            // 菜单文字区域
+  menuLabel: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },    // 菜单标题
+  menuSub: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },                       // 菜单副标题
+
+  // ═══════════════ 关于卡片 ═══════════════
   aboutCard: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, alignItems: 'center' },
-  aboutApp: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
-  aboutDesc: { fontSize: FontSize.small, color: Colors.caption, marginTop: Spacing.xs },
+  aboutApp: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },           // App 名称
+  aboutDesc: { fontSize: FontSize.small, color: Colors.caption, marginTop: Spacing.xs },            // App 描述
   aboutDivider: { width: 40, height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.md },
+
+  // ═══════════════ 导出弹窗 ═══════════════
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: Colors.overlay, justifyContent: 'center', alignItems: 'center' },
   exportModal: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: Spacing.xl, width: '80%', maxWidth: 400 },
   modalTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title, marginBottom: Spacing.lg, textAlign: 'center' },
   exportOption: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   exportOptionText: { fontSize: FontSize.body, color: Colors.title },
-  cancelBtn: { marginTop: Spacing.lg, alignItems: 'center', paddingVertical: Spacing.sm },
+  cancelBtn: { marginTop: Spacing.lg, alignItems: 'center', paddingVertical: Spacing.sm },         // 取消按钮
   cancelBtnText: { fontSize: FontSize.body, color: Colors.caption },
 });
 
