@@ -103,13 +103,13 @@ export const FontSize = {
 
 // ── 平板字号（当前与手机一致） ────────────────────────────
 export const TabletFontSize = {
-  h1: rem(28),
-  h2: rem(22),
-  h3: rem(18),
-  body: rem(15),
-  caption: rem(13),
-  small: rem(11),
-  amount: rem(20),
+  h1: rem(23),
+  h2: rem(17),
+  h3: rem(13),
+  body: rem(10),
+  caption: rem(8),
+  small: rem(6),
+  amount: rem(15),
 };
 
 // ── 图标尺寸（手机基线） ────────────────────────────────
