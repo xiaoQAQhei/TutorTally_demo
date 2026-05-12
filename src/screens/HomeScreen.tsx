@@ -311,7 +311,7 @@ const QuickActionButton: React.FC<{
       style={[styles.quickAction, { backgroundColor: item.color + '12', paddingVertical: isTablet ? spacing.xl : isUltraNarrow ? spacing.sm : spacing.lg }]}
     >
       <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
-        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2 }]}>
+        <View style={[styles.quickActionIcon, { backgroundColor: item.color + '22', width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2, marginBottom: spacing.xs }]}>
           <Ionicons name={item.icon as any} size={iconSize} color={item.color} />
         </View>
         <Text style={[styles.quickActionLabel, { fontSize: fontSize.small }]}>{item.label}</Text>
