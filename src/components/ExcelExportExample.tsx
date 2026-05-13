@@ -1,3 +1,10 @@
+// ── Excel 导出功能示例页面（ExcelExportExample） ──
+/**
+ * 展示 Excel 导出功能的示例页面，包含四种导出模式：
+ * 全部导出、按月导出、按学生导出、自定义数据导出。
+ * 展示实时进度条和错误处理。
+ */
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Button } from 'react-native-paper';
@@ -15,11 +22,13 @@ export const ExcelExportExample: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState<ExportProgress | null>(null);
 
+  // ── 导出进度更新回调 ──
   const handleProgressUpdate = (progressInfo: ExportProgress) => {
     setProgress(progressInfo);
     console.log(`[${progressInfo.stage}] ${progressInfo.message} (${progressInfo.current}/${progressInfo.total})`);
   };
 
+  // ── 导出全部账单 ──
   const handleExportAll = async () => {
     try {
       setIsExporting(true);
@@ -35,6 +44,7 @@ export const ExcelExportExample: React.FC = () => {
         currencySymbol: '元',
       };
 
+      // 校验配置
       const validation = validateExportOptions(options);
       if (!validation.valid) {
         Alert.alert('配置错误', validation.errors.join('\n'));
@@ -42,7 +52,6 @@ export const ExcelExportExample: React.FC = () => {
       }
 
       const path = await exportAllToExcel(options, handleProgressUpdate);
-      
       Alert.alert('导出成功', `文件已保存到：${path}`);
     } catch (error) {
       console.error('导出失败:', error);
@@ -52,6 +61,7 @@ export const ExcelExportExample: React.FC = () => {
     }
   };
 
+  // ── 按月份导出账单 ──
   const handleExportByMonth = async () => {
     try {
       setIsExporting(true);
@@ -70,7 +80,6 @@ export const ExcelExportExample: React.FC = () => {
       };
 
       const path = await exportByMonth(monthKey, options, handleProgressUpdate);
-      
       Alert.alert('导出成功', `月度账单已导出：${path}`);
     } catch (error) {
       console.error('按月导出失败:', error);
@@ -80,6 +89,7 @@ export const ExcelExportExample: React.FC = () => {
     }
   };
 
+  // ── 按学生导出账单 ──
   const handleExportStudent = async (studentId: number) => {
     try {
       setIsExporting(true);
@@ -93,7 +103,6 @@ export const ExcelExportExample: React.FC = () => {
       };
 
       const path = await exportByStudent(studentId, options, handleProgressUpdate);
-      
       Alert.alert('导出成功', `学生账单已导出：${path}`);
     } catch (error) {
       console.error('按学生导出失败:', error);
@@ -103,11 +112,13 @@ export const ExcelExportExample: React.FC = () => {
     }
   };
 
+  // ── 自定义数据导出 ──
   const handleCustomExport = async () => {
     try {
       setIsExporting(true);
       setProgress(null);
 
+      // 模拟的自定义数据
       const customData = [
         ['2026-05-01', '数学', '09:00-11:00', '2h', '300.00元', '✓ 已收款', '复习函数'],
         ['2026-05-03', '英语', '14:00-16:00', '2h', '240.00元', '待收款', '口语练习'],
@@ -134,6 +145,7 @@ export const ExcelExportExample: React.FC = () => {
     }
   };
 
+  // ── 计算进度百分比 ──
   const getProgressPercentage = (): number => {
     if (!progress) return 0;
     return Math.round((progress.current / progress.total) * 100);
@@ -143,6 +155,7 @@ export const ExcelExportExample: React.FC = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Excel 导出功能示例</Text>
 
+      {/* ── 导出进度指示器 ── */}
       {isExporting && (
         <View style={styles.progressContainer}>
           <ActivityIndicator size="large" color="#0070C0" />
@@ -151,11 +164,11 @@ export const ExcelExportExample: React.FC = () => {
               <Text style={styles.progressText}>{progress.message}</Text>
               <Text style={styles.percentage}>{getProgressPercentage()}%</Text>
               <View style={styles.progressBar}>
-                <View 
+                <View
                   style={[
                     styles.progressFill,
-                    { width: `${getProgressPercentage()}%` }
-                  ]} 
+                    { width: `${getProgressPercentage()}%` },
+                  ]}
                 />
               </View>
             </>
@@ -163,6 +176,7 @@ export const ExcelExportExample: React.FC = () => {
         </View>
       )}
 
+      {/* ── 导出操作按钮 ── */}
       <View style={styles.buttonContainer}>
         <Button
           mode="contained"
@@ -201,6 +215,7 @@ export const ExcelExportExample: React.FC = () => {
         </Button>
       </View>
 
+      {/* ── 功能特性说明 ── */}
       <View style={styles.infoContainer}>
         <Text style={styles.infoTitle}>功能特性：</Text>
         <Text style={styles.infoItem}>✓ 支持多种导出模式（全部/按月/按学生/自定义）</Text>

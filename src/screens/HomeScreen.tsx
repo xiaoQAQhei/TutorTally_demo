@@ -1,3 +1,11 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * HomeScreen - 首页/仪表盘
+ *
+ * 展示今日课程安排、快捷操作按钮和统计概览。
+ * 在页面获得焦点时自动刷新数据，支持「确认下课」滑动动画、
+ * 待收款总额与今日预计收益统计卡片。
+ */
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Animated, DimensionValue } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,32 +21,49 @@ import {
   Colors, FontWeight, BorderRadius, Shadows,
 } from '../styles/theme';
 
+/** 课程列表项：含 category 区分「即将上课」还是「待确认下课」 */
 type LessonItem = Lesson & { category: 'upcoming' | 'confirmable' };
 
+/** HomeScreen 接收的导航属性 */
 interface Props {
   navigation: { navigate: (screen: string) => void };
 }
 
+/** 快捷操作按钮配置：图标、标签、目标页面、颜色、附加动作 */
 const QUICK_ACTIONS: { icon: string; label: string; screen: string; color: string; action: 'addStudent' | 'addLesson' | null }[] = [
   { icon: 'person-add', label: '添加学生', screen: 'Students', color: Colors.paid, action: 'addStudent' },
   { icon: 'book', label: '记录课程', screen: 'Lessons', color: Colors.primary, action: 'addLesson' },
   { icon: 'stats-chart', label: '查看统计', screen: 'Stats', color: Colors.pending, action: null },
 ];
 
-// ── 页面入口：首页 ─────────────────────────────────────────
+/**
+ * HomeScreen 组件
+ *
+ * 首页仪表盘，显示今日待上课程和已下课待确认课程，以及统计概览。
+ * - useAction() 用于与课程页面的跨页面交互（pending action / filter / highlight）
+ * - 页面聚焦时通过 useFocusEffect 自动刷新数据
+ */
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { setPendingAction, setPendingFilter, setHighlightLessonId, confirmBeforeChange } = useAction();
-  const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [pendingAmount, setPendingAmount] = useState(0);
-  const [todayEarnings, setTodayEarnings] = useState(0);
-  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
-  const [morphingId, setMorphingId] = useState<number | null>(null);
-  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const slideOpAnims = useRef<Map<number, Animated.Value>>(new Map());
+  const [recentLessons, setRecentLessons] = useState<LessonItem[]>([]);   // 今日课程列表
+  const [students, setStudents] = useState<Student[]>([]);                 // 所有学生（用于查找姓名）
+  const [pendingAmount, setPendingAmount] = useState(0);                  // 待收款总额
+  const [todayEarnings, setTodayEarnings] = useState(0);                  // 今日预计收益
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗状态
+  const [morphingId, setMorphingId] = useState<number | null>(null);      // 正在执行滑动动画的课程 ID
+  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());      // 「确认下课」滑出动画的位移值
+  const slideOpAnims = useRef<Map<number, Animated.Value>>(new Map());    // 「确认下课」滑出动画的透明度值
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
+  /**
+   * loadData - 加载首页全部数据
+   *
+   * 1. 自动将已过 scheduled 状态的课程标记为 completed
+   * 2. 筛选今日课程：scheduled → upcoming, completed → confirmable
+   * 3. 计算待收款总额（paid / cancelled 之外的所有未付课程）
+   * 4. 计算今日预计收益
+   */
   const loadData = async () => {
     let lessons = await getAllLessons();
     const now = new Date();
@@ -81,6 +106,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setTodayEarnings(todayLessons.reduce((sum, l) => sum + l.amount, 0));
   };
 
+  /**
+   * handleConfirmPayment - 处理「确认下课」点击事件
+   *
+   * 触发滑动动画（卡片向右滑出），动画结束后将课程状态更新为 pendingPayment（待收款）。
+   * 如果 confirmBeforeChange 开启，则先弹确认对话框。
+   * @param id 课程 ID
+   */
   const handleConfirmPayment = (id: number) => {
     const doConfirm = () => {
       if (!slideAnims.current.has(id)) {
@@ -112,6 +144,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  /** 根据学生 ID 查找学生对象 */
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
   const { spacing, fontSize, isTablet, iconSize } = useResponsive();
   const { opacity, translateY } = useFadeIn();
@@ -173,6 +206,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     confirmOkText: { fontSize: fontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
   }), [spacing, fontSize, iconSize]);
 
+  /**
+   * renderLessonItem - 渲染单个课程卡片
+   *
+   * 根据 category 区分两种卡片样式：
+   * - confirmable（已下课待确认）：显示「确认下课/待收款」徽章，点击触发 morphing 动画
+   * - upcoming（待上课）：显示「待上」徽章，仅展示信息
+   * @param item 课程项（含 category 分类标记）
+   * @param index 列表索引
+   */
   const renderLessonItem = ({ item, index }: { item: LessonItem; index: number }) => {
     const student = getStudent(item.studentId);
     const isLast = index === recentLessons.length - 1;
@@ -359,7 +401,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-// ── 快捷操作按钮（独立组件） ──
+/**
+ * QuickActionButton - 快捷操作按钮组件
+ *
+ * 图标 + 标签的垂直布局按钮，带弹跳点击动画。
+ * @param item 按钮配置（图标、标签、颜色等）
+ * @param onPress 点击回调
+ */
 const QuickActionButton: React.FC<{
   item: typeof QUICK_ACTIONS[0];
   onPress: () => void;

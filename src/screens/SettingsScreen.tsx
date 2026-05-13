@@ -1,3 +1,12 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * SettingsScreen - 设置页面
+ *
+ * 数据管理：导出 Excel（全部/按月份/按学生）、导入 Excel、导出 PDF 账单。
+ * 周期规则管理：跳转到 RecurringRulesScreen 管理自动排课。
+ * 偏好设置：状态变更前确认弹窗开关。
+ * 关于信息：App 名称、版本、数据安全说明。
+ */
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,12 +25,25 @@ interface Props {
   onNavigateToStudentSelect?: (mode: 'pdf' | 'export') => void;
 }
 
+/**
+ * SettingsScreen 组件
+ *
+ * 设置页面，提供数据导出/导入、周期规则管理、偏好开关等功能。
+ * 依赖父组件传来的导航回调以跳转到学生选择或周期规则页面。
+ */
 const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigateToStudentSelect }) => {
-  const [exportMode, setExportMode] = useState<ExportMode>(null);
+  const [exportMode, setExportMode] = useState<ExportMode>(null);             // 导出模式弹窗
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
   const { maxContentWidth, spacing, fontSize } = useResponsive();
 
+  /**
+   * handleExport - 执行数据导出
+   *
+   * 按不同模式处理：全部导出调用 exportAllToExcel；
+   * 按学生/月份导出跳转到学生选择页面。
+   * @param mode 导出模式
+   */
   const handleExport = async (mode: ExportMode) => {
     setExportMode(null);
     try {
@@ -32,6 +54,12 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
     } catch (e: any) { setToast({ visible: true, message: `导出失败: ${e.message}`, type: 'error' }); }
   };
 
+  /**
+   * handleImport - 执行数据导入
+   *
+   * 调用 pickAndImportCsv 选择并导入 Excel 文件，
+   * 显示导入结果（成功条数和错误条数）。
+   */
   const handleImport = async () => {
     try {
       const result = await pickAndImportCsv();
@@ -106,7 +134,7 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
 
         <Text style={styles.sectionTitle}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
-          <Text style={styles.aboutApp}>家教账单 v1.0</Text>
+          <Text style={styles.aboutApp}>家教账单 v2.0</Text>
           <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>
           <View style={styles.aboutDivider} />
           <Text style={styles.aboutDesc}>数据安全：所有数据仅存储在您的设备上</Text>

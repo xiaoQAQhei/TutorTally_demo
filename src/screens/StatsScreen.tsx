@@ -1,3 +1,14 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * StatsScreen - 统计与分析页面
+ *
+ * 按月展示家教业务的统计数据，包含：
+ * - 月份切换选择器（左右箭头切换）
+ * - 顶部统计条（学生数/课时数/时长/收入）
+ * - 近 6 月收入趋势柱状图（react-native-gifted-charts）
+ * - 本月收款概览（已收比例进度条）
+ * - 每个学生的月度账单卡片（点击可查看详细账单）
+ */
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,18 +29,25 @@ const MONTH_NAMES: Record<string, string> = {
   '09': '9月', '10': '10月', '11': '11月', '12': '12月',
 };
 
+/**
+ * StatsScreen 组件
+ *
+ * 统计分析主页，按月份查看汇总数据和学生账单。
+ * 月份切换时自动重新计算统计值。
+ * 每个学生卡片可点击，弹出 StudentBillingDetailScreen 查看详细月度分布。
+ */
 const StatsScreen: React.FC = () => {
-  const currentMonth = new Date().toISOString().substring(0, 7);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [stats, setStats] = useState<StudentStats[]>([]);
-  const [totalStats, setTotalStats] = useState({
+  const currentMonth = new Date().toISOString().substring(0, 7);        // 当前月份 "YYYY-MM"
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);      // 用户选择的月份
+  const [stats, setStats] = useState<StudentStats[]>([]);                // 所有学生的统计
+  const [totalStats, setTotalStats] = useState({                        // 全局汇总统计
     totalStudents: 0, totalLessons: 0, totalHours: 0,
     totalAmount: 0, paidAmount: 0, pendingAmount: 0,
   });
-  const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 });
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
-  const [chartCardWidth, setChartCardWidth] = useState(0);
+  const [monthStats, setMonthStats] = useState({ paid: 0, pending: 0, total: 0 }); // 选中月份的收款数据
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null); // 选中的学生（查看详细账单）
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);           // 全部课程（用于图表和筛选）
+  const [chartCardWidth, setChartCardWidth] = useState(0);              // 柱状图容器宽度（动态计算）
   const { maxContentWidth, isTablet, spacing, fontSize } = useResponsive();
 
   // ── 响应式样式（随 spacing/fontSize 变化） ──
@@ -153,8 +171,16 @@ const StatsScreen: React.FC = () => {
 
   const chartAvail = chartCardWidth > 0 ? chartCardWidth - spacing.lg * 2 : 280;
 
+  // ── 页面聚焦时加载统计 ──
   useFocusEffect(useCallback(() => { loadStats(); }, []));
 
+  /**
+   * loadStats - 加载全部统计数据
+   *
+   * 遍历所有学生，计算每个学生的总课程数、总时长、总金额、已收金额。
+   * 同时计算选中月份的收款情况。
+   * 结果存入 stats、totalStats、monthStats 状态。
+   */
   const loadStats = async () => {
     const students = await getAllStudents();
     const lessons = await getAllLessons();
@@ -200,6 +226,7 @@ const StatsScreen: React.FC = () => {
     setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
   };
 
+  /** 基于 selectedMonth 筛选后的学生月度统计数据 */
   const monthFilteredStats = useMemo(() => {
     return stats.map((s) => {
       const mLessons = allLessons.filter(
@@ -218,6 +245,7 @@ const StatsScreen: React.FC = () => {
     });
   }, [stats, allLessons, selectedMonth]);
 
+  /** 近 6 月收入柱状图数据（仅统计已收款 paid 状态的课程） */
   const chartData = useMemo(() => {
     const months: { label: string; value: number }[] = [];
     const [year, m] = selectedMonth.split('-').map(Number);
@@ -234,11 +262,13 @@ const StatsScreen: React.FC = () => {
     return months;
   }, [allLessons, selectedMonth]);
 
+  // ── 柱状图尺寸计算（根据容器宽度自动适配） ──
   const unitW = chartAvail / (chartData.length * 2);
   const chartBarW = Math.floor(unitW);
   const chartGap = Math.floor(unitW);
   const chartInitial = Math.floor(unitW / 2);
 
+  /** 选中月份的全局汇总（去重学生数、总课时、总时长、总收入等） */
   const monthTotalStats = useMemo(() => {
     const uniqueStudents = new Set(monthFilteredStats.map((s) => s.student.id));
     let lessons = 0, hours = 0, amount = 0, paid = 0;
@@ -253,7 +283,15 @@ const StatsScreen: React.FC = () => {
 
   const monthRatio = monthStats.total > 0 ? (monthStats.paid / monthStats.total) * 100 : 0;
 
+  // ── 柱状图 Y 轴自适应刻度算法 ──
   const maxBarValue = Math.max(...chartData.map((d) => d.value), 1);
+  /**
+   * niceScale - 计算柱状图 Y 轴「漂亮」刻度和最大值
+   *
+   * 使柱状图的刻度显示更整齐美观（如 0、50、100、150 而非 0、37、74、111）。
+   * @param max 数据中的最大值
+   * @returns {maxValue, stepValue, noOfSections}
+   */
   const niceScale = (max: number) => {
     const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
     const steps = [1, 2, 2.5, 5, 10];
@@ -266,6 +304,12 @@ const StatsScreen: React.FC = () => {
   };
   const { maxValue: chartMax, stepValue: chartStep, noOfSections } = niceScale(maxBarValue);
 
+  /**
+   * changeMonth - 切换显示月份（上/下一个月）
+   *
+   * 更新 selectedMonth 后重新计算该月的收款统计数据。
+   * @param delta 偏移量：-1 上个月，+1 下个月
+   */
   const changeMonth = (delta: number) => {
     const [y, m] = selectedMonth.split('-').map(Number);
     let newMonth = m + delta;
@@ -278,6 +322,12 @@ const StatsScreen: React.FC = () => {
     loadFilteredMonth(next);
   };
 
+  /**
+   * loadFilteredMonth - 计算指定月份的收款统计
+   *
+   * 遍历全部课程，筛选出日期匹配该月的记录，按状态统计已收和待收金额。
+   * @param month 月份 "YYYY-MM"
+   */
   const loadFilteredMonth = async (month: string) => {
     const lessons = allLessons;
     let monthPaid = 0, monthPending = 0;
@@ -288,11 +338,13 @@ const StatsScreen: React.FC = () => {
     setMonthStats({ paid: monthPaid, pending: monthPending, total: monthPaid + monthPending });
   };
 
+  /** 格式化选中月份为中文显示 "2026年5月" */
   const formatSelectedMonth = () => {
     const [y, m] = selectedMonth.split('-');
     return `${y}年${MONTH_NAMES[m]}`;
   };
 
+  // ── 无数据时的空状态 ──
   if (stats.length === 0) {
     return (
       <View style={styles.container}>
@@ -308,7 +360,7 @@ const StatsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
       <ScrollView contentContainerStyle={[styles.scrollContent, { padding: spacing.xl }]} showsVerticalScrollIndicator={false}>
-        {/* Month Selector */}
+        {/* ── 月份选择器（左右箭头切换） ── */}
         <View style={styles.monthSelector}>
           <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthArrow}>
             <Ionicons name="chevron-back" size={20} color={Colors.primary} />
@@ -319,7 +371,7 @@ const StatsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Compact stats bar */}
+        {/* ── 紧凑统计条（学生数 / 课时 / 时长 / 收入） ── */}
         <View style={[styles.statsBar, Shadows.subtle]}>
           <View style={styles.statsBarItem}>
             <Text style={styles.statsBarValue}>{monthTotalStats.students}</Text>
@@ -342,7 +394,7 @@ const StatsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Bar Chart */}
+        {/* ── 近 6 月收入趋势柱状图 ── */}
         <View style={[styles.chartCard, Shadows.standard]} onLayout={(e: LayoutChangeEvent) => setChartCardWidth(e.nativeEvent.layout.width)}>
           <Text style={styles.chartTitle}>近6月收入趋势</Text>
           <View style={styles.chartWrap}>
@@ -375,7 +427,7 @@ const StatsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Monthly payment overview */}
+        {/* ── 月度收款概览（进度条 + 三列数字） ── */}
         <View style={[styles.overviewCard, Shadows.standard]}>
           <Text style={styles.overviewTitle}>收款概览 · 本月</Text>
           <View style={styles.progressTrack}>

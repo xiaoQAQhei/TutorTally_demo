@@ -1,13 +1,25 @@
+/**
+ * ── pdf.ts ─────────────────────────────────────────────────────────────────
+ * PDF 导出模块：基于 expo-print 和 expo-sharing。
+ * 生成学生月度课程账单 PDF，包含摘要卡片和课程明细表格。
+ * ────────────────────────────────────────────────────────────────────────────
+ */
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { getSubjectsByStudentId, getLessonsByStudentId, getPaymentsByLessonId } from '../database';
 import { Student, Payment } from '../models';
 
+/**
+ * 生成指定学生指定月份的 PDF 账单文件并通过系统分享面板发送。
+ * @param student - 学生对象
+ * @param month - 月份字符串（如 "2026-05"），用于筛选该月课程
+ */
 export async function generateStudentPdf(student: Student, month: string): Promise<void> {
   const subjects = await getSubjectsByStudentId(student.id);
   const allLessons = await getLessonsByStudentId(student.id);
-  const monthLessons = allLessons.filter(l => l.date.startsWith(month));
+  const monthLessons = allLessons.filter(l => l.date.startsWith(month)); // 筛选指定月份
   const payments: Payment[] = [];
+  // 收集该月所有课程的支付记录
   for (const l of monthLessons) {
     payments.push(...(await getPaymentsByLessonId(l.id)));
   }
@@ -15,12 +27,14 @@ export async function generateStudentPdf(student: Student, month: string): Promi
   const totalAmount = monthLessons.reduce((sum, l) => sum + l.amount, 0);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
+  // 生成 HTML 表格行
   const lessonRows = monthLessons.map(l => {
     const sub = subjects.find(s => s.id === l.studentSubjectId);
     const paid = payments.filter(p => p.lessonId === l.id).reduce((s, p) => s + p.amount, 0);
     return `<tr><td>${l.date}</td><td>${sub?.subject || '-'}</td><td>${l.timeSlot}</td><td>${l.duration}h</td><td>¥${l.amount.toFixed(0)}</td><td>¥${paid.toFixed(0)}</td><td>${paid >= l.amount ? '已结清' : l.status === 'cancelled' ? '已取消' : '待收'}</td></tr>`;
   }).join('');
 
+  // ── 构建完整 HTML 模板 ──
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     body { font-family: -apple-system, sans-serif; padding: 40px; color: #1A1A2E; }
     h1 { font-size: 24px; margin-bottom: 4px; }
@@ -36,12 +50,14 @@ export async function generateStudentPdf(student: Student, month: string): Promi
   </style></head><body>
     <h1>${student.name} - 家教账单</h1>
     <p class="subtitle">${month} | ${subjects.map(s => s.subject).join(', ')}</p>
+    <!-- 摘要卡片：课程数、总额、已收款、待收款 -->
     <div class="summary">
       <div class="summary-item"><div class="summary-value">${monthLessons.length}节</div><div class="summary-label">课程数</div></div>
       <div class="summary-item"><div class="summary-value">¥${totalAmount.toFixed(0)}</div><div class="summary-label">总额</div></div>
       <div class="summary-item"><div class="summary-value">¥${totalPaid.toFixed(0)}</div><div class="summary-label">已收款</div></div>
       <div class="summary-item"><div class="summary-value" style="color:${totalAmount - totalPaid > 0 ? '#F59E0B' : '#10B981'}">¥${(totalAmount - totalPaid).toFixed(0)}</div><div class="summary-label">待收款</div></div>
     </div>
+    <!-- 课程明细表格 -->
     <table><thead><tr><th>日期</th><th>科目</th><th>时段</th><th>课时</th><th>金额</th><th>已收</th><th>状态</th></tr></thead><tbody>${lessonRows}</tbody></table>
     <p class="footer">家教账单 v2.0 · ${new Date().toLocaleDateString('zh-CN')}</p>
   </body></html>`;

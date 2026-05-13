@@ -1,7 +1,17 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * StudentScreen - 学生管理页面
+ *
+ * 展示所有学生列表，支持添加/编辑/删除学生。
+ * 每个学生卡片显示姓名、头像、科目标签（含颜色）、联系方式。
+ * 添加/编辑时使用 BottomSheet 表单，支持多科目设置（含科目选择面板）。
+ * 修改课时费时会自动记录调价历史。
+ */
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAction } from '../contexts/ActionContext';
 import { Student, StudentSubject } from '../models';
 import { addStudent, getAllStudents, updateStudent, deleteStudent, addSubject, getSubjectsByStudentId, updateSubject, deleteSubject, addRateHistory } from '../database';
 import GradientFAB from '../components/GradientFAB';
@@ -15,8 +25,16 @@ import {
 } from '../styles/theme';
 import { useResponsive, scale } from '../utils/responsive';
 
+/**
+ * StudentScreen 组件
+ *
+ * 学生管理：展示学生列表卡片，提供添加/编辑/删除功能。
+ * 编辑表单使用 BottomSheet 弹出，支持多科目选择（含颜色标签），
+ * 课时费变更时自动记录调价历史。
+ */
 const StudentScreen: React.FC = () => {
-  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, inputSize } = useResponsive();
+  const { pendingAction, clearAction } = useAction();  // 消费首页"添加学生"的跳转动作
 
   // ═══════════════ 样式 ═══════════════
   const styles = useMemo(() => ({
@@ -62,7 +80,7 @@ const StudentScreen: React.FC = () => {
     // ═══════════════ 表单 ═══════════════
     formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md },
     input: {
-      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
       paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title,
       backgroundColor: Colors.background,
     },
@@ -89,26 +107,39 @@ const StudentScreen: React.FC = () => {
     confirmOkText: { fontSize: fontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 
     saveButton: {
-      backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,
+      backgroundColor: Colors.paid, height: inputSize.saveButton, borderRadius: BorderRadius.button,
       justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl,
     },
     saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold },
   } as const), [spacing, fontSize, iconSize]);
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({});
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]);
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const [students, setStudents] = useState<Student[]>([]);                           // 学生列表
+  const [studentSubjects, setStudentSubjects] = useState<Record<number, StudentSubject[]>>({}); // 学生 -> 科目映射
+  const [modalVisible, setModalVisible] = useState(false);                           // 编辑弹窗是否显示
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);        // 正在编辑的学生（null=新增模式）
+  const [name, setName] = useState('');                                               // 表单：姓名
+  const [phone, setPhone] = useState('');                                             // 表单：电话
+  const [address, setAddress] = useState('');                                         // 表单：地址
+  const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]); // 表单：科目列表
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' }); // Toast 提示
   const [pickingSubject, setPickingSubject] = useState<number | null>(null); // 正在选择科目的索引，null=不选
-  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
 
-  useFocusEffect(useCallback(() => { loadStudents(); }, []));
+  // ── 页面聚焦时：加载学生数据，并检查首页触发的"添加学生"动作 ──
+  useFocusEffect(useCallback(() => {
+    loadStudents();
+    if (pendingAction === 'addStudent') {
+      openAddModal();
+      clearAction();
+    }
+  }, [pendingAction, clearAction]));
 
+  /**
+   * loadStudents - 加载所有学生及其科目信息
+   *
+   * 遍历学生列表，为每个学生加载对应的科目数据，
+   * 结果存入 students 和 studentSubjects 两个状态。
+   */
   const loadStudents = async () => {
     const students = await getAllStudents();
     setStudents(students);
@@ -119,6 +150,12 @@ const StudentScreen: React.FC = () => {
     setStudentSubjects(subsMap);
   };
 
+  /**
+   * handleSave - 保存学生信息（新增或更新）
+   *
+   * 校验必填项（姓名 + 至少一个有效科目），
+   * 新增时创建学生记录及科目，更新时先记录调价历史再更新。
+   */
   const handleSave = async () => {
     if (!name || editSubjects.length === 0 || editSubjects.some(s => !s.subject || !s.hourlyRate)) {
       setToast({ visible: true, message: '请填写学生姓名和至少一个科目（含科目名和课时费）', type: 'error' });
@@ -151,6 +188,12 @@ const StudentScreen: React.FC = () => {
     setToast({ visible: true, message: editingStudent ? '学生信息已更新' : '学生已添加', type: 'success' });
   };
 
+  /**
+   * handleEdit - 打开编辑学生弹窗
+   *
+   * 填充学生已有信息到表单状态，同时加载该学生的科目数据。
+   * @param student 要编辑的学生对象
+   */
   const handleEdit = async (student: Student) => {
     setEditingStudent(student);
     setName(student.name);
@@ -165,11 +208,25 @@ const StudentScreen: React.FC = () => {
     setModalVisible(true);
   };
 
+  /**
+   * handleDelete - 执行删除学生操作
+   *
+   * 删除后重新加载列表，关闭确认弹窗。
+   * @param id 学生 ID
+   */
   const handleDelete = async (id: number) => {
     await deleteStudent(id);
     loadStudents();
     setConfirmDialog(null);
   };
+
+  /**
+   * confirmDelete - 弹出删除确认对话框
+   *
+   * 设置 confirmDialog 状态，用户确认后执行 handleDelete。
+   * @param id 学生 ID
+   * @param name 学生姓名（用于提示信息）
+   */
   const confirmDelete = (id: number, name: string) => {
     setConfirmDialog({
       visible: true,
@@ -179,6 +236,7 @@ const StudentScreen: React.FC = () => {
     });
   };
 
+  /** 打开新增学生弹窗，清空所有表单字段 */
   const openAddModal = () => {
     setEditingStudent(null);
     setName('');
@@ -188,11 +246,19 @@ const StudentScreen: React.FC = () => {
     setModalVisible(true);
   };
 
+  /**
+   * renderStudent - 渲染单个学生卡片
+   *
+   * 卡片包含：头像、姓名、科目标签（颜色圆点 + 科目名 + 课时费）、
+   * 联系方式（电话/地址）、编辑/删除操作按钮。
+   * @param item 学生对象
+   */
   const renderStudent = ({ item }: { item: Student }) => {
     const subs = studentSubjects[item.id] || [];
     return (
       <View style={[styles.card, Shadows.standard]}>
         <View style={styles.cardMain}>
+          {/* 头像尺寸：iconSize.avatar.lg（手机48 / 平板52），改大小到 theme.ts 调整 avatar.lg */}
           <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={iconSize.avatar.lg} />
           <View style={styles.info}>
             <Text style={styles.name}>{item.name}</Text>

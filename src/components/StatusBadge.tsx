@@ -1,3 +1,9 @@
+// ── 课程状态徽章（StatusBadge） ──
+/**
+ * 显示课程当前状态的徽章组件，带对应颜色和图标。
+ * 支持点击切换到下一个状态，带弹跳动画反馈。
+ */
+
 import React, { useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,19 +11,26 @@ import { LessonStatusColors, StatusTransitions, FontSize, FontWeight, BorderRadi
 import { LessonStatus } from '../models';
 import { useResponsive } from '../utils/responsive';
 
+/** 各状态对应的 Ionicons 图标名称 */
 const StatusIcons: Record<string, 'book' | 'time' | 'checkmark-circle' | 'close-circle' | 'wallet'> = {
-  scheduled: 'book', completed: 'time', pendingPayment: 'wallet', paid: 'checkmark-circle', cancelled: 'close-circle',
+  scheduled: 'book',
+  completed: 'time',
+  pendingPayment: 'wallet',
+  paid: 'checkmark-circle',
+  cancelled: 'close-circle',
 };
 
+/** StatusBadge 组件属性 */
 interface StatusBadgeProps {
-  status: LessonStatus;
-  disabled?: boolean;
-  onToggle?: (nextStatus: LessonStatus) => void;
+  status: LessonStatus;                    // 当前状态
+  disabled?: boolean;                      // 是否禁用点击切换
+  onToggle?: (nextStatus: LessonStatus) => void;  // 状态切换回调
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
   const { iconSize } = useResponsive();
   const scale = useRef(new Animated.Value(1)).current;
+  // 获取当前状态可切换到的下一个状态列表
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
 
@@ -25,6 +38,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
   const label = LessonStatusColors[status].label;
   const icon = StatusIcons[status];
 
+  // ── 点击处理：弹跳动画后触发状态切换 ──
   const handleTap = () => {
     if (!tappable || nextStatuses.length === 0) return;
     Animated.sequence([

@@ -1,25 +1,34 @@
+/**
+ * ── export.ts ──────────────────────────────────────────────────────────────
+ * Excel 导出模块：基于 xlsx-js-style 和 expo-file-system/expo-sharing。
+ * 提供全部导出、按月导出、按学生导出、自定义导出四种模式。
+ * 支持进度回调、状态筛选、日期范围、颜色标记等高级选项。
+ * ────────────────────────────────────────────────────────────────────────────
+ */
 import * as XLSX from 'xlsx-js-style';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getAllStudents, getSubjectsByStudentId, getAllLessons, getPaymentsByLessonId } from '../database';
 import { Student, StudentSubject, Lesson, Payment } from '../models';
 
+/** 导出选项配置接口 */
 export interface ExportOptions {
-  includeHeader?: boolean;
-  includeLegend?: boolean;
-  includeTotal?: boolean;
-  includeNotes?: boolean;
-  includePaymentInfo?: boolean;
-  dateFormat?: string;
-  numberFormat?: string;
-  currencySymbol?: string;
-  sheetName?: string;
-  title?: string;
-  customFields?: string[];
-  statusFilter?: string[];
-  dateRange?: { start: string; end: string };
+  includeHeader?: boolean;     // 是否包含标题行
+  includeLegend?: boolean;    // 是否包含图例
+  includeTotal?: boolean;     // 是否包含合计行
+  includeNotes?: boolean;     // 是否包含备注列
+  includePaymentInfo?: boolean; // 是否包含支付信息列
+  dateFormat?: string;        // 日期格式（默认 YYYY-MM-DD）
+  numberFormat?: string;      // 数字格式（默认 #,##0.00）
+  currencySymbol?: string;    // 货币符号（默认 元）
+  sheetName?: string;         // 工作表名称
+  title?: string;             // 文档标题
+  customFields?: string[];    // 自定义字段列表
+  statusFilter?: string[];    // 状态筛选（只导出指定状态的课程）
+  dateRange?: { start: string; end: string }; // 日期范围筛选
 }
 
+/** 导出进度信息接口 */
 export interface ExportProgress {
   current: number;
   total: number;
@@ -27,6 +36,7 @@ export interface ExportProgress {
   message: string;
 }
 
+/** 进度回调类型 */
 export type ProgressCallback = (progress: ExportProgress) => void;
 
 const STATUS_LABEL: Record<string, string> = {
@@ -293,6 +303,13 @@ function updateProgress(callback: ProgressCallback | undefined, progress: Partia
   }
 }
 
+/**
+ * 导出所有学生课程账单到 Excel。
+ * 每个学生一个 sheet，包含课程明细、状态颜色标记、合计行。
+ * @param options 导出选项（标题、筛选、格式等）
+ * @param onProgress 进度回调
+ * @returns 导出文件路径
+ */
 export async function exportAllToExcel(
   options: Partial<ExportOptions> = {},
   onProgress?: ProgressCallback
@@ -355,6 +372,14 @@ export async function exportAllToExcel(
   }
 }
 
+/**
+ * 按月份导出指定月份的账单汇总。
+ * 一张 sheet 按学生分组，带小计和总计。
+ * @param month 月份（"YYYY-MM"）
+ * @param options 导出选项
+ * @param onProgress 进度回调
+ * @returns 导出文件路径
+ */
 export async function exportByMonth(
   month: string,
   options: Partial<ExportOptions> = {},
@@ -493,6 +518,13 @@ export async function exportByMonth(
   }
 }
 
+/**
+ * 导出单个学生的完整账单。
+ * @param studentId 学生 ID
+ * @param options 导出选项
+ * @param onProgress 进度回调
+ * @returns 导出文件路径
+ */
 export async function exportByStudent(
   studentId: number,
   options: Partial<ExportOptions> = {},
@@ -550,6 +582,14 @@ export async function exportByStudent(
   }
 }
 
+/**
+ * 导出自定义数据（二维数组）到 Excel。
+ * @param data 数据二维数组
+ * @param filename 文件名
+ * @param options 配置（标题、表头、列宽、弹窗标题）
+ * @param onProgress 进度回调
+ * @returns 导出文件路径
+ */
 export async function exportCustomData(
   data: any[][],
   filename: string,
@@ -613,6 +653,11 @@ export async function exportCustomData(
   }
 }
 
+/**
+ * 校验导出选项的合法性。
+ * @param options 待校验的导出选项
+ * @returns 校验结果 { valid: 是否合法, errors: 错误信息列表 }
+ */
 export function validateExportOptions(options: Partial<ExportOptions>): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 

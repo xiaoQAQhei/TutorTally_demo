@@ -1,3 +1,9 @@
+/**
+ * ── App.tsx ─────────────────────────────────────────────────────────────────
+ * 应用入口组件：注册底部 Tab 导航器，管理应用初始化和数据库启动流程。
+ * 5 个 Tab：首页、学生、课程记录、账单统计、设置。
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -16,6 +22,7 @@ import { useResponsive, rem, scale } from './utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
+/** Tab 页图标映射：选中态 / 未选中态图标名 */
 const TAB_ICONS: Record<string, [string, string]> = {
   Home: ['home', 'home-outline'],
   Students: ['people', 'people-outline'],
@@ -28,6 +35,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { isTablet, fontSize, spacing, iconSize } = useResponsive();
 
+  // 应用启动时：初始化数据库，迁移旧版数据，申请通知权限
   useEffect(() => {
     const setupDatabase = async () => {
       try { await initDatabase(); await migrateFromV1(); } catch (e) { console.warn('Database init failed:', e); }
@@ -37,6 +45,7 @@ const App: React.FC = () => {
     setupDatabase();
   }, []);
 
+  // 数据库加载中显示启动屏
   if (isLoading) {
     return (
       <View style={loadStyles.container}>
@@ -85,10 +94,15 @@ const App: React.FC = () => {
           headerShadowVisible: false,
         })}
       >
+        {/* 首页 Tab */}
         <Tab.Screen name="Home" component={HomeScreen} options={{ title: '首页' }} />
+        {/* 学生管理 Tab */}
         <Tab.Screen name="Students" component={StudentScreen} options={{ title: '学生' }} />
+        {/* 课程记录 Tab */}
         <Tab.Screen name="Lessons" component={LessonScreen} options={{ title: '课程记录' }} />
+        {/* 账单统计 Tab */}
         <Tab.Screen name="Stats" component={StatsScreen} options={{ title: '账单统计' }} />
+        {/* 设置 Tab */}
         <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: '设置' }} />
       </Tab.Navigator>
       </NavigationContainer>

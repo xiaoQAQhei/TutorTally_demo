@@ -1,3 +1,9 @@
+/**
+ * ── theme.ts ───────────────────────────────────────────────────────────────
+ * 全局主题配置模块：定义色彩、间距、字号、图标尺寸、阴影、圆角、
+ * 状态迁移规则等样式常量。所有像素值走 responsive.ts 的 scale/rem 函数。
+ * ────────────────────────────────────────────────────────────────────────────
+ */
 import { scale, rem, moderateScale } from '../utils/responsive';
 
 export const Colors = {
@@ -35,17 +41,20 @@ export const Colors = {
   subjectChinese: '#10B981',
 } as const;
 
+/** 科目配色调色板（用于没有默认颜色的科目） */
 export const SubjectColorPalette = [
   '#5B8DEF', '#FF8C6B', '#FF9500', '#4ECDC4',
   '#34C759', '#FF3B6E', '#AF52DE', '#8E8E93',
 ];
 
+/** 常用科目的默认颜色映射 */
 export const DefaultSubjectColors: Record<string, string> = {
   '数学': '#5B8DEF', '英语': '#FF8C6B', '物理': '#FF9500',
   '化学': '#4ECDC4', '生物': '#34C759', '语文': '#FF3B6E',
   '历史': '#AF52DE',
 };
 
+/** 课程状态对应的背景色、文字色和中文标签 */
 export const LessonStatusColors: Record<string, { bg: string; text: string; label: string }> = {
   scheduled: { bg: '#EEF2FF', text: '#6366F1', label: '待上课' },
   completed: { bg: '#FEE2E2', text: '#EF4444', label: '确认下课' },
@@ -54,8 +63,10 @@ export const LessonStatusColors: Record<string, { bg: string; text: string; labe
   cancelled: { bg: '#F3F4F6', text: '#8E8E93', label: '已取消' },
 } as const;
 
+/** 学生头像用 emoji 列表，通过学生姓名哈希取模分配 */
 export const StudentEmojis = ['🎓', '👧', '👦', '👩‍🎓', '🧑‍🎓', '👨‍🎓', '👩', '👨'];
 
+/** 根据姓名哈希分配头像 emoji */
 export function getStudentEmoji(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -64,6 +75,7 @@ export function getStudentEmoji(name: string): string {
   return StudentEmojis[Math.abs(hash) % StudentEmojis.length];
 }
 
+/** 根据科目名称获取默认颜色，未匹配的返回调色板第一个颜色 */
 export function getSubjectColor(subject: string): string {
   return DefaultSubjectColors[subject] || SubjectColorPalette[0];
 }
@@ -134,10 +146,11 @@ export const TabletIconSize = {
   xl: 45,
   xxl: 48,
   container: { sm: 52, md: 62, lg: 76 },
-  avatar: { sm: 32, md: 80, lg: 52 },
+  avatar: { sm: 32, md: 80, lg: 60 },
   badge: { size: 24, radius: 12 },
 };
 
+// ── 字重 ──────────────────────────────────────────────────────────
 export const FontWeight = {
   bold: '700' as const,
   semiBold: '600' as const,
@@ -145,6 +158,7 @@ export const FontWeight = {
   regular: '400' as const,
 };
 
+// ── 圆角 ──────────────────────────────────────────────────────────
 export const BorderRadius = {
   card: moderateScale(16),
   smallCard: moderateScale(12),
@@ -154,6 +168,19 @@ export const BorderRadius = {
   full: 9999,
 };
 
+// ── 输入框尺寸（使用 scale 自动响应屏幕宽度） ─────────────────────
+export const InputSize = {
+  input: scale(50),         // 普通输入框高度
+  saveButton: scale(52),    // 保存按钮高度
+};
+
+// ── 平板输入框尺寸（responsive.ts 根据断点选择） ───────────────
+export const TabletInputSize = {
+  input: scale(35),         // 平板输入框高度（略小，屏幕大但触控目标不用等比例放大）
+  saveButton: scale(48),    // 平板保存按钮高度
+};
+
+// ── 阴影效果 ───────────────────────────────────────────────────────
 export const Shadows = {
   subtle: {
     shadowColor: Colors.title,
@@ -185,6 +212,8 @@ export const Shadows = {
   },
 };
 
+// ── 课程状态迁移规则 ─────────────────────────────────────────────────
+/** 每个状态可迁移到的下一个状态列表 */
 export const StatusTransitions: Record<string, string[]> = {
   scheduled: ['completed', 'cancelled'],
   completed: ['pendingPayment'],

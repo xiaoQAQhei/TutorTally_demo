@@ -1,3 +1,12 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * LessonScreen - 课程管理页面
+ *
+ * 展示所有课程列表，支持按状态筛选（待上课/待收款/已收款/全部）。
+ * 提供增删改查功能，支持课程状态流转（scheduled → completed → pendingPayment → paid）。
+ * 特色交互：确认下课滑动动画、取消课程删除线动画、删除碎纸机碎片动画。
+ * 从首页跳转时可接收 pendingAction（添加课程）、pendingFilter（筛选状态）和 highlight（高亮某课程）。
+ */
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
@@ -18,10 +27,12 @@ import EmptyState from '../components/EmptyState';
 import {
   Colors, FontWeight, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
-import { useSlideManager, useShatterManager } from '../utils/animationHooks';
+import { useSlideManager, useShatterManager, useCancelAnimation } from '../utils/animationHooks';
+import { useBatchAnim } from '../styles/animations';
 import { ShredderStrip } from '../components/ShredderStrip';
 import { scale, moderateScale, useResponsive } from '../utils/responsive';
 
+/** 筛选状态：待上课 / 待收款 / 已收款 / 全部 */
 type FilterStatus = 'upcoming' | 'unpaid' | 'paid' | 'all';
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
@@ -31,32 +42,48 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'all', label: '全部', color: Colors.primary },
 ];
 
+/**
+ * LessonScreen 组件
+ *
+ * 课程管理主页面，功能包括：
+ * - 课程列表展示 + 四态筛选（待上课/待收款/已收款/全部）
+ * - 添加/编辑课程表单（含学生选择、日期、时段、课时、课时费、金额预览）
+ * - 状态流转操作（确认下课→待收款→已收款）
+ * - 带确认弹窗的安全删除（含碎纸机动画效果）
+ * - 取消课程（删除线动画）
+ * - 接收来自首页的跨页面动作（pendingAction / pendingFilter / highlightLessonId）
+ */
 const LessonScreen: React.FC = () => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  const [showStudentPicker, setShowStudentPicker] = useState(false);
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
-  const [duration, setDuration] = useState('');
-  const [lessonRate, setLessonRate] = useState('');
-  const [notes, setNotes] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  // ── 课程与筛选 ──
+  const [lessons, setLessons] = useState<Lesson[]>([]);                     // 全部课程
+  const [students, setStudents] = useState<Student[]>([]);                   // 全部学生（用于显示姓名）
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');     // 当前筛选状态
+  const [modalVisible, setModalVisible] = useState(false);                   // 添加/编辑弹窗
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);   // 正在编辑的课程
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null); // 表单选中的学生 ID
+  const [showStudentPicker, setShowStudentPicker] = useState(false);         // 学生选择器
+  const [date, setDate] = useState('');                                       // 表单：日期
+  const [timeSlot, setTimeSlot] = useState('');                               // 表单：时段
+  const [duration, setDuration] = useState('');                               // 表单：课时
+  const [lessonRate, setLessonRate] = useState('');                           // 表单：课时费
+  const [notes, setNotes] = useState('');                                     // 表单：备注
+  const [showCalendar, setShowCalendar] = useState(false);                    // 日历选择器
+  const [showTimePicker, setShowTimePicker] = useState(false);                // 时段选择器
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' }); // 提示
+
+  // ── 跨页面交互 ──
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
-  const [highlightedId, setHighlightedId] = useState<number | null>(null);
-  const highlightAnim = useRef(new Animated.Value(0)).current;
-  const flatListRef = useRef<FlatList>(null);
-  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, contentPaddingH } = useResponsive();
-  const itemHeightRef = useRef(180);
-  const cardWidthRef = useRef<Map<number, number>>(new Map());
-  const cardHeightRef = useRef<Map<number, number>>(new Map());
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);   // 高亮课程 ID
+  const highlightAnim = useRef(new Animated.Value(0)).current;               // 高亮闪烁动画
+  const flatListRef = useRef<FlatList>(null);                                 // 列表引用，用于滚动
+
+  // ── 响应式 ──
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, contentPaddingH, inputSize } = useResponsive();
+  const itemHeightRef = useRef(180);                                          // 列表项预估高度（用于 getItemLayout）
+  const cardWidthRef = useRef<Map<number, number>>(new Map());                // 卡片实际宽度缓存
+  const cardHeightRef = useRef<Map<number, number>>(new Map());              // 卡片实际高度缓存
+  const [showScrollTop, setShowScrollTop] = useState(false);                  // 回到顶部按钮可见性
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
 
   // ── 响应式样式 ──
   const styles = useMemo(() => ({
@@ -96,6 +123,13 @@ const LessonScreen: React.FC = () => {
       paddingVertical: spacing.sm + 2, gap: spacing.xs,
     },
     segmentDivider: { width: scale(1), backgroundColor: Colors.divider },                            // 按钮间分隔线
+
+    // ═══════════════ 一键操作按钮 ═══════════════
+    batchBtn: {                                                                                       // 批量操作按钮
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      borderRadius: BorderRadius.button, padding: spacing.sm, gap: spacing.sm, borderWidth: 1,
+    },
+    batchBtnText: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold },                      // 按钮文字
     // ═══════════════ 课程卡片 ═══════════════
     card: {
       backgroundColor: Colors.card, borderRadius: BorderRadius.card,
@@ -121,7 +155,7 @@ const LessonScreen: React.FC = () => {
     // ═══════════════ 时间段标签 ═══════════════
     timeSlotBadge: {
       flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2,
-      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
       borderRadius: BorderRadius.smallCard,
       backgroundColor: Colors.primaryLight,
     },
@@ -194,7 +228,7 @@ const LessonScreen: React.FC = () => {
     // ═══════════════ 表单（添加/编辑课程）═══════════════
     datePickerButton: {                                                                               // 日期选择按钮
       flexDirection: 'row', alignItems: 'center',
-      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
       paddingHorizontal: spacing.md, backgroundColor: Colors.background,
       gap: spacing.sm,
     },
@@ -203,14 +237,14 @@ const LessonScreen: React.FC = () => {
     formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md },
     pickerButton: {                                                                                   // 选择器按钮（学生/时间段）
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
       paddingHorizontal: spacing.md, backgroundColor: Colors.background,
     },
     pickerSelected: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },                 // 已选中状态
     pickerText: { fontSize: fontSize.body, color: Colors.title, fontWeight: FontWeight.medium },     // 选中文字
     pickerPlaceholder: { fontSize: fontSize.body, color: Colors.caption },                            // 占位文字
     input: {                                                                                          // 文本输入框
-      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
       paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title,
       backgroundColor: Colors.background,
     },
@@ -230,7 +264,7 @@ const LessonScreen: React.FC = () => {
 
     // ═══════════════ 保存按钮 ═══════════════
     saveButton: {
-      backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button,
+      backgroundColor: Colors.primary, height: inputSize.saveButton, borderRadius: BorderRadius.button,
       justifyContent: 'center', alignItems: 'center', marginTop: spacing.xl,
     },
     saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold },
@@ -246,28 +280,39 @@ const LessonScreen: React.FC = () => {
     studentItemSubject: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },           // 科目名
   } as const), [spacing, fontSize, iconSize, isTablet, contentPaddingH]);
 
-  const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null);
-  const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const cancelAnims = useRef<Map<number, { anim: Animated.Value; width: number }>>(new Map());
-  const collapseAnims = useRef<Map<number, Animated.Value>>(new Map());
-  const collapseStarted = useRef<Set<number>>(new Set());
-  const slideMgr = useSlideManager();
-  const shatterMgr = useShatterManager();
-  const containerRef = useRef<View>(null);
-  const cardRefs = useRef<Map<number, any>>(new Map());
-  const [shredPortal, setShredPortal] = useState<{
+  // ── 动画状态 ──
+  const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null); // 正在执行状态流转动画的课程
+  const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());                        // 状态流转：水平位移
+  const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());                     // 状态流转：透明度
+  const collapseAnims = useRef<Map<number, Animated.Value>>(new Map());                         // 删除碎纸动画：高度收缩
+  const collapseStarted = useRef<Set<number>>(new Set());                                       // 标记已开始收缩的课程 ID
+  const slideMgr = useSlideManager();                                                            // 滑动管理器
+  const shatterMgr = useShatterManager();                                                         // 碎纸管理器
+  const cancelAnim = useCancelAnimation();                                                        // 取消删除线动画
+  const containerRef = useRef<View>(null);                                                        // 页面容器引用（用于碎纸定位）
+  const cardRefs = useRef<Map<number, any>>(new Map());                                          // 卡片 DOM 引用（用于碎纸定位）
+  const [shredPortal, setShredPortal] = useState<{                                               // 碎纸 Portal 配置
     pageX: number; pageY: number; cardW: number; cardH: number;
     strips: import('../utils/animationHooks').ShatterStripConfig[];
     lessonId: number;
   } | null>(null);
+  const cpl = useBatchAnim();                                                                              // 一键确认下课动画
+  const coll = useBatchAnim();                                                                             // 一键收款动画
+  const isCplRunning = useRef(false);                                                                      // 一键确认下课执行中
+  const isCollRunning = useRef(false);                                                                     // 一键收款执行中
 
+  // ── 页面聚焦时加载数据 ──
   useFocusEffect(useCallback(() => {
     loadLessons();
     loadStudents();
   }, []));
 
+  /**
+   * loadLessons - 加载全部课程
+   *
+   * 自动将已过 scheduled 结束时间的课程标记为 completed（超时自动下课），
+   * 然后重新获取最新课程列表。
+   */
   const loadLessons = async () => {
     const all = await getAllLessons();
     const now = new Date();
@@ -281,14 +326,21 @@ const LessonScreen: React.FC = () => {
     }
     setLessons(await getAllLessons());
   };
+  /**
+   * loadStudents - 加载学生列表
+   *
+   * 默认选中第一个学生作为添加课程表单的默认值。
+   */
   const loadStudents = async () => {
     const data = await getAllStudents();
     setStudents(data);
     if (data.length > 0 && !selectedStudentId) setSelectedStudentId(data[0].id);
   };
 
+  /** 根据学生 ID 查找学生对象 */
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
 
+  /** 根据 filterStatus 筛选并排序后的课程列表 */
   const filteredLessons = (() => {
     let filtered: Lesson[];
     if (filterStatus === 'upcoming') {
@@ -307,6 +359,7 @@ const LessonScreen: React.FC = () => {
     return filtered;
   })();
 
+  /** 各状态课程数量统计（用于筛选栏计数徽章） */
   const counts = (() => {
     const upcoming = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed').length;
     const paid = lessons.filter((l) => l.status === 'paid').length;
@@ -314,11 +367,23 @@ const LessonScreen: React.FC = () => {
     return { upcoming, paid, unpaid, all: lessons.length };
   })();
 
+  /** 可一键确认下课的课程数（completed → pendingPayment） */
+  const schedulableCount = lessons.filter((l) => l.status === 'completed').length;
+  /** 可一键收款的课程数（仅 pendingPayment） */
+  const collectableCount = lessons.filter((l) => l.status === 'pendingPayment').length;
+
+  /** 计算预计课时费：课时 × 课时费 */
   const calculateAmount = () => {
     if (!duration) return 0;
     return (parseFloat(lessonRate) || 0) * parseFloat(duration);
   };
 
+  /**
+   * handleSave - 保存课程（新增或更新）
+   *
+   * 校验必填项后，根据时段自动修正课时（表时段与课时不一致时自动调整），
+   * 然后调用 addLesson 或 updateLesson 写入数据库。
+   */
   const handleSave = async () => {
     if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
       setToast({ visible: true, message: '请选择学生、日期、时段并填写课时和课时费', type: 'error' });
@@ -361,6 +426,15 @@ const LessonScreen: React.FC = () => {
     setToast({ visible: true, message: editingLesson ? '课程已更新' : '课程已添加', type: 'success' });
   };
 
+  /**
+   * handleStatusChange - 改变课程状态（如 completed → pendingPayment → paid）
+   *
+   * 如果当前筛选状态不是「全部」，触发滑动带动画的过渡效果；
+   * 否则使用 LayoutAnimation 平滑过渡。
+   * 如果 confirmBeforeChange 开启，先弹出确认对话框。
+   * @param lesson 目标课程
+   * @param nextStatus 目标状态
+   */
   const handleStatusChange = async (lesson: Lesson, nextStatus: LessonStatus) => {
     const doChange = () => {
       if (filterStatus !== 'all' && (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid')) {
@@ -399,19 +473,85 @@ const LessonScreen: React.FC = () => {
     }
   };
 
+  /** 依次触发单个卡片的滑动动画，返回 Promise */
+  const animateOneSlide = (lessonId: number, targetStatus: LessonStatus): Promise<void> => {
+    return new Promise((resolve) => {
+      if (!slideTestAnims.current.has(lessonId)) slideTestAnims.current.set(lessonId, new Animated.Value(0));
+      if (!slideOpacityAnims.current.has(lessonId)) slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
+      const slideX = slideTestAnims.current.get(lessonId)!;
+      const slideOp = slideOpacityAnims.current.get(lessonId)!;
+      slideX.setValue(0);
+      slideOp.setValue(1);
+      setMorphing({ id: lessonId, targetStatus });
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
+          Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
+        ]).start(() => {
+          slideX.setValue(0);
+          slideOp.setValue(1);
+          setMorphing(null);
+          resolve();
+        });
+      }, 300);
+    });
+  };
+
+  /** 一键确认下课：按键退场 → 每个卡片依次滑动退出 → 修改状态 */
+  const handleBatchComplete = () => {
+    if (isCplRunning.current) return;
+    const doBatch = async () => {
+      isCplRunning.current = true;
+      await cpl.exit();
+      const targetLessons = filteredLessons.filter((l) => l.status === 'completed');
+      for (const l of targetLessons) {
+        await animateOneSlide(l.id, 'pendingPayment');
+        await setLessonStatus(l.id, 'pendingPayment');
+      }
+      isCplRunning.current = false;
+      loadLessons();
+      setToast({ visible: true, message: `已确认 ${targetLessons.length} 节课待收款`, type: 'success' });
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '批量确认下课', message: `确定要将 ${schedulableCount} 节已下课课程转为待收款吗？`, onConfirm: doBatch });
+    } else {
+      doBatch();
+    }
+  };
+
+  /** 一键收款：按键退场 → 每个卡片依次滑动退出 → 修改状态 */
+  const handleBatchCollect = () => {
+    if (isCollRunning.current) return;
+    const doBatch = async () => {
+      isCollRunning.current = true;
+      await coll.exit();
+      const targetLessons = filteredLessons.filter((l) => l.status === 'pendingPayment');
+      for (const l of targetLessons) {
+        await animateOneSlide(l.id, 'paid');
+        await setLessonStatus(l.id, 'paid');
+      }
+      isCollRunning.current = false;
+      loadLessons();
+      setToast({ visible: true, message: `已收取 ${targetLessons.length} 节课款`, type: 'success' });
+    };
+    if (confirmBeforeChange) {
+      setConfirmDialog({ visible: true, title: '批量收款', message: `确定要将 ${collectableCount} 节待收款课程标记为已收款吗？`, onConfirm: doBatch });
+    } else {
+      doBatch();
+    }
+  };
+
+  /**
+   * handleCancelLesson - 取消课程操作
+   *
+   * 触发删除线动画（从左到右展开），动画完成后将课程状态设为 cancelled，
+   * 并重新加载列表。
+   * @param lesson 要取消的课程
+   */
   const handleCancelLesson = (lesson: Lesson) => {
     const doCancel = () => {
-      setCancellingId(lesson.id);
-      if (!cancelAnims.current.has(lesson.id)) {
-        cancelAnims.current.set(lesson.id, { anim: new Animated.Value(0), width: 0 });
-      }
-      const cd = cancelAnims.current.get(lesson.id)!;
-      Animated.timing(cd.anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
-        // Keep cancelled visual for 800ms before reloading
-        setTimeout(() => {
-          setCancellingId(null);
-          setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
-        }, 800);
+      cancelAnim.trigger(lesson.id, () => {
+        setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
       });
     };
     if (confirmBeforeChange) {
@@ -421,12 +561,20 @@ const LessonScreen: React.FC = () => {
     }
   };
 
+  /** 判断课程是否已过结束时间（用于控制「取消课程」按钮的显示） */
   const isClassEnded = (lesson: Lesson): boolean => {
     const endTime = lesson.timeSlot?.split('-')[1]?.trim();
     if (!endTime) return true;
     return new Date() >= new Date(`${lesson.date}T${endTime}:00`);
   };
 
+  /**
+   * handleDelete - 删除课程（含碎纸机动画）
+   *
+   * 先触发碎纸机碎片动画，动画完成后执行 deleteLesson 并从列表移除。
+   * 如果 confirmBeforeChange 开启，先弹出确认对话框。
+   * @param id 课程 ID
+   */
   const handleDelete = (id: number) => {
     if (shatterMgr.activeId !== null) return;
     const doDelete = () => {
@@ -456,6 +604,12 @@ const LessonScreen: React.FC = () => {
     }
   };
 
+  /**
+   * handleEdit - 打开编辑课程弹窗
+   *
+   * 将课程现有数据填充到表单状态中。
+   * @param lesson 要编辑的课程
+   */
   const handleEdit = (lesson: Lesson) => {
     setEditingLesson(lesson);
     setSelectedStudentId(lesson.studentId);
@@ -468,6 +622,7 @@ const LessonScreen: React.FC = () => {
     setModalVisible(true);
   };
 
+  /** 打开添加课程弹窗，设置默认值（明天日期、2小时、75元/h） */
   const openAddModal = () => {
     setEditingLesson(null);
     const firstStudent = students[0];
@@ -481,7 +636,9 @@ const LessonScreen: React.FC = () => {
     setModalVisible(true);
   };
 
-  // Handle pending action from home screen
+  // ── 响应来自首页的跨页面动作 ──
+
+  /** 从首页跳转过来添加课程时自动打开弹窗 */
   useEffect(() => {
     if (pendingAction === 'addLesson') {
       openAddModal();
@@ -489,7 +646,7 @@ const LessonScreen: React.FC = () => {
     }
   }, [pendingAction]);
 
-  // Handle pending filter from home screen
+  /** 从首页跳转过来时应用筛选状态 */
   useEffect(() => {
     if (pendingFilter) {
       setFilterStatus(pendingFilter);
@@ -497,7 +654,25 @@ const LessonScreen: React.FC = () => {
     }
   }, [pendingFilter, clearFilter]);
 
-  // Handle highlight
+  /** 一键确认下课：条件满足时显示，不满足时退场 */
+  useEffect(() => {
+    if (filterStatus === 'upcoming' && schedulableCount >= 5 && !isCplRunning.current) {
+      cpl.enter();
+    } else if (cpl.visible && cpl.hasAnimated.current) {
+      cpl.exit();
+    }
+  }, [filterStatus, schedulableCount]);
+
+  /** 一键收款：条件满足时显示，不满足时退场 */
+  useEffect(() => {
+    if (filterStatus === 'unpaid' && collectableCount >= 5 && !isCollRunning.current) {
+      coll.enter();
+    } else if (coll.visible && coll.hasAnimated.current) {
+      coll.exit();
+    }
+  }, [filterStatus, collectableCount]);
+
+  /** 处理课程高亮：滚动到指定课程位置 + 背景闪烁动画 */
   useEffect(() => {
     if (highlightLessonId === null || lessons.length === 0) return;
 
@@ -522,21 +697,27 @@ const LessonScreen: React.FC = () => {
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
+  /**
+   * renderCardContent - 渲染课程卡片内容（头部、信息行、金额、备注、操作按钮）
+   *
+   * 这是卡片的核心内容渲染函数，会被 renderLesson 调用两次：
+   * - 正常模式 (interactive=true)：包含可交互的按钮
+   * - 碎纸模式 (interactive=false)：只渲染不可交互的副本（用于碎纸动画）
+   * 同时处理状态流转动画（morphing）和取消动画（strikethrough）的显示逻辑。
+   * @param lesson 课程数据
+   * @param interactive 是否可交互（按钮可点击）
+   */
   const renderCardContent = (lesson: Lesson, interactive: boolean) => {
     const student = getStudent(lesson.studentId);
     const lessonId = lesson.id;
     const isMorphingCard = morphing?.id === lessonId;
     const displayStatus = isMorphingCard ? morphing!.targetStatus : lesson.status;
     const isCancelled = lesson.status === 'cancelled';
-    const isCancellingCard = cancellingId === lessonId;
+    const isCancellingCard = cancelAnim.cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancellingCard;
 
-    if (!cancelAnims.current.has(lessonId)) {
-      cancelAnims.current.set(lessonId, { anim: new Animated.Value(0), width: 0 });
-    }
-    const cancelData = cancelAnims.current.get(lessonId)!;
     if (isCancelled && !isCancellingCard) {
-      cancelData.anim.setValue(1);
+      cancelAnim.markCancelled(lessonId);
     }
 
     return (
@@ -586,20 +767,13 @@ const LessonScreen: React.FC = () => {
           ) : null}
           {showCancelAnim && interactive && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
-              <Animated.View style={[styles.strikethroughLine, {
-                width: cancelData.anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, cancelData.width > 0 ? cancelData.width + 20 : 400],
-                }),
-              }]} />
-              <Animated.Text style={[styles.strikethroughLabel, {
-                opacity: cancelData.anim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1] }),
-              }]}>已取消</Animated.Text>
+              <Animated.View style={[styles.strikethroughLine, cancelAnim.getLineStyle(lessonId, cardWidthRef.current.get(lessonId) || 400)]} />
+              <Animated.Text style={[styles.strikethroughLabel, cancelAnim.getLabelStyle(lessonId)]}>已取消</Animated.Text>
             </View>
           )}
           {showCancelAnim && !interactive && isCancelled && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
-              <View style={[styles.strikethroughLine, { width: cancelData.width > 0 ? cancelData.width + 20 : 400 }]} />
+              <View style={[styles.strikethroughLine, { width: (cardWidthRef.current.get(lessonId) || 400) + 20 }]} />
               <Text style={[styles.strikethroughLabel]}>已取消</Text>
             </View>
           )}
@@ -641,6 +815,17 @@ const LessonScreen: React.FC = () => {
     );
   };
 
+  /**
+   * renderLesson - 渲染整个课程卡片（含动画容器）
+   *
+   * 包裹 Animated.View，处理：
+   * - 状态流转的滑动动画（slideTestAnims）
+   * - 取消课程的删除线动画（cancelAnims）
+   * - 碎纸删除的高度收缩动画（collapseAnims）
+   * - 高亮闪烁动画（highlightAnim）
+   * 测量卡片实际尺寸并缓存（用于 getItemLayout 和删除线宽度）。
+   * @param item 课程对象
+   */
   const renderLesson = ({ item }: { item: Lesson }) => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
@@ -649,7 +834,7 @@ const LessonScreen: React.FC = () => {
     const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
     const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
-    const isCancelling = cancellingId === lessonId;
+    const isCancelling = cancelAnim.cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
@@ -658,11 +843,6 @@ const LessonScreen: React.FC = () => {
     }
     if (!slideOpacityAnims.current.has(lessonId)) {
       slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
-    }
-
-    // Keep cancelAnims width updated for strikethrough
-    if (cancelAnims.current.has(lessonId)) {
-      cancelAnims.current.get(lessonId)!.width = cardWidthRef.current.get(lessonId) || 400;
     }
 
     // Collapse animation when shredding
@@ -717,9 +897,6 @@ const LessonScreen: React.FC = () => {
           if (w > 0) {
             cardWidthRef.current.set(lessonId, w);
             cardHeightRef.current.set(lessonId, h);
-            if (cancelAnims.current.has(lessonId)) {
-              cancelAnims.current.get(lessonId)!.width = w;
-            }
           }
         }}
       >
@@ -757,6 +934,7 @@ const LessonScreen: React.FC = () => {
           setTimeout(() => clearInterval(retryInterval), 1000);
         }}
         ListHeaderComponent={
+          <>
           <View style={styles.filterRow}>
             {/* Standalone: 待上课 */}
             {(() => {
@@ -833,6 +1011,43 @@ const LessonScreen: React.FC = () => {
               );
             })()}
           </View>
+
+          {/* 一键确认下课 */}
+          {cpl.visible ? (
+            <Animated.View style={{
+              transform: [{ translateY: cpl.translateY }],
+              opacity: cpl.opacity, maxHeight: cpl.height, overflow: 'hidden',
+              marginBottom: cpl.anim.interpolate({ inputRange: [0, 1], outputRange: [0, spacing.md] }),
+            }}>
+              <TouchableOpacity
+                style={[styles.batchBtn, { backgroundColor: Colors.dangerLight, borderColor: Colors.danger + '30' }]}
+                activeOpacity={0.75}
+                onPress={handleBatchComplete}
+              >
+                <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
+                <Text style={[styles.batchBtnText, { color: Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ) : null}
+
+          {/* 一键收款 */}
+          {coll.visible ? (
+            <Animated.View style={{
+              transform: [{ translateY: coll.translateY }],
+              opacity: coll.opacity, maxHeight: coll.height, overflow: 'hidden',
+              marginBottom: coll.anim.interpolate({ inputRange: [0, 1], outputRange: [0, spacing.md] }),
+            }}>
+              <TouchableOpacity
+                style={[styles.batchBtn, { backgroundColor: Colors.paidLight, borderColor: Colors.paid + '30' }]}
+                activeOpacity={0.75}
+                onPress={handleBatchCollect}
+              >
+                <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
+                <Text style={[styles.batchBtnText, { color: Colors.paid }]}>一键收款（{collectableCount}节）</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ) : null}
+        </>
         }
         ListEmptyComponent={
           <EmptyState

@@ -1,3 +1,12 @@
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * RecurringRulesScreen - 周期课程规则管理页面
+ *
+ * 管理周期性排课规则：创建、编辑、删除规则。
+ * 每条规则指定：学生、科目、星期、频率（每周/隔周）、时间段、课时、费用。
+ * 支持一键生成未来课程（从开始日期到结束日期，按规则自动排课）。
+ * 可排除特定日期（excludedDates 字段，当前未暴露 UI）。
+ */
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,32 +22,48 @@ import { useResponsive, scale } from '../utils/responsive';
 
 const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
+/**
+ * RecurringRulesScreen 组件
+ *
+ * 周期排课规则管理：列表展示已有规则，提供创建/编辑/删除操作，
+ * 以及一键生成未来课程的功能。
+ */
 const RecurringRulesScreen: React.FC = () => {
-  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
-  const [rules, setRules] = useState<RecurringRule[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
-  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
-  const [interval, setInterval] = useState('1');
-  const [timeSlot, setTimeSlot] = useState('');
-  const [duration, setDuration] = useState('2');
-  const [amount, setAmount] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, inputSize } = useResponsive();
+  const [rules, setRules] = useState<RecurringRule[]>([]);                   // 规则列表
+  const [students, setStudents] = useState<Student[]>([]);                   // 学生列表（用于选择）
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);            // 选中学生的科目列表
+  const [modalVisible, setModalVisible] = useState(false);                   // 编辑弹窗
+  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null); // 正在编辑的规则
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null); // 表单：选中学生
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null); // 表单：选中科目
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);    // 表单：选中星期（1-7）
+  const [interval, setInterval] = useState('1');                              // 表单：频率（1=每周，2=隔周）
+  const [timeSlot, setTimeSlot] = useState('');                               // 表单：时间段
+  const [duration, setDuration] = useState('2');                              // 表单：课时（小时）
+  const [amount, setAmount] = useState('');                                   // 表单：费用（可选）
+  const [startDate, setStartDate] = useState('');                             // 表单：开始日期
+  const [endDate, setEndDate] = useState('');                                 // 表单：结束日期（可选）
+  const [notes, setNotes] = useState('');                                     // 表单：备注
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
 
+  // ── 页面聚焦时加载数据 ──
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
+  /**
+   * loadData - 加载规则列表和学生列表
+   */
   const loadData = async () => {
     setRules(await getAllRecurringRules());
     setStudents(await getAllStudents());
   };
 
+  /**
+   * loadSubjectsForStudent - 加载选中学生的科目列表
+   *
+   * 选择学生后自动加载其科目，并默认选中第一个科目。
+   * @param studentId 学生 ID
+   */
   const loadSubjectsForStudent = async (studentId: number) => {
     const subs = await getSubjectsByStudentId(studentId);
     setSubjects(subs);
@@ -48,6 +73,15 @@ const RecurringRulesScreen: React.FC = () => {
   const getStudentName = (id: number) => students.find(s => s.id === id)?.name || '未知';
   const getSubjectName = (id?: number) => subjects.find(s => s.id === id)?.subject || '';
 
+  /**
+   * generateCourses - 根据规则生成未来的课程列表
+   *
+   * 从开始日期到结束日期（默认未来 30 天），遍历每一天，
+   * 如果当天星期匹配规则中的 weekday 且不在排除列表中，生成一条课程。
+   * 支持 interval=2 的隔周模式（跳 7 天步进）。
+   * @param rule 周期规则
+   * @returns 生成的课程数组（不含 id）
+   */
   const generateCourses = (rule: RecurringRule) => {
     const start = new Date(rule.startDate);
     const end = rule.endDate ? new Date(rule.endDate) : new Date(Date.now() + 30 * 86400000);
@@ -71,6 +105,12 @@ const RecurringRulesScreen: React.FC = () => {
     return courses;
   };
 
+  /**
+   * handleGenerate - 一键生成课程（将规则展开为具体课程并写入数据库）
+   *
+   * 调用 generateCourses 生成课程数组，逐条写入数据库。
+   * @param rule 要展开的周期规则
+   */
   const handleGenerate = async (rule: RecurringRule) => {
     const courses = generateCourses(rule);
     for (const c of courses) {
@@ -79,6 +119,11 @@ const RecurringRulesScreen: React.FC = () => {
     setToast({ visible: true, message: `已生成 ${courses.length} 节课程`, type: 'success' });
   };
 
+  /**
+   * handleSave - 保存周期规则（新增或更新）
+   *
+   * 校验必填项后调用数据库的 addRecurringRule 或 updateRecurringRule。
+   */
   const handleSave = async () => {
     if (!selectedStudentId || selectedWeekdays.length === 0 || !timeSlot || !startDate) {
       setToast({ visible: true, message: '请填写必填项', type: 'error' }); return;
@@ -134,13 +179,20 @@ const RecurringRulesScreen: React.FC = () => {
     chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background } as const,
     chipText: { fontSize: fontSize.caption, color: Colors.body } as const,
     weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center' as const, alignItems: 'center' as const } as const,
-    input: { height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title, backgroundColor: Colors.background } as const,
+    input: { height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title, backgroundColor: Colors.background } as const,
     formRow: { flexDirection: 'row' as const, gap: spacing.md } as const,
     formHalf: { flex: 1 } as const,
-    saveButton: { backgroundColor: Colors.primary, height: scale(52), borderRadius: BorderRadius.button, justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl } as const,
+    saveButton: { backgroundColor: Colors.primary, height: inputSize.saveButton, borderRadius: BorderRadius.button, justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl } as const,
     saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold } as const,
   } as const), [spacing, fontSize, iconSize]);
 
+  /**
+   * renderRule - 渲染单条规则卡片
+   *
+   * 卡片展示：学生名、科目、星期分布（圆点阵列）、时间段·时长·频率、
+   * 一键生成按钮、编辑/删除操作。
+   * @param item 周期规则
+   */
   const renderRule = ({ item }: { item: RecurringRule }) => {
     const weekdays = JSON.parse(item.weekdays || '[]') as number[];
     return (

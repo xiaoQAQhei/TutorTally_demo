@@ -51,9 +51,23 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 格式保持与 `PROGRESS.md` 现有结构一致（`- [x]` / `- [ ]`）。
 
-### 关闭终端（Stop hook）时的行为
-Stop hook 在终端关闭时自动触发，执行以下操作（已配置在 `.claude/settings.local.json`）：
-1. 生成 changelog 条目并写入 `logs/CHANGELOG.md`
-2. `git add -A && git commit` 提交所有改动
-3. `git push` 推送到远程，PR 自动更新
-Stop hook **无法**执行需要 AI 理解上下文的操作（如总结进度、写入 PROGRESS.md），这些只在用户主动说"收工"时由 AI 完成。
+### 新项目结构文档规范
+每次接手或创建新项目时，必须先了解项目结构并在 CLAUDE.md 中写明：
+- 目录结构说明：每个目录/子目录的职责
+- 代码归属规则：什么代码该放在哪个文件（如：动画→hooks文件、样式→useMemo、类型→models、数据库操作→database等）
+- 关键约定：命名规范、导入路径规则、状态管理模式等
+
+### 动画/逻辑解耦规范
+- 动画逻辑必须放在 `src/styles/animations.ts`（通用动画 hooks）或 `src/utils/animationHooks.ts`（课程卡片专用动画）中
+- Screen 组件只负责调用 hook 和 JSX 渲染，不写 `Animated.timing/spring` 等动画创建代码
+- 状态管理（useState/useRef）不跨功能共享——每个独立功能有自己独立的状态（如两个按钮用两套独立的 hook 实例）
+- 避免在组件文件中写 `new Animated.Value()` 或 `Animated.spring/timing` 调用，统一封装到 hook 里
+
+### 样式编写规范
+- 所有样式必须放在 useMemo styles 对象中统一管理
+- 禁止在 JSX 中写内联 `style={{}}` 对象（唯一例外：动态颜色值可通过 `[styles.xxx, { color: dynamicColor }]` 覆盖）
+- 布局/尺寸/字体/间距等所有非颜色属性都必须走 useMemo
+
+### 关闭终端时的行为
+Stop hook 已停用（`settings.local.json` 中移除）。不再自动 commit 或 push。
+所有 git 操作由我手动执行，commit 信息写人话。

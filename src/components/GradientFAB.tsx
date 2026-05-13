@@ -1,3 +1,9 @@
+// ── 渐变浮动操作按钮（GradientFAB） ──
+/**
+ * 悬浮在页面右下角的操作按钮，支持脉冲动画和按下弹跳效果。
+ * 导出位置常量供其他组件同步使用。
+ */
+
 import React from 'react';
 import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,11 +17,12 @@ export const FAB_BOTTOM_PHONE = 24;        // 手机底部间距
 export const FAB_BOTTOM_TABLET = 32;       // 平板底部间距
 export const FAB_RIGHT_TABLET = 24;       // 平板右侧间距
 
+/** GradientFAB 组件属性 */
 interface GradientFABProps {
-  icon?: string;
-  onPress: () => void;
-  color?: string;
-  position?: { bottom?: number; right?: number };
+  icon?: string;               // 图标名称（Ionicons），默认 "add"
+  onPress: () => void;         // 点击回调
+  color?: string;              // 按钮背景色，默认 Colors.primary
+  position?: { bottom?: number; right?: number };  // 自定义位置（可选）
 }
 
 const GradientFAB: React.FC<GradientFABProps> = ({
@@ -29,7 +36,11 @@ const GradientFAB: React.FC<GradientFABProps> = ({
   const { isTablet, isUltraNarrow, contentPaddingH, iconSize } = useResponsive();
 
   const btnSize = moderateScale(FAB_BASE_SIZE);
-  const defaultPos = { bottom: isTablet ? FAB_BOTTOM_TABLET : FAB_BOTTOM_PHONE, right: isTablet ? 24 : contentPaddingH + 4 };
+  // 默认位置：根据设备类型自动计算
+  const defaultPos = {
+    bottom: isTablet ? FAB_BOTTOM_TABLET : FAB_BOTTOM_PHONE,
+    right: isTablet ? 24 : contentPaddingH + 4,
+  };
   const pos = position ?? defaultPos;
 
   return (
@@ -39,6 +50,7 @@ const GradientFAB: React.FC<GradientFABProps> = ({
         {
           bottom: pos.bottom,
           right: pos.right,
+          // 脉冲与弹跳动画叠加
           transform: [{ scale: Animated.multiply(pulse, scale) }],
         },
       ]}

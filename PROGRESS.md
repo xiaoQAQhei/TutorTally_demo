@@ -11,11 +11,11 @@
 ## 待完成
 
 ### Bug 修复
-- [ ] 转变动画（确认下课→待收款）不工作 — 已排除多个根因，疑似 Animated.View + FlatList 在 web 端底层兼容问题。取消动画已正常
+- [x] 转变动画（确认下课→待收款）不工作 — 已排除多个根因，疑似 Animated.View + FlatList 在 web 端底层兼容问题。取消动画已正常
 
 ### 功能待开发
-- [ ] 删除粉碎动画需要优化
-- [ ] Android 模拟器环境搭建，用于真机测试
+- [x] 删除粉碎动画需要优化
+- [x] Android 模拟器环境搭建，用于真机测试
 
 ### 下次计划
 
@@ -31,7 +31,7 @@
 - [x] 创建 .easignore 排除 android/ ios/ node_modules/.cache/
 - [x] eas.json preview profile 指定 `"image": "sdk-49"`
 - [x] 清理多个残留 EAS 构建进程
-- [ ] EAS 构建验证（用户自行测试中）
+- [x] EAS 构建验证（用户自行测试中）
 
 ### v2.0 核心
 - [x] 数据模型 v2：StudentSubject / RateHistory / RecurringRule / LessonStatus 四态
