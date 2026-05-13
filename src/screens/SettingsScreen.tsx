@@ -134,10 +134,11 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
 
         <Text style={styles.sectionTitle}>关于</Text>
         <View style={[styles.aboutCard, Shadows.subtle]}>
-          <Text style={styles.aboutApp}>家教账单 v2.0</Text>
+          <Text style={styles.aboutApp}>家教账单 v1.2</Text>
           <Text style={styles.aboutDesc}>个人离线家教课程账单管理工具</Text>
           <View style={styles.aboutDivider} />
           <Text style={styles.aboutDesc}>数据安全：所有数据仅存储在您的设备上</Text>
+          <Text style={styles.aboutDesc}>项目归属：xiaoQAQhei</Text>
         </View>
       </ScrollView>
 

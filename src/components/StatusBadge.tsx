@@ -4,7 +4,7 @@
  * 支持点击切换到下一个状态，带弹跳动画反馈。
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LessonStatusColors, StatusTransitions, FontSize, FontWeight, BorderRadius, Spacing } from '../styles/theme';
@@ -30,6 +30,7 @@ interface StatusBadgeProps {
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
   const { iconSize } = useResponsive();
   const scale = useRef(new Animated.Value(1)).current;
+  const pulseOpacity = useRef(new Animated.Value(1)).current;          // 呼吸动画值
   // 获取当前状态可切换到的下一个状态列表
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
@@ -48,11 +49,26 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
     onToggle(nextStatuses[0]);
   };
 
+  // ── 可点击时触发呼吸动画 ──
+  useEffect(() => {
+    if (tappable) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseOpacity, { toValue: 0.7, duration: 1200, useNativeDriver: true }),
+          Animated.timing(pulseOpacity, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+  }, [tappable, pulseOpacity]);
+
   return (
     <TouchableOpacity activeOpacity={tappable ? 0.75 : 1} onPress={handleTap} disabled={!tappable}>
-      <Animated.View style={[styles.badge, { backgroundColor: colors.bg, transform: [{ scale }] }]}>
+      <Animated.View style={[styles.badge, { backgroundColor: colors.bg, transform: [{ scale }], opacity: pulseOpacity }]}>
         <Ionicons name={icon} size={iconSize.xs} color={colors.text} />
         <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
+        {tappable && <Ionicons name="chevron-forward" size={iconSize.xs} color={colors.text} style={{ opacity: 0.6 }} />}
       </Animated.View>
     </TouchableOpacity>
   );

@@ -20,7 +20,7 @@ export const Colors = {
 
   // Primary accent
   primary: '#6366F1',
-  primaryLight: '#EEF2FF',
+  primaryLight: '#dbeaff',
   primaryDark: '#4F46E5',
 
   // Neutrals
@@ -133,7 +133,7 @@ export const IconSize = {
   xl: 25,              // 时间段(time-outline)
   xxl: 28,             // 快捷操作按钮/FAB
   container: { sm: 32, md: 42, lg: 56 },     // 图标背景容器 sm=超窄屏  md=常规  lg=平板
-  avatar: { sm: 28, md: 50, lg: 48 },         // 学生头像 sm=选择列表  md=课程卡片  lg=学生管理页
+  avatar: { sm: 35, md: 45, lg: 48 },         // 学生头像 sm=选择列表  md=课程卡片  lg=学生管理页
   badge: { size: 20, radius: 10 },            // 筛选栏计数徽章
 };
 
@@ -171,13 +171,15 @@ export const BorderRadius = {
 // ── 输入框尺寸（使用 scale 自动响应屏幕宽度） ─────────────────────
 export const InputSize = {
   input: scale(50),         // 普通输入框高度
+  textArea: scale(80),      // 多行文本框高度
   saveButton: scale(52),    // 保存按钮高度
 };
 
 // ── 平板输入框尺寸（responsive.ts 根据断点选择） ───────────────
 export const TabletInputSize = {
   input: scale(35),         // 平板输入框高度（略小，屏幕大但触控目标不用等比例放大）
-  saveButton: scale(48),    // 平板保存按钮高度
+  textArea: scale(45),      // 平板多行文本框高度
+  saveButton: scale(30),    // 平板保存按钮高度
 };
 
 // ── 阴影效果 ───────────────────────────────────────────────────────

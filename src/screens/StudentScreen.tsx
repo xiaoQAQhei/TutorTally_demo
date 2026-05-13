@@ -33,7 +33,7 @@ import { useResponsive, scale } from '../utils/responsive';
  * 课时费变更时自动记录调价历史。
  */
 const StudentScreen: React.FC = () => {
-  const { maxContentWidth, spacing, fontSize, isTablet, iconSize, inputSize } = useResponsive();
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
   const { pendingAction, clearAction } = useAction();  // 消费首页"添加学生"的跳转动作
 
   // ═══════════════ 样式 ═══════════════
@@ -73,20 +73,20 @@ const StudentScreen: React.FC = () => {
     // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
     actions: {
       flexDirection: 'row' as const, justifyContent: 'flex-end' as const, gap: spacing.lg,
-      marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
+      marginTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider,
     },
     actionButton: { padding: spacing.sm },                                                           // 单个操作按钮
 
     // ═══════════════ 表单 ═══════════════
     formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md },
     input: {
-      height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
+      height: scale(50), borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button,
       paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title,
       backgroundColor: Colors.background,
     },
     subjectEditRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm, marginBottom: spacing.sm }, // 科目编辑行
-    subjectInput: { flex: 1.5 },                                                                     // 科目名输入框（占 1.5 份）
-    rateInput: { flex: 1 },                                                                          // 课时费输入框（占 1 份）
+    subjectInput: { flex: 1},                                                        // 科目名输入框
+    rateInput: { flex: 2 },                                                             // 课时费输入框
     addSubjectBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs, paddingVertical: spacing.sm }, // 添加科目按钮
     addSubjectText: { fontSize: fontSize.caption, color: Colors.primary, fontWeight: FontWeight.medium },
     subjectChip: {                                                                                   // 科目选择标签
@@ -107,7 +107,7 @@ const StudentScreen: React.FC = () => {
     confirmOkText: { fontSize: fontSize.body, color: Colors.white, fontWeight: FontWeight.semiBold },
 
     saveButton: {
-      backgroundColor: Colors.paid, height: inputSize.saveButton, borderRadius: BorderRadius.button,
+      backgroundColor: Colors.paid, height: scale(52), borderRadius: BorderRadius.button,
       justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl,
     },
     saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold },

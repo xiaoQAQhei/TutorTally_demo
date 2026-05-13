@@ -158,26 +158,45 @@ export function useBounce(onPress?: () => void) {
  * 批量操作按钮的入场/退场动画 Hook。
  * 入场：下拉淡入（useNativeDriver=true）；退场：上浮缩小+淡出（useNativeDriver=false）。
  * 首次出现时不重复动画，数据刷新保持可见。
+ * @param delayMs - 满足条件后延迟显示的时间（毫秒），默认 0
  */
-export function useBatchAnim() {
+export function useBatchAnim(delayMs = 0) {
   const anim = useRef(new Animated.Value(0)).current;
   const height = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);      // 入场动画是否播放过
   const [visible, setVisible] = useState(false);  // 是否在 DOM 中
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /** 下拉入场 */
+  /** 下拉入场（支持延迟） */
   const enter = useCallback(() => {
-    setVisible(true);
-    height.setValue(200);
-    if (!hasAnimated.current) {
-      hasAnimated.current = true;
-      anim.setValue(0);
-      Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 6 }).start();
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (delayMs > 0) {
+      timerRef.current = setTimeout(() => {
+        setVisible(true);
+        height.setValue(200);
+        if (!hasAnimated.current) {
+          hasAnimated.current = true;
+          anim.setValue(0);
+          Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 6 }).start();
+        }
+      }, delayMs);
+    } else {
+      setVisible(true);
+      height.setValue(200);
+      if (!hasAnimated.current) {
+        hasAnimated.current = true;
+        anim.setValue(0);
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 6 }).start();
+      }
     }
-  }, []);
+  }, [delayMs]);
 
-  /** 上浮缩小退场，返回 Promise */
+  // 组件卸载时清除延迟定时器
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  /** 上浮缩小退场，返回 Promise（立即执行，取消延迟定时器） */
   const exit = useCallback((): Promise<void> => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     hasAnimated.current = false;
     return new Promise((resolve) => {
       Animated.parallel([
@@ -187,7 +206,12 @@ export function useBatchAnim() {
     });
   }, []);
 
+  /** 取消延迟定时器（切 tab 时用） */
+  const cancel = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] });
 
-  return { anim, height, translateY, opacity: anim, visible, enter, exit, hasAnimated };
+  return { anim, height, translateY, opacity: anim, visible, enter, exit, cancel, hasAnimated };
 }
