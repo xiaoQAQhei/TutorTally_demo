@@ -1,3 +1,54 @@
+## 课程卡片 UI 现状（待优化）
+当前排版：
+```
+┌──────────────────────────────────────┐
+│ 🧑 张三              ┌──────────┐   │
+│    13812345678       │ 待上课 🔵 │   │
+│                      └──────────┘   │
+├──────────────────────────────────────┤
+│ 📅 05-14  ⏰ 2h      ┌──────────┐   │
+│                      │🕐14-16:00│   │  ← 时段独立 badge
+│                      └──────────┘   │
+│ 💰 200元                            │
+│ 📝 备注...                          │
+├──────────────────────────────────────┤
+│              ✏️  ❌  🗑️             │
+└──────────────────────────────────────┘
+```
+可优化方向：
+1. 去掉卡头电话号码，改为显示科目名
+2. 日期/时段/时长/金额合并为一行
+3. 时段不用大号蓝底 badge，用普通字号
+4. 备注和操作按钮同行排列
+5. 卡片信息密度提升
+
+---
+
+## [2026-05-12 21:33] 全部 screen 转换为 useMemo 响应式样式 + 科目选择器 + FAB 常量导出
+- 7 个 screen 全部从 StyleSheet.create 改为 useMemo 响应式样式模式，Spacing/FontSize 替代为 spacing/fontSize
+- StudentScreen: 科目输入从 TextInput 改为预设科目选择面板 + 删除确认弹窗 + BorderRadius 适配
+- LessonScreen: scrollTopBtn 相对 FAB 居中 + contentPaddingH 同步右侧对齐
+- GradientFAB: 导出 FAB_BASE_SIZE/BOTTOM_PHONE/BOTTOM_TABLET 常量供 scrollTopBtn 同步定位
+- BottomSheet: 平板模式下圆角适配
+- database: 增加模拟课程数据
+- theme: 清理无用 import，图标分层注释
+  - 文件: src/screens/HomeScreen.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StatsScreen.tsx, src/screens/StudentBillingDetailScreen.tsx, src/screens/StudentScreen.tsx, src/components/BottomSheet.tsx, src/components/GradientFAB.tsx, src/components/StatCard.tsx, src/components/StatusBadge.tsx, src/database/index.ts, src/styles/theme.ts
+
+## [2026-05-12 18:38] LessonScreen StyleSheet.create → useMemo 响应式样式转换
+- 移除 StyleSheet.create，改用 useMemo 封装响应式样式（跟随 spacing/fontSize/iconSize 变化）
+- 样式定义移至组件函数内部以调用 useResponsive() hook
+- Spacing.* 替换为 spacing.*，FontSize.* 替换为 fontSize.*
+- 导入：添加 useMemo，移除 StyleSheet/FontSize/Spacing
+- 移除 JSX 中所有冗余的 inline `{ fontSize: fontSize.xxx }` 覆写
+  - 文件: src/screens/LessonScreen.tsx
+
+## [2026-05-12 18:31] StatsScreen StyleSheet.create → useMemo 响应式样式转换
+- 移除 StyleSheet.create，改用 useMemo 封装响应式样式（跟随 spacing/fontSize 变化）
+- Spacing.* 替换为 spacing.*，FontSize.* 替换为 fontSize.*，字符串值添加 as const
+- 移除 JSX 中所有冗余的 inline `{ fontSize: fontSize.xxx }` 覆盖
+- progressTrack/progressFill 硬编码尺寸改为 scale() 响应式
+  - 文件: src/screens/StatsScreen.tsx
+
 ## [2026-05-12 17:43] 响应式系统重构 + 图标尺寸体系统一 + 全屏幕自适应收官
 ## 2026-05-12 18:03 | auto: 05-12 18:03 | .claude/settings.local.json 
 - .claude/settings.local.json
