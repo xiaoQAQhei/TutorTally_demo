@@ -15,7 +15,7 @@ import { RecurringRule, Student, StudentSubject, Lesson } from '../models';
 import { getAllRecurringRules, addRecurringRule, updateRecurringRule, deleteRecurringRule, getAllStudents, getSubjectsByStudentId, addLesson } from '../database';
 import BottomSheet from '../components/BottomSheet';
 import GradientFAB from '../components/GradientFAB';
-import Toast from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import EmptyState from '../components/EmptyState';
 import { Colors, FontWeight, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
 import { useResponsive, scale } from '../utils/responsive';
@@ -45,7 +45,7 @@ const RecurringRulesScreen: React.FC = () => {
   const [startDate, setStartDate] = useState('');                             // 表单：开始日期
   const [endDate, setEndDate] = useState('');                                 // 表单：结束日期（可选）
   const [notes, setNotes] = useState('');                                     // 表单：备注
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const { showToast } = useToast();
 
   // ── 页面聚焦时加载数据 ──
   useFocusEffect(useCallback(() => { loadData(); }, []));
@@ -116,7 +116,7 @@ const RecurringRulesScreen: React.FC = () => {
     for (const c of courses) {
       await addLesson(c);
     }
-    setToast({ visible: true, message: `已生成 ${courses.length} 节课程`, type: 'success' });
+    showToast(`已生成 ${courses.length} 节课程`, 'success');
   };
 
   /**
@@ -126,7 +126,7 @@ const RecurringRulesScreen: React.FC = () => {
    */
   const handleSave = async () => {
     if (!selectedStudentId || selectedWeekdays.length === 0 || !timeSlot || !startDate) {
-      setToast({ visible: true, message: '请填写必填项', type: 'error' }); return;
+      showToast('请填写必填项', 'error'); return;
     }
     const ruleData = {
       studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined,
@@ -142,7 +142,7 @@ const RecurringRulesScreen: React.FC = () => {
       await addRecurringRule(ruleData as any);
     }
     setModalVisible(false); resetForm(); loadData();
-    setToast({ visible: true, message: editingRule ? '规则已更新' : '规则已添加', type: 'success' });
+    showToast(editingRule ? '规则已更新' : '规则已添加', 'success');
   };
 
   const resetForm = () => {
@@ -294,7 +294,6 @@ const RecurringRulesScreen: React.FC = () => {
           <Text style={styles.saveButtonText}>{editingRule ? '更新规则' : '创建规则'}</Text>
         </TouchableOpacity>
       </BottomSheet>
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </View>
   );
 };

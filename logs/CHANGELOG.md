@@ -1,3 +1,19 @@
+## [2026-05-14 01:09] Toast 上下文化 + 横滑 Tab 分页 + 碎纸删除优化 + 停用 Stop hook
+- Toast 组件全局上下文化：创建 ToastContext/ToastProvider，所有 screen 统一使用 `useToast()` 替代各自维护的 toast state
+- Toast 组件改为绝对定位浮层（高 zIndex），不再使用 Modal，不阻挡触摸事件；图标尺寸改用 iconSize.md 响应式变量
+- LessonScreen 筛选栏重构：从下拉筛选芯片改为横滑 Tab 分页栏（左三一组 + 右侧"全部"），带跟随滑动插值的颜色/位置动画滑块
+- LessonScreen 列表改为 4 页横向 ScrollView 分页（待上课/待收款/已收款/全部），每页独立 FlatList 惰性加载，切换 Tab 与横滑联动吸附
+- 删除操作优化为本地立即移除（UI 先更新），后台 DB 删除失败时回滚恢复；容器偏移量 onLayout 缓存，避免碎纸定位时二次 measure
+- App.tsx 包裹 ToastProvider，CLAUDE.md 新增对话开始时读取 PROGRESS.md 的步骤
+  - 文件: .claude/settings.local.json, CLAUDE.md, logs/CHANGELOG.md, src/App.tsx, src/components/Toast.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StudentScreen.tsx
+
+## [2026-05-14 01:09] 停用 Stop hook 自动提交 + 补充历史改动日志
+- `.claude/settings.local.json`: 移除 Stop hook 配置，不再每轮对话结束后自动 git commit/push
+- `logs/CHANGELOG.md`: 补全之前会话的功能改动日志（课程卡片重设计、响应式重构等）
+- `CLAUDE.md`: 更新说明——Stop hook 已停用，所有 git 操作手动执行
+- 多屏幕代码清理：移除 Toast 内联样式、简化 LessonScreen/StudentScreen/SettingsScreen/RecurringRulesScreen 冗余逻辑
+  - 文件: .claude/settings.local.json, logs/CHANGELOG.md, CLAUDE.md, src/App.tsx, src/components/Toast.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StudentScreen.tsx
+
 ## 课程卡片 UI 现状（待优化）
 当前排版：
 ```

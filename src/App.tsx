@@ -15,6 +15,7 @@ import LessonScreen from './screens/LessonScreen';
 import StatsScreen from './screens/StatsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import { ActionProvider } from './contexts/ActionContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { initDatabase, migrateFromV1 } from './database';
 import { requestPermission, scheduleAllReminders } from './utils/notifications';
 import { Colors, FontSize, FontWeight, Spacing, Shadows, BorderRadius } from './styles/theme';
@@ -58,8 +59,9 @@ const App: React.FC = () => {
   }
 
   return (
-    <ActionProvider>
-      <NavigationContainer>
+    <ToastProvider>
+      <ActionProvider>
+        <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -106,7 +108,8 @@ const App: React.FC = () => {
         <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: '设置' }} />
       </Tab.Navigator>
       </NavigationContainer>
-    </ActionProvider>
+      </ActionProvider>
+    </ToastProvider>
   );
 };
 

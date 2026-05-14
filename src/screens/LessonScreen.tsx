@@ -10,6 +10,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
+  ScrollView, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,8 +21,8 @@ import GradientFAB, { FAB_BASE_SIZE, FAB_BOTTOM_PHONE, FAB_BOTTOM_TABLET, FAB_RI
 import BottomSheet from '../components/BottomSheet';
 import CalendarPicker from '../components/CalendarPicker';
 import TimeRangePicker from '../components/TimeRangePicker';
-import Toast from '../components/Toast';
 import StatusBadge from '../components/StatusBadge';
+import { useToast } from '../contexts/ToastContext';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import DropdownSelect from '../components/DropdownSelect';
@@ -40,7 +41,7 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'upcoming', label: '待上课', color: '#6366F1' },
   { key: 'unpaid', label: '待收款', color: Colors.pending },
   { key: 'paid', label: '已收款', color: Colors.paid },
-  { key: 'all', label: '全部', color: Colors.primary },
+  { key: 'all', label: '全部', color: '#6b7280' },
 ];
 
 /**
@@ -58,11 +59,53 @@ const LessonScreen: React.FC = () => {
   // ── 课程与筛选 ──
   const [lessons, setLessons] = useState<Lesson[]>([]);                     // 全部课程
   const [students, setStudents] = useState<Student[]>([]);                   // 全部学生（用于显示姓名）
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');     // 当前筛选状态
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('upcoming'); // 当前筛选状态（与横滑初始页一致）
+  // Tab 动画值
+  const FILTER_INDEX: Record<FilterStatus, number> = { upcoming: 0, unpaid: 1, paid: 2, all: 3 };
+  const SCREEN_W = Dimensions.get('window').width;                          // 屏幕宽度（分页基准）
+  const pageScrollRef = useRef<ScrollView>(null);                           // 横向 ScrollView 引用
+  const scrollX = useRef(new Animated.Value(0)).current;                    // 横向滚动偏移量
+  const scrollXRef = useRef(0);                                              // 横向滚动偏移量（非动画版，用于 measure 计算）
+  const filterAnim = useRef(new Animated.Value(FILTER_INDEX[filterStatus])).current;  // 初始值与当前筛选状态一致
+  const tabColorAnim = useRef(new Animated.Value(FILTER_INDEX[filterStatus])).current; // 滑块颜色插值
+  const switchTab = useCallback((key: FilterStatus) => {
+    setFilterStatus(key);
+    const idx = FILTER_INDEX[key];
+    // 动画 + 横滑滚动
+    const anims = [
+      Animated.timing(filterAnim, { toValue: idx, duration: 250, useNativeDriver: true }),
+      Animated.timing(tabColorAnim, { toValue: idx, duration: 250, useNativeDriver: false }),
+    ];
+    if (pageScrollRef.current) {
+      pageScrollRef.current.scrollTo({ x: idx * SCREEN_W, animated: true });
+      // 手动设值，避免 onScroll 覆盖
+      Animated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: true }).start();
+    }
+    Animated.parallel(anims).start();
+  }, [filterAnim, tabColorAnim, scrollX, SCREEN_W]);
+
+  // 横滑跟踪：直接更新 scrollX（避免 Animated.event 额外开销）
+  const onPageScroll = (e: any) => {
+    scrollX.setValue(e.nativeEvent.contentOffset.x);
+    scrollXRef.current = e.nativeEvent.contentOffset.x;
+  };
+
+  // 抬手吸附：更新 filterStatus
+  const onMomentumEnd = useCallback((e: any) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    const key = FILTER_OPTIONS[idx].key;
+    setFilterStatus(key);
+    Animated.parallel([
+      Animated.timing(filterAnim, { toValue: idx, duration: 150, useNativeDriver: true }),
+      Animated.timing(tabColorAnim, { toValue: idx, duration: 150, useNativeDriver: false }),
+    ]).start();
+      }, [filterAnim, tabColorAnim, SCREEN_W]);
+
   const [modalVisible, setModalVisible] = useState(false);                   // 添加/编辑弹窗
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);   // 正在编辑的课程
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null); // 表单选中的学生 ID
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null); // 表单选中的科目 ID
+  const [tabBarW, setTabBarW] = useState(0);                    // Tab 栏宽度（用于计算滑块位置）
   // 学生/科目选择器状态由 DropdownSelect 组件内部管理
   const [date, setDate] = useState('');                                       // 表单：日期
   const [timeSlot, setTimeSlot] = useState('');                               // 表单：时段
@@ -71,19 +114,20 @@ const LessonScreen: React.FC = () => {
   const [notes, setNotes] = useState('');                                     // 表单：备注
   const [showCalendar, setShowCalendar] = useState(false);                    // 日历选择器
   const [showTimePicker, setShowTimePicker] = useState(false);                // 时段选择器
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' }); // 提示
+  const { showToast } = useToast();
 
   // ── 跨页面交互 ──
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);   // 高亮课程 ID
   const highlightAnim = useRef(new Animated.Value(0)).current;               // 高亮闪烁动画
-  const flatListRef = useRef<FlatList>(null);                                 // 列表引用，用于滚动
+  const flatListRefs = useRef<(FlatList | null)[]>([]);                      // 4 个分页列表引用
 
-  // ── 响应式 ──
+  // ── 响应式 + 屏幕 ──
   const { maxContentWidth, spacing, fontSize, isTablet, iconSize, contentPaddingH, inputSize } = useResponsive();
   const itemHeightRef = useRef(180);                                          // 列表项预估高度（用于 getItemLayout）
   const cardWidthRef = useRef<Map<number, number>>(new Map());                // 卡片实际宽度缓存
   const cardHeightRef = useRef<Map<number, number>>(new Map());              // 卡片实际高度缓存
+  const cardPosRef = useRef<(Map<number, { x: number; y: number }>)[]>([new Map(), new Map(), new Map(), new Map()]); // 卡片容器内位置缓存（onLayout + measureInWindow）
   const [showScrollTop, setShowScrollTop] = useState(false);                  // 回到顶部按钮可见性
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
   const batchCollapseAnims = useRef<Map<number, Animated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
@@ -94,40 +138,33 @@ const LessonScreen: React.FC = () => {
   const styles = useMemo(() => ({
     // ═══════════════ 页面容器 ═══════════════
     container: { flex: 1, backgroundColor: Colors.background, position: 'relative' as const, width: '100%', alignSelf: 'center' },
+    pageWrap: { width: SCREEN_W, flex: 1 },                                                           // 单页宽度 = 屏幕宽
+    pageList: { paddingBottom: 100, paddingTop: spacing.sm },                                          // 每页列表底部留白
     list: { paddingBottom: 100 },                                                                     // 列表底部留白
 
-    // ═══════════════ 筛选栏（状态标签 + 排序切换）═══════════════
-    filterRow: {
-      flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm,
-      marginBottom: spacing.sm,
+    // ═══════════════ Tab 筛选栏（左三一组 + 右侧单独）═══════════════
+    tabBarWrap: {                                                                                     // Tab 栏外层容器
+      paddingHorizontal: spacing.xl, paddingTop: spacing.xs, paddingBottom: spacing.sm,
+      flexDirection: 'row', gap: spacing.sm,
     },
-    filterChip: {                                                                                     // 筛选标签（待上课/已下课 等）
-      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-      paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md,
-      borderRadius: BorderRadius.pill, borderWidth: 1.5,
-      borderColor: Colors.divider, backgroundColor: Colors.card,
-      gap: spacing.xs,
+    tabGroup: {                                                                                       // 左边三个一组
+      flex: 3, flexDirection: 'row', backgroundColor: Colors.card, borderRadius: BorderRadius.pill,
+      borderWidth: 1.5, borderColor: Colors.divider, overflow: 'hidden', position: 'relative' as const,
     },
-    filterChipText: {
-      fontSize: fontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption,
+    tabSolo: {                                                                                        // 全部单独
+      flex: 1, backgroundColor: Colors.card, borderRadius: BorderRadius.pill,
+      borderWidth: 1.5, borderColor: Colors.divider, overflow: 'hidden', position: 'relative' as const,
+      alignItems: 'center', justifyContent: 'center',
     },
-    filterChipTextActive: { color: Colors.white, fontWeight: FontWeight.semiBold },                  // 选中态文字
-    filterCount: {                                                                                    // 计数徽章
-      backgroundColor: Colors.divider,
-      justifyContent: 'center', alignItems: 'center',
-      paddingHorizontal: spacing.xs,
+    tabBtn: {                                                                                         // Tab 按钮
+      flex: 1, paddingVertical: spacing.sm + 2,
+      alignItems: 'center', justifyContent: 'center', zIndex: 2,
     },
-    filterCountText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption },
-    segmentContainer: {                                                                               // 排序切换容器（全部/未收/已收）
-      flex: 2, flexDirection: 'row', borderRadius: BorderRadius.pill,
-      backgroundColor: Colors.card, borderWidth: 1.5, borderColor: Colors.divider,
-      overflow: 'hidden',
+    tabBtnText: { fontSize: fontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption },
+    tabSlider: {                                                                                      // 滑块指示器
+      position: 'absolute' as const, top: 2, bottom: 2, left: 2, right: 2,
+      borderRadius: BorderRadius.pill - 2, zIndex: 1,
     },
-    segmentBtn: {                                                                                     // 排序切换按钮
-      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-      paddingVertical: spacing.sm + 2, gap: spacing.xs,
-    },
-    segmentDivider: { width: scale(1), backgroundColor: Colors.divider },                            // 按钮间分隔线
 
     // ═══════════════ 一键操作按钮 ═══════════════
     batchBtn: {                                                                                       // 批量操作按钮
@@ -301,7 +338,8 @@ const LessonScreen: React.FC = () => {
   const shatterMgr = useShatterManager();                                                         // 碎纸管理器
   const cancelAnim = useCancelAnimation();                                                        // 取消删除线动画
   const containerRef = useRef<View>(null);                                                        // 页面容器引用（用于碎纸定位）
-  const cardRefs = useRef<Map<number, any>>(new Map());                                          // 卡片 DOM 引用（用于碎纸定位）
+  const containerOffRef = useRef({ x: 0, y: 0 });                                                   // 容器屏幕偏移（onLayout 捕获）
+  const cardRefs = useRef<(Map<number, any>)[]>([new Map(), new Map(), new Map(), new Map()]);                                          // 卡片 DOM 引用（用于碎纸定位）
   const [shredPortal, setShredPortal] = useState<{                                               // 碎纸 Portal 配置
     pageX: number; pageY: number; cardW: number; cardH: number;
     strips: import('../utils/animationHooks').ShatterStripConfig[];
@@ -351,24 +389,21 @@ const LessonScreen: React.FC = () => {
   /** 根据学生 ID 查找学生对象 */
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
 
-  /** 根据 filterStatus 筛选并排序后的课程列表 */
-  const filteredLessons = (() => {
-    let filtered: Lesson[];
-    if (filterStatus === 'upcoming') {
-      filtered = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed');
-      filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
-    } else if (filterStatus === 'unpaid') {
-      filtered = lessons.filter((l) => l.status === 'pendingPayment');
-      filtered.sort((a, b) => a.date.localeCompare(b.date));
-    } else if (filterStatus === 'paid') {
-      filtered = lessons.filter((l) => l.status === 'paid');
-      filtered.sort((a, b) => b.date.localeCompare(a.date));
-    } else {
-      filtered = [...lessons];
-      filtered.sort((a, b) => b.date.localeCompare(a.date));
-    }
-    return filtered;
-  })();
+  /** 4 个独立分页数据（按状态预过滤+排序） */
+  const pageData: Lesson[][] = useMemo(() => {
+    const upcoming = lessons.filter((l) => l.status === 'scheduled' || l.status === 'completed');
+    upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.timeSlot || '').localeCompare(b.timeSlot || ''));
+    const unpaid = lessons.filter((l) => l.status === 'pendingPayment');
+    unpaid.sort((a, b) => a.date.localeCompare(b.date));
+    const paid = lessons.filter((l) => l.status === 'paid');
+    paid.sort((a, b) => b.date.localeCompare(a.date));
+    const all = [...lessons];
+    all.sort((a, b) => b.date.localeCompare(a.date));
+    return [upcoming, unpaid, paid, all];
+  }, [lessons]);
+
+  /** 兼容旧逻辑：当前选中 Tab 的数据 */
+  const filteredLessons = pageData[FILTER_INDEX[filterStatus]];
 
   /** 各状态课程数量统计（用于筛选栏计数徽章） */
   const counts = (() => {
@@ -403,7 +438,7 @@ const LessonScreen: React.FC = () => {
    */
   const handleSave = async () => {
     if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
-      setToast({ visible: true, message: '请选择学生、日期、时段并填写课时和课时费', type: 'error' });
+      showToast('请选择学生、日期、时段并填写课时和课时费', 'error');
       return;
     }
     const amount = calculateAmount();
@@ -417,7 +452,7 @@ const LessonScreen: React.FC = () => {
       const rounded = roundDuration(slotDuration);
       if (rounded > 0 && Math.abs(rounded - parseFloat(duration)) > 0.01) {
         setDuration(rounded.toString());
-        setToast({ visible: true, message: `课时已根据时段自动调整为 ${fmtDuration(rounded)}`, type: 'success' });
+        showToast(`课时已根据时段自动调整为 ${fmtDuration(rounded)}`, 'success');
         return;
       }
     }
@@ -444,7 +479,7 @@ const LessonScreen: React.FC = () => {
     setLessonRate('');
     setNotes('');
     loadLessons();
-    setToast({ visible: true, message: editingLesson ? '课程已更新' : '课程已添加', type: 'success' });
+    showToast(editingLesson ? '课程已更新' : '课程已添加', 'success');
   };
 
   /**
@@ -543,7 +578,7 @@ const LessonScreen: React.FC = () => {
       }
       isCplRunning.current = false;
       loadLessons();
-      setToast({ visible: true, message: `已确认 ${targetLessons.length} 节课待收款`, type: 'success' });
+      showToast(`已确认 ${targetLessons.length} 节课待收款`, 'success');
     };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '批量确认下课', message: `确定要将 ${schedulableCount} 节已下课课程转为待收款吗？`, onConfirm: doBatch });
@@ -576,7 +611,7 @@ const LessonScreen: React.FC = () => {
       }
       isCollRunning.current = false;
       loadLessons();
-      setToast({ visible: true, message: `已收取 ${targetLessons.length} 节课款`, type: 'success' });
+      showToast(`已收取 ${targetLessons.length} 节课款`, 'success');
     };
     if (confirmBeforeChange) {
       setConfirmDialog({ visible: true, title: '批量收款', message: `确定要将 ${collectableCount} 节待收款课程标记为已收款吗？`, onConfirm: doBatch });
@@ -622,21 +657,29 @@ const LessonScreen: React.FC = () => {
   const handleDelete = (id: number) => {
     if (shatterMgr.activeId !== null) return;
     const doDelete = () => {
-      const cardView = cardRefs.current.get(id);
+      const cardView = cardRefs.current[FILTER_INDEX[filterStatus]].get(id);
       const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
         const strips = shatterMgr.triggerShatter(id, cardH, () => {
           setShredPortal(null);
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          deleteLesson(id).then(loadLessons);
+          setLessons(prev => prev.filter(l => l.id !== id));
+          cardRefs.current[FILTER_INDEX[filterStatus]].delete(id); cardPosRef.current[FILTER_INDEX[filterStatus]].delete(id); cardWidthRef.current.delete(id); cardHeightRef.current.delete(id);
+          deleteLesson(id).catch((e) => { const target = lessons.find(l => l.id === id); if (target) setLessons(prev => [...prev, target]); showToast('删除失败，请重试', 'error'); });
         });
         setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id });
       };
-      if (cardView && containerRef.current) {
-        (containerRef.current as any).measure((_cx: number, _cy: number, _cw: number, _ch: number, cPageX: number, cPageY: number) => {
-          (cardView as any).measure((_x: number, _y: number, _w: number, _h: number, cardPageX: number, cardPageY: number) => {
-            doShatter(cardPageX - cPageX, cardPageY - cPageY, _w, _h);
+      if (cardView) {
+        // 优先用缓存的容器内位置（onLayout 时捕获）
+        const cached = cardPosRef.current[FILTER_INDEX[filterStatus]].get(id);
+        if (cached) {
+          doShatter(cached.x, cached.y, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
+        } else {
+          requestAnimationFrame(() => {
+            (cardView as any).measureInWindow((_x: number, _y: number, _w: number, _h: number) => {
+              doShatter(_x - containerOffRef.current.x, _y - containerOffRef.current.y, _w, _h);
+            });
           });
-        });
+        }
       } else {
         doShatter(0, 0, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
       }
@@ -694,7 +737,7 @@ const LessonScreen: React.FC = () => {
   /** 从首页跳转过来时应用筛选状态 */
   useEffect(() => {
     if (pendingFilter) {
-      setFilterStatus(pendingFilter);
+      switchTab(pendingFilter);
       clearFilter();
     }
   }, [pendingFilter, clearFilter]);
@@ -755,7 +798,7 @@ const LessonScreen: React.FC = () => {
       setHighlightedId(highlightLessonId);
       
       requestAnimationFrame(() => {
-        flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
+        flatListRefs.current[FILTER_INDEX[filterStatus]]?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
       });
       
       Animated.sequence([
@@ -903,7 +946,7 @@ const LessonScreen: React.FC = () => {
    * 测量卡片实际尺寸并缓存（用于 getItemLayout 和删除线宽度）。
    * @param item 课程对象
    */
-  const renderLesson = ({ item }: { item: Lesson }) => {
+  const renderLesson = ({ item }: { item: Lesson }, pageIdx: number = 3) => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
 
@@ -973,7 +1016,7 @@ const LessonScreen: React.FC = () => {
           marginBottom: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
           overflow: 'hidden',
         } : null]}
-        ref={(el) => { if (el) cardRefs.current.set(lessonId, el); }}
+        ref={(el) => { if (el) cardRefs.current[pageIdx].set(lessonId, el); }}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           const w = e.nativeEvent.layout.width;
@@ -981,6 +1024,7 @@ const LessonScreen: React.FC = () => {
           if (w > 0) {
             cardWidthRef.current.set(lessonId, w);
             cardHeightRef.current.set(lessonId, h);
+	          try { (e.target as any).measureInWindow((x: number, y: number) => { cardPosRef.current[pageIdx].set(lessonId, { x: x - containerOffRef.current.x, y: y - containerOffRef.current.y }); }); } catch (_) {}
           }
         }}
       >
@@ -992,168 +1036,126 @@ const LessonScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { maxWidth: maxContentWidth }]} ref={containerRef}>
-      <FlatList
-        data={filteredLessons}
-        renderItem={renderLesson}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[styles.list, { padding: spacing.xl, paddingBottom: 100 }]}
-        ref={flatListRef}
-        onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
-        scrollEventThrottle={16}
-        initialNumToRender={filteredLessons.length}
-        windowSize={50}
-        getItemLayout={(_, index) => {
-          const h = itemHeightRef.current;
-          return { length: h, offset: h * index, index };
-        }}
-        onScrollToIndexFailed={(info) => {
-          const h = itemHeightRef.current;
-          const retryInterval = setInterval(() => {
-            if (info.index < filteredLessons.length) {
-              clearInterval(retryInterval);
-              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-            }
-          }, 50);
-          setTimeout(() => clearInterval(retryInterval), 1000);
-        }}
-        ListHeaderComponent={
-          <>
-          <View style={styles.filterRow}>
-            {/* Standalone: 待上课 */}
-            {(() => {
-              const opt = FILTER_OPTIONS[0]; // upcoming
-              const active = filterStatus === opt.key;
-              const count = counts[opt.key];
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.filterChip, active && { backgroundColor: opt.color, borderColor: opt.color }]}
-                  activeOpacity={0.75}
-                  onPress={() => setFilterStatus(opt.key)}
-                >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                    {opt.label}
-                  </Text>
-                  <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
-                      {count}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })()}
-
-            {/* Segmented: 待收款 | 已收款 */}
-            <View style={styles.segmentContainer}>
-              {FILTER_OPTIONS.slice(1, 3).map((opt, i) => {
-                const active = filterStatus === opt.key;
-                const count = counts[opt.key];
-                return (
-                  <React.Fragment key={opt.key}>
-                    {i > 0 && <View style={styles.segmentDivider} />}
-                    <TouchableOpacity
-                      style={[styles.segmentBtn, active && { backgroundColor: opt.color }]}
-                      activeOpacity={0.75}
-                      onPress={() => setFilterStatus(opt.key)}
-                    >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                        {opt.label}
-                      </Text>
-                      <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                        <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
-                          {count}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                );
-              })}
-            </View>
-
-            {/* Standalone: 全部 */}
-            {(() => {
-              const opt = FILTER_OPTIONS[3]; // all
-              const active = filterStatus === opt.key;
-              const count = counts[opt.key];
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.filterChip, active && { backgroundColor: opt.color, borderColor: opt.color }]}
-                  activeOpacity={0.75}
-                  onPress={() => setFilterStatus(opt.key)}
-                >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                    {opt.label}
-                  </Text>
-                  <View style={[styles.filterCount, { width: iconSize.badge.size, height: iconSize.badge.size, borderRadius: iconSize.badge.radius }, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={[styles.filterCountText, active && { color: Colors.white }]}>
-                      {count}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })()}
+    <View style={[styles.container, { maxWidth: maxContentWidth }]} ref={containerRef} onLayout={() => { try { containerRef.current?.measureInWindow?.((x: number, y: number) => { containerOffRef.current = { x, y }; }); } catch (e) {} }}>
+      {/* ── Tab 筛选栏（由 scrollX 驱动，跟随横滑） ── */}
+      <View style={styles.tabBarWrap}>
+        <View style={styles.tabGroup} onLayout={(e) => setTabBarW(e.nativeEvent.layout.width)}>
+          {tabBarW > 0 && (
+            <Animated.View style={[styles.tabSlider, {
+              width: scrollX.interpolate({ inputRange: [0, 2*SCREEN_W, 3*SCREEN_W], outputRange: [tabBarW/3, tabBarW/3, 0], extrapolate: 'clamp' }),
+              backgroundColor: scrollX.interpolate({ inputRange: [0, SCREEN_W, 2*SCREEN_W, 3*SCREEN_W], outputRange: ['#6366F1',Colors.pending,Colors.paid,'#6b7280'] }),
+              transform: [{ translateX: scrollX.interpolate({ inputRange: [0, 2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 2*tabBarW/3, 3*tabBarW/3], extrapolate: 'clamp' }) }],
+              opacity: scrollX.interpolate({ inputRange: [2*SCREEN_W, 3*SCREEN_W], outputRange: [1, 0], extrapolate: 'clamp' }),
+            }]} />
+          )}
+          {FILTER_OPTIONS.slice(0, 3).map((opt, i) => (
+            <TouchableOpacity key={opt.key} style={styles.tabBtn} activeOpacity={0.75} onPress={() => switchTab(opt.key)}>
+              <Animated.Text style={[styles.tabBtnText, {
+                color: scrollX.interpolate({
+                  inputRange: [SCREEN_W*(i-1), SCREEN_W*i, SCREEN_W*(i+1)],
+                  outputRange: [Colors.caption, '#FFF', Colors.caption],
+                  extrapolate: 'clamp',
+                }),
+              }]}>{opt.label}</Animated.Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity style={styles.tabSolo} activeOpacity={0.75} onPress={() => switchTab('all')}>
+          <Animated.View style={[styles.tabSlider, {
+            backgroundColor: scrollX.interpolate({ inputRange: [0, SCREEN_W, 2*SCREEN_W, 3*SCREEN_W], outputRange: ['#6366F1',Colors.pending,Colors.paid,'#6b7280'] }),
+            opacity: scrollX.interpolate({ inputRange: [2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 1], extrapolate: 'clamp' }),
+          }]} />
+          <View style={styles.tabBtn}>
+            <Animated.Text style={[styles.tabBtnText, {
+              color: scrollX.interpolate({
+                inputRange: [2*SCREEN_W, 3*SCREEN_W, 4*SCREEN_W],
+                outputRange: [Colors.caption, '#FFF', Colors.caption],
+                extrapolate: 'clamp',
+              }),
+            }]}>全部</Animated.Text>
           </View>
+        </TouchableOpacity>
+      </View>
 
-          {/* 一键确认下课 */}
-          {cpl.visible ? (
-            <Animated.View style={[styles.batchBtnWrap, {
-              transform: [{ translateY: cpl.translateY }],
-              opacity: cpl.opacity, maxHeight: cpl.height,
-              marginBottom: cpl.anim.interpolate({ inputRange: [0, 1], outputRange: [0, spacing.md] }),
-            }]}>
-              <TouchableOpacity
-                style={[styles.batchBtn, { backgroundColor: Colors.dangerLight, borderColor: Colors.danger + '30' }]}
-                activeOpacity={0.75}
-                onPress={handleBatchComplete}
-              >
-                <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
-                <Text style={[styles.batchBtnText, { color: Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : null}
+      {/* ── 横滑分页内容 ── */}
+      <Animated.ScrollView
+        ref={pageScrollRef as any}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onPageScroll}
+        onMomentumScrollEnd={onMomentumEnd}
+        decelerationRate="fast"
+        scrollEventThrottle={16}
+        style={{ flex: 1 }}
+      >
+        {pageData.map((data, idx) => (
+          <View style={styles.pageWrap} key={idx}>
+            {data.length === 0 ? (
+              <EmptyState
+                icon="book-outline"
+                title={idx === 0 ? '没有待上课程' : idx === 2 ? '没有已收款记录' : idx === 1 ? '没有待收款记录' : '还没有课程记录'}
+                subtitle={idx === 3 ? '点击右下角按钮记录第一节课' : undefined}
+                buttonLabel={idx === 3 ? '添加课程' : undefined}
+                onButtonPress={idx === 3 ? openAddModal : undefined}
+              />
+            ) : (
+              <FlatList
+                ref={(el) => { flatListRefs.current[idx] = el; }}
+                data={data}
+                renderItem={({ item }) => renderLesson({ item }, idx)}
+                keyExtractor={(item) => item.id.toString()}
+                nestedScrollEnabled
+                contentContainerStyle={[{ padding: spacing.xl, paddingBottom: 100, paddingTop: 0 }]}
+                onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
+                scrollEventThrottle={16}
+                initialNumToRender={15}
+                windowSize={10}
+                getItemLayout={(_, index) => {
+                  const h = itemHeightRef.current;
+                  return { length: h, offset: h * index, index };
+                }}
+                onScrollToIndexFailed={(info) => {
+                  const retryInterval = setInterval(() => {
+                    if (info.index < data.length) {
+                      clearInterval(retryInterval);
+                      flatListRefs.current[idx]?.scrollToIndex({ index: info.index, animated: true });
+                    }
+                  }, 50);
+                  setTimeout(() => clearInterval(retryInterval), 1000);
+                }}
+                ListHeaderComponent={
+                  <>
+                    {idx === 0 && cpl.visible && (
+                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: cpl.translateY }], opacity: cpl.opacity, maxHeight: cpl.height }]}>
+                        <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.dangerLight, borderColor:Colors.danger+'30' }]} activeOpacity={0.75} onPress={handleBatchComplete}>
+                          <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
+                          <Text style={[styles.batchBtnText, { color:Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    )}
+                    {idx === 1 && coll.visible && (
+                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: coll.translateY }], opacity: coll.opacity, maxHeight: coll.height }]}>
+                        <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.paidLight, borderColor:Colors.paid+'30' }]} activeOpacity={0.75} onPress={handleBatchCollect}>
+                          <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
+                          <Text style={[styles.batchBtnText, { color:Colors.paid }]}>一键收款（{collectableCount}节）</Text>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    )}
+                  </>
+                }
+              />
+            )}
+          </View>
+        ))}
+      </Animated.ScrollView>
 
-          {/* 一键收款 */}
-          {coll.visible ? (
-            <Animated.View style={[styles.batchBtnWrap, {
-              transform: [{ translateY: coll.translateY }],
-              opacity: coll.opacity, maxHeight: coll.height,
-              marginBottom: coll.anim.interpolate({ inputRange: [0, 1], outputRange: [0, spacing.md] }),
-            }]}>
-              <TouchableOpacity
-                style={[styles.batchBtn, { backgroundColor: Colors.paidLight, borderColor: Colors.paid + '30' }]}
-                activeOpacity={0.75}
-                onPress={handleBatchCollect}
-              >
-                <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
-                <Text style={[styles.batchBtnText, { color: Colors.paid }]}>一键收款（{collectableCount}节）</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : null}
-        </>
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="book-outline"
-            title={
-              filterStatus === 'upcoming' ? '没有待上课程' :
-              filterStatus === 'paid' ? '没有已收款记录' :
-              filterStatus === 'unpaid' ? '没有待收款记录' :
-              '还没有课程记录'
-            }
-            subtitle={filterStatus === 'all' ? '点击右下角按钮记录第一节课' : undefined}
-            buttonLabel={filterStatus === 'all' ? '添加课程' : undefined}
-            onButtonPress={filterStatus === 'all' ? openAddModal : undefined}
-          />
-        }
-      />
 
       {showScrollTop && (
         <TouchableOpacity
           style={styles.scrollTopBtn}
           activeOpacity={0.7}
-          onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+          onPress={() => flatListRefs.current[FILTER_INDEX[filterStatus]]?.scrollToOffset({ offset: 0, animated: true })}
         >
           <Ionicons name="arrow-up" size={iconSize.lg} color={Colors.primary} />
         </TouchableOpacity>
@@ -1291,13 +1293,6 @@ const LessonScreen: React.FC = () => {
           setTimeSlot(slot);
         }}
         onClose={() => setShowTimePicker(false)}
-      />
-
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onDismiss={() => setToast({ ...toast, visible: false })}
       />
 
       {confirmDialog && (

@@ -4,7 +4,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 ## 关键规则
 
-### 每轮对话开始：汇报上次改动
+### 每轮对话开始：汇报上次改动 + 查看进度
 在本轮对话开始时，必须执行以下步骤：
 1. 运行 `git log -1 --stat` 查看最新 commit（由 Stop hook 自动提交的）
 2. 运行 `git diff HEAD~1 --stat` 查看改动文件
@@ -17,6 +17,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 ```
 
 4. 如果最近 commit 是 Stop hook 自动提交的且没有实质改动，说明「上次没有实质改动」
+5. 读取 `PROGRESS.md`，了解当前待完成和已完成状态，告知用户当前进度梗概
 
 ### 每轮对话结束：启动子 agent 写改动日志
 在本轮回复结束前，启动一个后台子 agent（run_in_background: true），让它做以下事：
@@ -35,7 +36,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 启动子 agent 的 prompt 模板：
 ```
-写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动，然后在 logs/CHANGELOG.md 开头插入人话总结（格式见项目 CLAUDE.md）。只写日志文件。
+写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 sed 在文件开头插入人话总结（格式见项目 CLAUDE.md），不要读整个文件——只读前 5 行确认格式存在即可。只写日志文件。
 ```
 
 ### 用户表示收工（睡觉/下班/结束工作）时：写入进度文件

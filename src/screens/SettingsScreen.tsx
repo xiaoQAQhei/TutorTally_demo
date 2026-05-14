@@ -11,7 +11,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
-import Toast from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import { useAction } from '../contexts/ActionContext';
 import { exportAllToExcel } from '../utils/export';
 import { pickAndImportCsv } from '../utils/import';
@@ -34,7 +34,7 @@ interface Props {
 const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigateToStudentSelect }) => {
   const [exportMode, setExportMode] = useState<ExportMode>(null);             // 导出模式弹窗
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const { showToast } = useToast();
   const { maxContentWidth, spacing, fontSize } = useResponsive();
 
   /**
@@ -50,8 +50,8 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
       if (mode === 'all') await exportAllToExcel();
       else if (mode === 'student') { onNavigateToStudentSelect?.('export'); return; }
       else if (mode === 'month') { onNavigateToStudentSelect?.('export'); return; }
-      setToast({ visible: true, message: '导出成功', type: 'success' });
-    } catch (e: any) { setToast({ visible: true, message: `导出失败: ${e.message}`, type: 'error' }); }
+      showToast('导出成功', 'success');
+    } catch (e: any) { showToast(`导出失败: ${e.message}`, 'error'); }
   };
 
   /**
@@ -63,9 +63,9 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
   const handleImport = async () => {
     try {
       const result = await pickAndImportCsv();
-      setToast({ visible: true, message: `导入完成: ${result.imported} 条记录`, type: 'success' });
-      if (result.errors.length > 0) setToast({ visible: true, message: `${result.errors.length} 条错误`, type: 'error' });
-    } catch (e: any) { setToast({ visible: true, message: `导入失败: ${e.message}`, type: 'error' }); }
+      showToast(`导入完成: ${result.imported} 条记录`, 'success');
+      if (result.errors.length > 0) showToast(`${result.errors.length} 条错误`, 'error');
+    } catch (e: any) { showToast(`导入失败: ${e.message}`, 'error'); }
   };
 
   const menuItems = [
@@ -163,7 +163,6 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules, onNavigat
         </View>
       )}
 
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </View>
   );
 };

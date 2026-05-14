@@ -16,7 +16,7 @@ import { Student, StudentSubject } from '../models';
 import { addStudent, getAllStudents, updateStudent, deleteStudent, addSubject, getSubjectsByStudentId, updateSubject, deleteSubject, addRateHistory } from '../database';
 import GradientFAB from '../components/GradientFAB';
 import BottomSheet from '../components/BottomSheet';
-import Toast from '../components/Toast';
+import { useToast } from '../contexts/ToastContext';
 import StudentAvatar from '../components/StudentAvatar';
 import EmptyState from '../components/EmptyState';
 import {
@@ -121,7 +121,7 @@ const StudentScreen: React.FC = () => {
   const [phone, setPhone] = useState('');                                             // 表单：电话
   const [address, setAddress] = useState('');                                         // 表单：地址
   const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]); // 表单：科目列表
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' }); // Toast 提示
+  const { showToast } = useToast();
   const [pickingSubject, setPickingSubject] = useState<number | null>(null); // 正在选择科目的索引，null=不选
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
 
@@ -158,7 +158,7 @@ const StudentScreen: React.FC = () => {
    */
   const handleSave = async () => {
     if (!name || editSubjects.length === 0 || editSubjects.some(s => !s.subject || !s.hourlyRate)) {
-      setToast({ visible: true, message: '请填写学生姓名和至少一个科目（含科目名和课时费）', type: 'error' });
+      showToast('请填写学生姓名和至少一个科目（含科目名和课时费）', 'error');
       return;
     }
     if (editingStudent) {
@@ -185,7 +185,7 @@ const StudentScreen: React.FC = () => {
     setName(''); setPhone(''); setAddress('');
     setEditSubjects([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]);
     loadStudents();
-    setToast({ visible: true, message: editingStudent ? '学生信息已更新' : '学生已添加', type: 'success' });
+    showToast(editingStudent ? '学生信息已更新' : '学生已添加', 'success');
   };
 
   /**
@@ -414,12 +414,6 @@ const StudentScreen: React.FC = () => {
         </View>
       )}
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onDismiss={() => setToast({ ...toast, visible: false })}
-      />
     </View>
   );
 };
