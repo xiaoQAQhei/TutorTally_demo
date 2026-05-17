@@ -1,3 +1,16 @@
+## [2026-05-17 20:43] 添加种子数据功能 + 周期规则导航栏 + 移除浮动按钮
+- seedTestData: 插入 3 学生 / 5 科目 / 20 课 / 5 支付 / 2 周期规则
+- SettingsScreen 添加「生成测试数据」按钮
+- RecurringRulesScreen 顶部导航栏添加关闭 (✕) 按钮
+- 移除 SettingsScreen 浮动关闭按钮，改用 onClose prop
+  - 文件: src/database/index.ts, src/screens/SettingsScreen.tsx, src/screens/RecurringRulesScreen.tsx, PROGRESS.md
+## [2026-05-17 20:15] 周期规则表单 UI 升级 + 箭头旋转动画 + 学生表单箭头
+- RecurringRulesScreen: TimeRangePicker/CalendarPicker 替换为原生选择器
+- 选择科目时自动填充课时费
+- 所有表单选择器箭头添加旋转动画 (↓→↑)
+- SettingsScreen 接入 RecurringRulesScreen (Modal)
+- StudentScreen 科目选择器加箭头+旋转动画
+  - 文件: src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/SettingsScreen.tsx, src/screens/StudentScreen.tsx
 ## [2026-05-17 18:24] 导出流程重设计 + 状态转变动画重构 + 批量入场动画修复 + Web 导出支持
 - ExportFlowModal 多步导出弹窗（选格式→选范围→选月份/学生→预览→导出）
 - SettingsScreen 统一导出入口，移除旧的 onNavigateToStudentSelect

@@ -42,7 +42,9 @@
       "Bash(unzip -o /tmp/check.zip xl/styles.xml -d /tmp/check)",
       "Read(//tmp/check/xl/**)",
       "WebFetch(domain:expo.dev)",
-      "WebFetch(domain:storage.googleapis.com)"
+      "WebFetch(domain:storage.googleapis.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:code-review-graph.com)"
     ]
   },
   "hooks": {}
