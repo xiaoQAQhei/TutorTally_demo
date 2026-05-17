@@ -1,4 +1,8 @@
 # 改动日志
+## 2026-05-17 20:45 | auto: 05-17 20:45 | android/app/release.keystore android/key.properties 
+- android/app/release.keystore
+- android/key.properties
+
 ## 2026-05-08 21:54 | auto: 05-08 21:54 | src/screens/LessonScreen.tsx 
 - src/screens/LessonScreen.tsx
 
