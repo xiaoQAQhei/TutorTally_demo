@@ -8,7 +8,7 @@
  * 关于信息：App 名称、版本、数据安全说明。
  */
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import { useToast } from '../contexts/ToastContext';
@@ -16,22 +16,16 @@ import { useAction } from '../contexts/ActionContext';
 import { pickAndImportCsv } from '../utils/import';
 import { useResponsive } from '../utils/responsive';
 import ExportFlowModal from '../components/ExportFlowModal';
-
-type ExportMode = 'all' | 'month' | 'student' | null;
-
-interface Props {
-  onNavigateToRecurringRules?: () => void;
-  onNavigateToStudentSelect?: (mode: 'pdf' | 'export') => void;
-}
+import RecurringRulesScreen from './RecurringRulesScreen';
 
 /**
  * SettingsScreen 组件
  *
  * 设置页面，提供数据导出/导入、周期规则管理、偏好开关等功能。
- * 依赖父组件传来的导航回调以跳转到学生选择或周期规则页面。
  */
-const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules }) => {
-  const [showExportModal, setShowExportModal] = useState(false);                // 导出流程弹窗
+const SettingsScreen: React.FC = () => {
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showRecurringRules, setShowRecurringRules] = useState(false);
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const { showToast } = useToast();
   const { maxContentWidth, spacing, fontSize } = useResponsive();
@@ -53,30 +47,25 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules }) => {
   const menuItems = [
     { icon: 'download-outline', label: '导出数据', subtitle: 'Excel / PDF 多方式导出', onPress: () => setShowExportModal(true), color: Colors.paid },
     { icon: 'upload-outline', label: '导入数据', subtitle: '从 Excel 文件恢复数据', onPress: handleImport, color: Colors.primary },
-    { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => onNavigateToRecurringRules?.(), color: '#AF52DE' },
+    { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => setShowRecurringRules(true), color: '#AF52DE' },
   ];
 
   const styles = useMemo(() => ({
-    // ═══════════════ 页面容器 ═══════════════
     container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
-    list: { padding: spacing.xl },                                                                    // 列表滚动内边距
+    list: { padding: spacing.xl },
 
-    // ═══════════════ 分组标题 ═══════════════
     sectionTitle: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.caption, marginBottom: spacing.md, marginTop: spacing.xl, textTransform: 'uppercase' as const },
 
-    // ═══════════════ 菜单项 ═══════════════
     menuItem: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.lg, marginBottom: spacing.md, gap: spacing.md },
-    iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center' as const, alignItems: 'center' as const }, // 菜单图标容器
-    menuText: { flex: 1 },                                                                            // 菜单文字区域
-    menuLabel: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },    // 菜单标题
-    menuSub: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },                       // 菜单副标题
+    iconBox: { width: 44, height: 44, borderRadius: BorderRadius.iconContainer, justifyContent: 'center' as const, alignItems: 'center' as const },
+    menuText: { flex: 1 },
+    menuLabel: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
+    menuSub: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },
 
-    // ═══════════════ 关于卡片 ═══════════════
     aboutCard: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.xl, alignItems: 'center' as const },
-    aboutApp: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },           // App 名称
-    aboutDesc: { fontSize: fontSize.small, color: Colors.caption, marginTop: spacing.xs },            // App 描述
+    aboutApp: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
+    aboutDesc: { fontSize: fontSize.small, color: Colors.caption, marginTop: spacing.xs },
     aboutDivider: { width: 40, height: 1, backgroundColor: Colors.divider, marginVertical: spacing.md },
-
   }), [spacing, fontSize]);
 
   return (
@@ -117,6 +106,12 @@ const SettingsScreen: React.FC<Props> = ({ onNavigateToRecurringRules }) => {
 
       <ExportFlowModal visible={showExportModal} onClose={() => setShowExportModal(false)} />
 
+      <Modal visible={showRecurringRules} animationType="slide" onRequestClose={() => setShowRecurringRules(false)}>
+        <RecurringRulesScreen />
+        <TouchableOpacity style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 8 }} onPress={() => setShowRecurringRules(false)}>
+          <Ionicons name="close-circle" size={28} color={Colors.caption} />
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };

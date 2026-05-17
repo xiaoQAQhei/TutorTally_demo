@@ -120,6 +120,8 @@ const LessonScreen: React.FC = () => {
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);   // 高亮课程 ID
   const highlightAnim = useRef(new Animated.Value(0)).current;               // 高亮闪烁动画
+  const calArrowRot = useRef(new Animated.Value(0)).current;
+  const timeArrowRot = useRef(new Animated.Value(0)).current;
   const flatListRefs = useRef<(FlatList | null)[]>([]);                      // 4 个分页列表引用
 
   // ── 响应式 + 屏幕 ──
@@ -962,6 +964,14 @@ const LessonScreen: React.FC = () => {
    * 测量卡片实际尺寸并缓存（用于 getItemLayout 和删除线宽度）。
    * @param item 课程对象
    */
+  // ── 选择器箭头旋转动画 ──
+  useEffect(() => {
+    Animated.timing(calArrowRot, { toValue: showCalendar ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [showCalendar]);
+  useEffect(() => {
+    Animated.timing(timeArrowRot, { toValue: showTimePicker ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [showTimePicker]);
+
   const renderLesson = ({ item }: { item: Lesson }, pageIdx: number = 3) => {
     const student = getStudent(item.studentId);
     const lessonId = item.id;
@@ -1249,7 +1259,7 @@ const LessonScreen: React.FC = () => {
                 <Text style={[styles.datePickerText, !date && styles.datePickerPlaceholder]}>
                   {date ? date.slice(5) : '选择日期'}
                 </Text>
-                <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
+                <Animated.View style={{ transform: [{ rotate: calArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
               </TouchableOpacity>
             </View>
             <View style={styles.formHalf}>
@@ -1258,7 +1268,7 @@ const LessonScreen: React.FC = () => {
                 <Text style={[styles.datePickerText, !timeSlot && styles.datePickerPlaceholder]}>
                 {timeSlot || '选择时段'}
               </Text>
-              <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
+              <Animated.View style={{ transform: [{ rotate: timeArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
             </TouchableOpacity>
           </View>
         </View>

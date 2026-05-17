@@ -7,14 +7,16 @@
  * 支持一键生成未来课程（从开始日期到结束日期，按规则自动排课）。
  * 可排除特定日期（excludedDates 字段，当前未暴露 UI）。
  */
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { RecurringRule, Student, StudentSubject, Lesson } from '../models';
 import { getAllRecurringRules, addRecurringRule, updateRecurringRule, deleteRecurringRule, getAllStudents, getSubjectsByStudentId, addLesson } from '../database';
 import BottomSheet from '../components/BottomSheet';
 import GradientFAB from '../components/GradientFAB';
+import CalendarPicker from '../components/CalendarPicker';
+import TimeRangePicker from '../components/TimeRangePicker';
 import { useToast } from '../contexts/ToastContext';
 import EmptyState from '../components/EmptyState';
 import { Colors, FontWeight, BorderRadius, Shadows, SubjectColorPalette } from '../styles/theme';
@@ -30,58 +32,64 @@ const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
  */
 const RecurringRulesScreen: React.FC = () => {
   const { maxContentWidth, spacing, fontSize, isTablet, iconSize, inputSize } = useResponsive();
-  const [rules, setRules] = useState<RecurringRule[]>([]);                   // 规则列表
-  const [students, setStudents] = useState<Student[]>([]);                   // 学生列表（用于选择）
-  const [subjects, setSubjects] = useState<StudentSubject[]>([]);            // 选中学生的科目列表
-  const [modalVisible, setModalVisible] = useState(false);                   // 编辑弹窗
-  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null); // 正在编辑的规则
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null); // 表单：选中学生
-  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null); // 表单：选中科目
-  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);    // 表单：选中星期（1-7）
-  const [interval, setInterval] = useState('1');                              // 表单：频率（1=每周，2=隔周）
-  const [timeSlot, setTimeSlot] = useState('');                               // 表单：时间段
-  const [duration, setDuration] = useState('2');                              // 表单：课时（小时）
-  const [amount, setAmount] = useState('');                                   // 表单：费用（可选）
-  const [startDate, setStartDate] = useState('');                             // 表单：开始日期
-  const [endDate, setEndDate] = useState('');                                 // 表单：结束日期（可选）
-  const [notes, setNotes] = useState('');                                     // 表单：备注
+  const [rules, setRules] = useState<RecurringRule[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
+  const [interval, setInterval] = useState('1');
+  const [timeSlot, setTimeSlot] = useState('');
+  const [duration, setDuration] = useState('2');
+  const [amount, setAmount] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState<'start' | 'end'>('start');
+  const timeArrowRot = useRef(new Animated.Value(0)).current;
+  const startArrowRot = useRef(new Animated.Value(0)).current;
+  const endArrowRot = useRef(new Animated.Value(0)).current;
   const { showToast } = useToast();
 
-  // ── 页面聚焦时加载数据 ──
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
-  /**
-   * loadData - 加载规则列表和学生列表
-   */
   const loadData = async () => {
     setRules(await getAllRecurringRules());
     setStudents(await getAllStudents());
   };
 
-  /**
-   * loadSubjectsForStudent - 加载选中学生的科目列表
-   *
-   * 选择学生后自动加载其科目，并默认选中第一个科目。
-   * @param studentId 学生 ID
-   */
   const loadSubjectsForStudent = async (studentId: number) => {
     const subs = await getSubjectsByStudentId(studentId);
     setSubjects(subs);
     if (subs.length > 0) setSelectedSubjectId(subs[0].id);
   };
 
+  // ── 选择科目时自动填充课时费 ──
+  useEffect(() => {
+    if (selectedSubjectId && subjects.length > 0) {
+      const sub = subjects.find(s => s.id === selectedSubjectId);
+      if (sub) setAmount(sub.hourlyRate.toString());
+    }
+  }, [selectedSubjectId, subjects]);
+
+  // ── 选择器箭头旋转动画 ──
+  useEffect(() => {
+    Animated.timing(timeArrowRot, { toValue: showTimePicker ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [showTimePicker]);
+  useEffect(() => {
+    Animated.timing(startArrowRot, { toValue: showCalendar && datePickerMode === 'start' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [showCalendar, datePickerMode]);
+  useEffect(() => {
+    Animated.timing(endArrowRot, { toValue: showCalendar && datePickerMode === 'end' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [showCalendar, datePickerMode]);
+
   const getStudentName = (id: number) => students.find(s => s.id === id)?.name || '未知';
   const getSubjectName = (id?: number) => subjects.find(s => s.id === id)?.subject || '';
 
-  /**
-   * generateCourses - 根据规则生成未来的课程列表
-   *
-   * 从开始日期到结束日期（默认未来 30 天），遍历每一天，
-   * 如果当天星期匹配规则中的 weekday 且不在排除列表中，生成一条课程。
-   * 支持 interval=2 的隔周模式（跳 7 天步进）。
-   * @param rule 周期规则
-   * @returns 生成的课程数组（不含 id）
-   */
   const generateCourses = (rule: RecurringRule) => {
     const start = new Date(rule.startDate);
     const end = rule.endDate ? new Date(rule.endDate) : new Date(Date.now() + 30 * 86400000);
@@ -105,12 +113,6 @@ const RecurringRulesScreen: React.FC = () => {
     return courses;
   };
 
-  /**
-   * handleGenerate - 一键生成课程（将规则展开为具体课程并写入数据库）
-   *
-   * 调用 generateCourses 生成课程数组，逐条写入数据库。
-   * @param rule 要展开的周期规则
-   */
   const handleGenerate = async (rule: RecurringRule) => {
     const courses = generateCourses(rule);
     for (const c of courses) {
@@ -119,11 +121,6 @@ const RecurringRulesScreen: React.FC = () => {
     showToast(`已生成 ${courses.length} 节课程`, 'success');
   };
 
-  /**
-   * handleSave - 保存周期规则（新增或更新）
-   *
-   * 校验必填项后调用数据库的 addRecurringRule 或 updateRecurringRule。
-   */
   const handleSave = async () => {
     if (!selectedStudentId || selectedWeekdays.length === 0 || !timeSlot || !startDate) {
       showToast('请填写必填项', 'error'); return;
@@ -151,48 +148,41 @@ const RecurringRulesScreen: React.FC = () => {
     setAmount(''); setStartDate(''); setEndDate(''); setNotes(''); setSubjects([]);
   };
 
-  // 响应式样式：依赖 spacing / fontSize / iconSize 动态计算
+  const openDatePicker = (mode: 'start' | 'end') => {
+    setDatePickerMode(mode);
+    setShowCalendar(true);
+  };
+
   const styles = useMemo(() => ({
-    // ═══════════════ 页面容器 ═══════════════
     container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
     list: { paddingBottom: 100, padding: spacing.xl },
-    // ═══════════════ 规则卡片 ═══════════════
     card: { backgroundColor: Colors.card, borderRadius: BorderRadius.card, padding: spacing.lg, marginBottom: spacing.md } as const,
     cardHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: spacing.md } as const,
     ruleStudent: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title } as const,
     ruleSubtext: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 } as const,
-    // ═══════════════ 一键生成按钮 ═══════════════
     generateBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: Colors.paid, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: BorderRadius.pill, gap: 4 } as const,
     generateBtnText: { fontSize: fontSize.small, color: Colors.white, fontWeight: FontWeight.semiBold } as const,
-    // ═══════════════ 星期标签 ═══════════════
     weekdayRow: { flexDirection: 'row' as const, gap: spacing.xs, marginBottom: spacing.sm } as const,
     weekdayDot: { width: scale(30), height: scale(30), borderRadius: scale(15), backgroundColor: Colors.divider, justifyContent: 'center' as const, alignItems: 'center' as const } as const,
     weekdayDotText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold, color: Colors.caption } as const,
-    // ═══════════════ 规则信息 ═══════════════
     ruleInfo: { borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: spacing.md } as const,
     ruleInfoText: { fontSize: fontSize.caption, color: Colors.body } as const,
-    // ═══════════════ 操作按钮（编辑 / 删除）═══════════════
     actions: { flexDirection: 'row' as const, justifyContent: 'flex-end' as const, gap: spacing.lg, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider } as const,
-    // ═══════════════ 表单 ═══════════════
     formLabel: { fontSize: fontSize.caption, fontWeight: FontWeight.semiBold, color: Colors.body, marginBottom: spacing.sm, marginTop: spacing.md } as const,
     chipRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm, marginBottom: spacing.xs } as const,
     chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: BorderRadius.pill, borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background } as const,
     chipText: { fontSize: fontSize.caption, color: Colors.body } as const,
     weekdayChip: { width: scale(36), height: scale(36), borderRadius: scale(18), borderWidth: 1.5, borderColor: Colors.divider, backgroundColor: Colors.background, justifyContent: 'center' as const, alignItems: 'center' as const } as const,
     input: { height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: spacing.md, fontSize: fontSize.body, color: Colors.title, backgroundColor: Colors.background } as const,
+    pickerTouch: { height: inputSize.input, borderWidth: 1, borderColor: Colors.divider, borderRadius: BorderRadius.button, paddingHorizontal: spacing.md, justifyContent: 'center' as const, backgroundColor: Colors.background } as const,
+    pickerTouchText: { fontSize: fontSize.body, color: Colors.title } as const,
+    pickerPlaceholder: { fontSize: fontSize.body, color: Colors.caption } as const,
     formRow: { flexDirection: 'row' as const, gap: spacing.md } as const,
     formHalf: { flex: 1 } as const,
     saveButton: { backgroundColor: Colors.primary, height: inputSize.saveButton, borderRadius: BorderRadius.button, justifyContent: 'center' as const, alignItems: 'center' as const, marginTop: spacing.xl } as const,
     saveButtonText: { color: Colors.white, fontSize: fontSize.body, fontWeight: FontWeight.semiBold } as const,
   } as const), [spacing, fontSize, iconSize]);
 
-  /**
-   * renderRule - 渲染单条规则卡片
-   *
-   * 卡片展示：学生名、科目、星期分布（圆点阵列）、时间段·时长·频率、
-   * 一键生成按钮、编辑/删除操作。
-   * @param item 周期规则
-   */
   const renderRule = ({ item }: { item: RecurringRule }) => {
     const weekdays = JSON.parse(item.weekdays || '[]') as number[];
     return (
@@ -275,25 +265,57 @@ const RecurringRulesScreen: React.FC = () => {
           ))}
         </View>
         <Text style={styles.formLabel}>时间段</Text>
-        <TextInput style={styles.input} placeholder="如 14:00-16:00" value={timeSlot} onChangeText={setTimeSlot} placeholderTextColor={Colors.caption} />
+        <TouchableOpacity style={[styles.pickerTouch, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]} onPress={() => setShowTimePicker(true)}>
+          <Ionicons name="time-outline" size={iconSize.md} color={Colors.primary} />
+          <Text style={[{ flex: 1 }, timeSlot ? styles.pickerTouchText : styles.pickerPlaceholder]}>{timeSlot || '选择时间段'}</Text>
+          <Animated.View style={{ transform: [{ rotate: timeArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+        </TouchableOpacity>
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
             <Text style={styles.formLabel}>课时（小时）</Text>
             <TextInput style={styles.input} value={duration} onChangeText={setDuration} keyboardType="numeric" placeholderTextColor={Colors.caption} />
           </View>
           <View style={styles.formHalf}>
-            <Text style={styles.formLabel}>费用（可选）</Text>
-            <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="自动计算" placeholderTextColor={Colors.caption} />
+            <Text style={styles.formLabel}>费用</Text>
+            <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="自动从科目获取" placeholderTextColor={Colors.caption} />
           </View>
         </View>
         <Text style={styles.formLabel}>开始日期</Text>
-        <TextInput style={styles.input} placeholder="如 2026-05-10" value={startDate} onChangeText={setStartDate} placeholderTextColor={Colors.caption} />
+        <TouchableOpacity style={[styles.pickerTouch, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]} onPress={() => openDatePicker('start')}>
+          <Ionicons name="calendar-outline" size={iconSize.md} color={Colors.primary} />
+          <Text style={[{ flex: 1 }, startDate ? styles.pickerTouchText : styles.pickerPlaceholder]}>{startDate || '选择开始日期'}</Text>
+          <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
+        </TouchableOpacity>
         <Text style={styles.formLabel}>结束日期（可选）</Text>
-        <TextInput style={styles.input} placeholder="留空则持续生成" value={endDate} onChangeText={setEndDate} placeholderTextColor={Colors.caption} />
+        <TouchableOpacity style={[styles.pickerTouch, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]} onPress={() => openDatePicker('end')}>
+          <Ionicons name="calendar-outline" size={iconSize.md} color={Colors.primary} />
+          <Text style={[{ flex: 1 }, endDate ? styles.pickerTouchText : styles.pickerPlaceholder]}>{endDate || '选择结束日期'}</Text>
+          <Animated.View style={{ transform: [{ rotate: startArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
           <Text style={styles.saveButtonText}>{editingRule ? '更新规则' : '创建规则'}</Text>
         </TouchableOpacity>
       </BottomSheet>
+
+      <CalendarPicker
+        visible={showCalendar}
+        value={datePickerMode === 'start' ? startDate : endDate}
+        onConfirm={(d) => {
+          if (datePickerMode === 'start') setStartDate(d);
+          else setEndDate(d);
+          setShowCalendar(false);
+        }}
+        onClose={() => setShowCalendar(false)}
+      />
+
+      <TimeRangePicker
+        visible={showTimePicker}
+        onConfirm={(sh, sm, eh, em) => {
+          const slot = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}-${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+          setTimeSlot(slot);
+        }}
+        onClose={() => setShowTimePicker(false)}
+      />
     </View>
   );
 };

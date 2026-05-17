@@ -7,8 +7,8 @@
  * 添加/编辑时使用 BottomSheet 表单，支持多科目设置（含科目选择面板）。
  * 修改课时费时会自动记录调价历史。
  */
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAction } from '../contexts/ActionContext';
@@ -122,7 +122,8 @@ const StudentScreen: React.FC = () => {
   const [address, setAddress] = useState('');                                         // 表单：地址
   const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]); // 表单：科目列表
   const { showToast } = useToast();
-  const [pickingSubject, setPickingSubject] = useState<number | null>(null); // 正在选择科目的索引，null=不选
+  const [pickingSubject, setPickingSubject] = useState<number | null>(null);
+  const subArrowRot = useRef(new Animated.Value(0)).current;                                                // 科目选择器箭头旋转
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
 
   // ── 页面聚焦时：加载学生数据，并检查首页触发的"添加学生"动作 ──
@@ -133,6 +134,11 @@ const StudentScreen: React.FC = () => {
       clearAction();
     }
   }, [pendingAction, clearAction]));
+  // ── 科目选择器箭头旋转动画 ──
+  useEffect(() => {
+    Animated.timing(subArrowRot, { toValue: pickingSubject !== null ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [pickingSubject]);
+
 
   /**
    * loadStudents - 加载所有学生及其科目信息
@@ -325,12 +331,13 @@ const StudentScreen: React.FC = () => {
         {editSubjects.map((sub, idx) => (
           <View key={idx} style={styles.subjectEditRow}>
             <TouchableOpacity
-              style={[styles.input, styles.subjectInput, { justifyContent: 'center' as const }]}
+              style={[styles.input, styles.subjectInput, { flexDirection: 'row', alignItems: 'center' }]}
               onPress={() => setPickingSubject(idx)}
             >
-              <Text style={[sub.subject ? { color: Colors.title, fontSize: fontSize.body } : { color: Colors.caption, fontSize: fontSize.body }, { fontWeight: sub.subject ? FontWeight.medium : FontWeight.regular }]}>
+              <Text style={[{ flex: 1 }, sub.subject ? { color: Colors.title, fontSize: fontSize.body, fontWeight: FontWeight.medium } : { color: Colors.caption, fontSize: fontSize.body }]}>
                 {sub.subject || '选择科目'}
               </Text>
+              <Animated.View style={{ transform: [{ rotate: subArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
             </TouchableOpacity>
             <TextInput
               style={[styles.input, styles.rateInput]}
