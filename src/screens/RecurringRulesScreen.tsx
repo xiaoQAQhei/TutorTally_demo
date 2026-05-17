@@ -30,7 +30,9 @@ const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
  * 周期排课规则管理：列表展示已有规则，提供创建/编辑/删除操作，
  * 以及一键生成未来课程的功能。
  */
-const RecurringRulesScreen: React.FC = () => {
+interface Props { onClose?: () => void }
+
+const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
   const { maxContentWidth, spacing, fontSize, isTablet, iconSize, inputSize } = useResponsive();
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -223,6 +225,14 @@ const RecurringRulesScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { maxWidth: maxContentWidth }]}>
+      {/* ── 顶部导航栏 ── */}
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm }}>
+        <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
+          <Ionicons name="close-circle" size={28} color={Colors.caption} />
+        </TouchableOpacity>
+        <Text style={{ fontSize: fontSize.h3, fontWeight: "700", color: Colors.title, marginLeft: spacing.md }}>周期课程规则</Text>
+      </View>
+
       <FlatList data={rules} renderItem={renderRule} keyExtractor={item => item.id.toString()} contentContainerStyle={styles.list}
         ListEmptyComponent={<EmptyState icon="repeat-outline" title="没有周期规则" subtitle="创建规则自动排课" buttonLabel="创建规则" onButtonPress={() => { resetForm(); setModalVisible(true); }} />}
       />
