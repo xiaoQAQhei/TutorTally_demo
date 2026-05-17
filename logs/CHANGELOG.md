@@ -1,3 +1,15 @@
+## [2026-05-17 18:24] 导出流程重设计 + 状态转变动画重构 + 批量入场动画修复 + Web 导出支持
+- ExportFlowModal 多步导出弹窗（选格式→选范围→选月份/学生→预览→导出）
+- SettingsScreen 统一导出入口，移除旧的 onNavigateToStudentSelect
+- PDF 支持全部/按月/按学生三种范围 + Web 端 Blob 下载
+- Excel 导出金额去小数、合计行列顺序调整、Web 端下载
+- 抽离 changeStatusWithAnim，批量操作复用（animateOneSlide 删除）
+- 状态转变卡片高度收缩→LayoutAnimation，消除下方卡片跳跃
+- useBatchAnim 入场去 spring/高度跳变，改为 useEffect 触发+同步展开
+- 安装 jest + ts-jest 测试框架，32 个导出测试全部通过
+- tsconfig 加 dom lib（支持 document/window 类型）
+  - 文件: jest.config.js, package.json, src/components/ExportFlowModal.tsx, src/screens/SettingsScreen.tsx, src/styles/animations.ts, src/utils/__tests__/export.test.ts, src/utils/export.ts, src/utils/pdf.ts, tsconfig.json
+
 ## [2026-05-14 01:09] Toast 上下文化 + 横滑 Tab 分页 + 碎纸删除优化 + 停用 Stop hook
 - Toast 组件全局上下文化：创建 ToastContext/ToastProvider，所有 screen 统一使用 `useToast()` 替代各自维护的 toast state
 - Toast 组件改为绝对定位浮层（高 zIndex），不再使用 Modal，不阻挡触摸事件；图标尺寸改用 iconSize.md 响应式变量
