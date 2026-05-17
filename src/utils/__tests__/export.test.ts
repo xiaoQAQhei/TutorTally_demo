@@ -8,9 +8,10 @@ import {
   exportCustomData,
   validateExportOptions,
   ExportError,
-} from './export';
+} from '../export';
 import * as XLSX from 'xlsx-js-style';
 
+jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 jest.mock('expo-file-system', () => ({
   documentDirectory: '/mock/path/',
   writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
@@ -29,6 +30,9 @@ jest.mock('../database', () => ({
 }));
 
 import { getAllStudents, getSubjectsByStudentId, getAllLessons, getPaymentsByLessonId } from '../database';
+
+// spy 而非 mock —— 保留真实 xlsx 行为同时可断言调用
+const bookAppendSheetSpy = jest.spyOn(XLSX.utils, 'book_append_sheet');
 
 const mockStudent = {
   id: 1,
@@ -203,7 +207,7 @@ describe('Export Utilities', () => {
 
       await exportByMonth('2026-05', options);
 
-      expect(XLSX.utils.book_append_sheet).toHaveBeenCalled();
+      expect(bookAppendSheetSpy).toHaveBeenCalled();
     });
   });
 
@@ -240,7 +244,7 @@ describe('Export Utilities', () => {
 
       await exportByStudent(1, options);
 
-      expect(XLSX.utils.book_append_sheet).toHaveBeenCalledWith(
+      expect(bookAppendSheetSpy).toHaveBeenCalledWith(
         expect.any(Object),
         expect.any(Object),
         '自定义Sheet名称'

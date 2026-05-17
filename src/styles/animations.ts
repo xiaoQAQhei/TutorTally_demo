@@ -6,7 +6,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { Animated } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
 /**
  * 淡入动画 Hook：元素从透明 + 下方滑入到完全不透明 + 原位。
@@ -163,44 +163,45 @@ export function useBounce(onPress?: () => void) {
 export function useBatchAnim(delayMs = 0) {
   const anim = useRef(new Animated.Value(0)).current;
   const height = useRef(new Animated.Value(0)).current;
-  const hasAnimated = useRef(false);      // 入场动画是否播放过
+  const hasAnimated = useRef(false);              // 入场动画是否播放过
   const [visible, setVisible] = useState(false);  // 是否在 DOM 中
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /** 下拉入场（支持延迟） */
+  // visible 变为 true 后触发入场动画（确保组件已渲染再启动）
+  useEffect(() => {
+    if (visible && !hasAnimated.current) {
+      hasAnimated.current = true;
+      anim.setValue(0);
+      height.setValue(0);
+      // 高度 + 透明度同步展开，避免布局跳变
+      Animated.parallel([
+        Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+        Animated.timing(height, { toValue: 100, duration: 2000, useNativeDriver: false, easing: Easing.out(Easing.cubic) }),
+      ]).start();
+    }
+  }, [visible]);
+
+  /** 下拉淡入入场（只在满足条件时设 visible=true，动画由 useEffect 触发） */
   const enter = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    const doEnter = () => setVisible(true);
     if (delayMs > 0) {
-      timerRef.current = setTimeout(() => {
-        setVisible(true);
-        height.setValue(200);
-        if (!hasAnimated.current) {
-          hasAnimated.current = true;
-          anim.setValue(0);
-          Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 6 }).start();
-        }
-      }, delayMs);
+      timerRef.current = setTimeout(doEnter, delayMs);
     } else {
-      setVisible(true);
-      height.setValue(200);
-      if (!hasAnimated.current) {
-        hasAnimated.current = true;
-        anim.setValue(0);
-        Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 6 }).start();
-      }
+      doEnter();
     }
   }, [delayMs]);
 
   // 组件卸载时清除延迟定时器
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-  /** 上浮缩小退场，返回 Promise（立即执行，取消延迟定时器） */
+  /** 淡出退场，返回 Promise */
   const exit = useCallback((): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
     hasAnimated.current = false;
     return new Promise((resolve) => {
       Animated.parallel([
-        Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }),
+        Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: true }),
         Animated.timing(height, { toValue: 0, duration: 200, useNativeDriver: false }),
       ]).start(() => { setVisible(false); resolve(); });
     });

@@ -5,6 +5,7 @@
  * 支持进度回调、状态筛选、日期范围、颜色标记等高级选项。
  * ────────────────────────────────────────────────────────────────────────────
  */
+import { Platform } from 'react-native';
 import * as XLSX from 'xlsx-js-style';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -50,8 +51,8 @@ const STATUS_LABEL: Record<string, string> = {
 const PAID_STYLE = { fill: { fgColor: { rgb: 'D1FAE5' }, patternType: 'solid' as const } };
 const PENDING_STYLE = { fill: { fgColor: { rgb: 'FEF3C7' }, patternType: 'solid' as const } };
 const CANCELLED_STYLE = { fill: { fgColor: { rgb: 'FEE2E2' }, patternType: 'solid' as const } };
-const COMPLETED_STYLE = { fill: { fgColor: { rgb: 'DBEAFE' }, patternType: 'solid' as const } };
-const SCHEDULED_STYLE = { fill: { fgColor: { rgb: 'F3F4F6' }, patternType: 'solid' as const } };
+const COMPLETED_STYLE = { fill: { fgColor: { rgb: 'FEE2E2' }, patternType: 'solid' as const } };
+const SCHEDULED_STYLE = { fill: { fgColor: { rgb: 'EEF2FF' }, patternType: 'solid' as const } };
 
 const CENTER_STYLE = { alignment: { horizontal: 'center' as const } };
 const BOLD_STYLE = { font: { bold: true } };
@@ -125,11 +126,11 @@ function formatDate(dateStr: string, format: string = 'YYYY-MM-DD'): string {
     .replace('mm', minutes);
 }
 
-function formatNumber(num: number, format: string = '#,##0.00'): string {
+function formatNumber(num: number, format: string = '#,##0'): string {
   if (format.includes(',')) {
-    return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
-  return num.toFixed(2);
+  return num.toFixed(0);
 }
 
 function formatCurrency(amount: number, symbol: string = '元'): string {
@@ -252,7 +253,7 @@ function buildStudentSheet(
 
     sheet.push([
       cell('', undefined), cell('', undefined), cell('', undefined), 
-      cell('', undefined), cell('', undefined), cell('', undefined),
+      cell('', undefined), cell('', undefined), 
       cell('✓ 已收款', PAID_STYLE),
       cell('待收款', PENDING_STYLE),
     ]);
@@ -276,11 +277,24 @@ function buildStudentSheet(
 
 async function saveAndShareWorkbook(wb: XLSX.WorkBook, filename: string, dialogTitle: string): Promise<string> {
   try {
+    // ── Web 端：Blob 下载 ──
+    if (Platform.OS === 'web') {
+      const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      return filename;
+    }
+
     const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
     const path = FileSystem.documentDirectory + filename;
-    
+
     await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
-    
+
     await Sharing.shareAsync(path, {
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       dialogTitle,
@@ -352,6 +366,11 @@ export async function exportAllToExcel(
         current: 40 + (processedCount / students.length) * 40,
         total: 100
       });
+    }
+
+    // 无数据时创建一个空白占位 sheet，避免 XLSX.write 空工作簿报错
+    if (wb.SheetNames.length === 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['无数据']]), '数据');
     }
 
     updateProgress(onProgress, { stage: 'generating', message: '正在生成 Excel 文件...', current: 85, total: 100 });
