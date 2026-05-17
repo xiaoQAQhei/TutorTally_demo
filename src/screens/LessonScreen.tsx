@@ -510,10 +510,23 @@ const LessonScreen: React.FC = () => {
             Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
             Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
           ]).start(() => {
-            slideX.setValue(0);
-            slideOp.setValue(1);
+            // 不重置 slideX/slideOp，保持滑出位置
             setMorphing(null);
-            setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+            // 高度收缩 → LayoutAnimation → 移除卡片 → DB 写入 → 刷新
+            const cardH = cardHeightRef.current.get(lesson.id) || 200;
+            if (!batchCollapseAnims.current.has(lesson.id))
+              batchCollapseAnims.current.set(lesson.id, new Animated.Value(cardH));
+            const collapseAnim = batchCollapseAnims.current.get(lesson.id)!;
+            collapseAnim.setValue(cardH);
+            Animated.timing(collapseAnim, {
+              toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic),
+            }).start(() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setLessons((prev) => prev.filter((x) => x.id !== lesson.id));
+              slideTestAnims.current.get(lesson.id)?.setValue(0);
+              slideOpacityAnims.current.get(lesson.id)?.setValue(1);
+              setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
+            });
           });
         }, 300);
       } else {
@@ -544,8 +557,7 @@ const LessonScreen: React.FC = () => {
           Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
           Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
         ]).start(() => {
-          slideX.setValue(0);
-          slideOp.setValue(1);
+          // 不重置 slideX/slideOp，保持滑出位置等待收缩动画
           setMorphing(null);
           resolve();
         });
@@ -572,6 +584,8 @@ const LessonScreen: React.FC = () => {
           Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
+            slideTestAnims.current.get(l.id)?.setValue(0);
+            slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
           });
         });
@@ -605,6 +619,8 @@ const LessonScreen: React.FC = () => {
           Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
+            slideTestAnims.current.get(l.id)?.setValue(0);
+            slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
           });
         });
