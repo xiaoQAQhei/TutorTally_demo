@@ -47,7 +47,7 @@ const SettingsScreen: React.FC = () => {
 
   const menuItems = [
     { icon: 'download-outline', label: '导出数据', subtitle: 'Excel / PDF 多方式导出', onPress: () => setShowExportModal(true), color: Colors.paid },
-    { icon: 'upload-outline', label: '导入数据', subtitle: '从 Excel 文件恢复数据', onPress: handleImport, color: Colors.primary },
+    { icon: 'cloud-upload-outline', label: '导入数据', subtitle: '从 Excel 文件恢复数据', onPress: handleImport, color: Colors.primary },
     { icon: 'flask-outline', label: '生成测试数据', subtitle: '插入 30 条演示数据', onPress: handleSeedData, color: '#AF52DE' },
     { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => setShowRecurringRules(true), color: '#FF9500' },
   ];

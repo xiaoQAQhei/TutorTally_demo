@@ -177,19 +177,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         </View>
 
-        {/* ── 面板主体 ── */}
-        <Animated.View
-          style={[
-            styles.sheet,
-            { height: Animated.add(baseHeight, heightOffset), transform: [{ translateY }] },
-            sheetWidth ? {
-              width: sheetWidth,
-              alignSelf: 'center',
-              borderBottomLeftRadius: BorderRadius.card + 4,
-              borderBottomRightRadius: BorderRadius.card + 4,
-            } : null,
-          ]}
-        >
+        {/* ── 面板主体（外层：原生驱动 translateY） ── */}
+        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }, sheetWidth ? { width: sheetWidth, alignSelf: "center", borderBottomLeftRadius: BorderRadius.card + 4, borderBottomRightRadius: BorderRadius.card + 4 } : null]}>
+          {/* ── 内层：JS 驱动 height ── */}
+          <Animated.View style={[{ height: Animated.add(baseHeight, heightOffset) }]}>
           {/* 顶部拖拽区（手柄 + 标题栏，整个区域可拖） */}
           <View {...panResponder.panHandlers}>
             <View style={styles.handleContainer}>
@@ -211,6 +202,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           ) : (
             <View style={styles.content}>{children}</View>
           )}
+          </Animated.View>
         </Animated.View>
       </View>
     </Modal>

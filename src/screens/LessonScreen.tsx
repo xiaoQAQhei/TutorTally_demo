@@ -10,7 +10,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
-  ScrollView, Dimensions,
+  ScrollView, Dimensions, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -79,7 +79,7 @@ const LessonScreen: React.FC = () => {
     if (pageScrollRef.current) {
       pageScrollRef.current.scrollTo({ x: idx * SCREEN_W, animated: true });
       // 手动设值，避免 onScroll 覆盖
-      Animated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: true }).start();
+      Animated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: false }).start();
     }
     Animated.parallel(anims).start();
   }, [filterAnim, tabColorAnim, scrollX, SCREEN_W]);
@@ -523,16 +523,17 @@ const LessonScreen: React.FC = () => {
             Animated.timing(collapseAnim, {
               toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic),
             }).start(() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               setLessons((prev) => prev.filter((x) => x.id !== lesson.id));
               slideTestAnims.current.get(lesson.id)?.setValue(0);
+              batchCollapseAnims.current.delete(lesson.id);
               slideOpacityAnims.current.get(lesson.id)?.setValue(1);
               setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
             });
           });
         }, 300);
       } else {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
       }
     };
@@ -584,8 +585,9 @@ const LessonScreen: React.FC = () => {
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
           Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
+            batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
             slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
@@ -619,8 +621,9 @@ const LessonScreen: React.FC = () => {
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
           Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
+            batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
             slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
@@ -679,7 +682,7 @@ const LessonScreen: React.FC = () => {
       const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
         const strips = shatterMgr.triggerShatter(id, cardH, () => {
           setShredPortal(null);
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setLessons(prev => prev.filter(l => l.id !== id));
           cardRefs.current[FILTER_INDEX[filterStatus]].delete(id); cardPosRef.current[FILTER_INDEX[filterStatus]].delete(id); cardWidthRef.current.delete(id); cardHeightRef.current.delete(id);
           deleteLesson(id).catch((e) => { const target = lessons.find(l => l.id === id); if (target) setLessons(prev => [...prev, target]); showToast('删除失败，请重试', 'error'); });
@@ -1136,6 +1139,7 @@ const LessonScreen: React.FC = () => {
                 onScroll={(e) => setShowScrollTop(e.nativeEvent.contentOffset.y > 300)}
                 scrollEventThrottle={16}
                 initialNumToRender={15}
+                extraData={lessons.length}
                 windowSize={10}
                 getItemLayout={(_, index) => {
                   const h = itemHeightRef.current;
@@ -1153,19 +1157,23 @@ const LessonScreen: React.FC = () => {
                 ListHeaderComponent={
                   <>
                     {idx === 0 && cpl.visible && (
-                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: cpl.translateY }], opacity: cpl.opacity, maxHeight: cpl.height }]}>
+                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: cpl.translateY }], opacity: cpl.opacity }]}>
+                      <Animated.View style={{ maxHeight: cpl.height }}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.dangerLight, borderColor:Colors.danger+'30' }]} activeOpacity={0.75} onPress={handleBatchComplete}>
                           <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
                           <Text style={[styles.batchBtnText, { color:Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
                         </TouchableOpacity>
                       </Animated.View>
+                      </Animated.View>
                     )}
                     {idx === 1 && coll.visible && (
-                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: coll.translateY }], opacity: coll.opacity, maxHeight: coll.height }]}>
+                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: coll.translateY }], opacity: coll.opacity }]}>
+                      <Animated.View style={{ maxHeight: coll.height }}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.paidLight, borderColor:Colors.paid+'30' }]} activeOpacity={0.75} onPress={handleBatchCollect}>
                           <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
                           <Text style={[styles.batchBtnText, { color:Colors.paid }]}>一键收款（{collectableCount}节）</Text>
                         </TouchableOpacity>
+                      </Animated.View>
                       </Animated.View>
                     )}
                   </>

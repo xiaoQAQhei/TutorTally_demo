@@ -10,6 +10,7 @@ module.exports = async function (env, argv) {
   config.resolve.alias = {
     ...config.resolve.alias,
     'nanoid/non-secure': nonSecure,
+    'react-native-linear-gradient': path.resolve(__dirname, 'src/utils/LinearGradientMock.js'),
   };
 
   return config;

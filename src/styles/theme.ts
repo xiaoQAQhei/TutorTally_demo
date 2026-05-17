@@ -4,7 +4,7 @@
  * 状态迁移规则等样式常量。所有像素值走 responsive.ts 的 scale/rem 函数。
  * ────────────────────────────────────────────────────────────────────────────
  */
-import { scale, rem, moderateScale } from '../utils/responsive';
+import { scale, rem, moderateScale } from '../utils/scale';
 
 export const Colors = {
   // Functional colors
