@@ -1,15 +1,23 @@
+// ── 空状态占位组件（EmptyState） ──
+/**
+ * 当列表/页面没有数据时显示的占位视图。
+ * 包含图标、标题、副标题和可选的操作按钮，带有淡入动画。
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../styles/theme';
 import { useFadeIn } from '../styles/animations';
+import { useResponsive, moderateScale } from '../utils/responsive';
 
+/** EmptyState 组件属性 */
 interface EmptyStateProps {
-  icon: string;
-  title: string;
-  subtitle?: string;
-  buttonLabel?: string;
-  onButtonPress?: () => void;
+  icon: string;                // 显示的图标名称（Ionicons）
+  title: string;               // 主标题文字
+  subtitle?: string;           // 副标题文字（可选）
+  buttonLabel?: string;        // 操作按钮文字（可选，不传则不显示按钮）
+  onButtonPress?: () => void;  // 按钮点击回调（可选）
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -20,14 +28,21 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   onButtonPress,
 }) => {
   const { opacity, translateY } = useFadeIn();
+  const { isTablet } = useResponsive();
+
+  // ── 响应式图标尺寸 ──
+  const iconSize = moderateScale(isTablet ? 110 : 100);
+  const iconInner = isTablet ? 64 : 56;
 
   return (
     <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]}>
-      <View style={styles.iconContainer}>
-        <Ionicons name={icon as any} size={56} color={Colors.caption} />
+      {/* 图标容器 */}
+      <View style={[styles.iconContainer, { width: iconSize, height: iconSize, borderRadius: iconSize / 2 }]}>
+        <Ionicons name={icon as any} size={iconInner} color={Colors.caption} />
       </View>
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {/* 可选操作按钮 */}
       {buttonLabel && onButtonPress ? (
         <TouchableOpacity style={styles.button} activeOpacity={0.85} onPress={onButtonPress}>
           <Ionicons name="add-circle-outline" size={18} color={Colors.white} />
@@ -45,9 +60,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     backgroundColor: Colors.divider,
     justifyContent: 'center',
     alignItems: 'center',

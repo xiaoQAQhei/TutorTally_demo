@@ -1,3 +1,9 @@
+/**
+ * ── App.tsx ─────────────────────────────────────────────────────────────────
+ * 应用入口组件：注册底部 Tab 导航器，管理应用初始化和数据库启动流程。
+ * 5 个 Tab：首页、学生、课程记录、账单统计、设置。
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -9,12 +15,15 @@ import LessonScreen from './screens/LessonScreen';
 import StatsScreen from './screens/StatsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import { ActionProvider } from './contexts/ActionContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { initDatabase, migrateFromV1 } from './database';
 import { requestPermission, scheduleAllReminders } from './utils/notifications';
-import { Colors, FontSize, FontWeight, Spacing, Shadows } from './styles/theme';
+import { Colors, FontSize, FontWeight, Spacing, Shadows, BorderRadius } from './styles/theme';
+import { useResponsive, rem, scale } from './utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
+/** Tab 页图标映射：选中态 / 未选中态图标名 */
 const TAB_ICONS: Record<string, [string, string]> = {
   Home: ['home', 'home-outline'],
   Students: ['people', 'people-outline'],
@@ -25,7 +34,9 @@ const TAB_ICONS: Record<string, [string, string]> = {
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { isTablet, fontSize, spacing, iconSize } = useResponsive();
 
+  // 应用启动时：初始化数据库，迁移旧版数据，申请通知权限
   useEffect(() => {
     const setupDatabase = async () => {
       try { await initDatabase(); await migrateFromV1(); } catch (e) { console.warn('Database init failed:', e); }
@@ -35,6 +46,7 @@ const App: React.FC = () => {
     setupDatabase();
   }, []);
 
+  // 数据库加载中显示启动屏
   if (isLoading) {
     return (
       <View style={loadStyles.container}>
@@ -47,26 +59,27 @@ const App: React.FC = () => {
   }
 
   return (
-    <ActionProvider>
-      <NavigationContainer>
+    <ToastProvider>
+      <ActionProvider>
+        <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             const [active, inactive] = TAB_ICONS[route.name] || ['help-circle', 'help-circle-outline'];
-            return <Ionicons name={(focused ? active : inactive) as any} size={size} color={color} />;
+            return <Ionicons name={(focused ? active : inactive) as any} size={iconSize.lg} color={color} />;
           },
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.caption,
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: fontSize.small,
             fontWeight: FontWeight.medium,
           },
           tabBarStyle: {
             backgroundColor: Colors.white,
             borderTopWidth: 0,
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 6,
+            height: isTablet ? 72 : 60,
+            paddingBottom: isTablet ? 14 : 8,
+            paddingTop: isTablet ? 8 : 6,
             ...Shadows.topBar,
           },
           headerStyle: {
@@ -76,21 +89,27 @@ const App: React.FC = () => {
             borderBottomWidth: 0,
           },
           headerTitleStyle: {
-            fontSize: FontSize.h3,
+            fontSize: fontSize.h3,
             fontWeight: FontWeight.bold,
             color: Colors.title,
           },
           headerShadowVisible: false,
         })}
       >
+        {/* 首页 Tab */}
         <Tab.Screen name="Home" component={HomeScreen} options={{ title: '首页' }} />
+        {/* 学生管理 Tab */}
         <Tab.Screen name="Students" component={StudentScreen} options={{ title: '学生' }} />
+        {/* 课程记录 Tab */}
         <Tab.Screen name="Lessons" component={LessonScreen} options={{ title: '课程记录' }} />
+        {/* 账单统计 Tab */}
         <Tab.Screen name="Stats" component={StatsScreen} options={{ title: '账单统计' }} />
+        {/* 设置 Tab */}
         <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: '设置' }} />
       </Tab.Navigator>
       </NavigationContainer>
-    </ActionProvider>
+      </ActionProvider>
+    </ToastProvider>
   );
 };
 
@@ -100,7 +119,7 @@ const loadStyles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   iconBox: {
-    width: 80, height: 80, borderRadius: 24,
+    width: scale(80), height: scale(80), borderRadius: BorderRadius.card,
     backgroundColor: Colors.primaryLight,
     justifyContent: 'center', alignItems: 'center',
     marginBottom: Spacing.lg,

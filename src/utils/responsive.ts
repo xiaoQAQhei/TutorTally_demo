@@ -1,0 +1,238 @@
+/**
+ * ── responsive.ts ──────────────────────────────────────────────────────────
+ * 响应式工具模块：提供屏幕适配相关的常量、函数及 React Hook。
+ * 以 iPhone 11/12/13（375×812）为设计基准。
+ * 导出：断点检测、缩放函数、响应式 Hook（useResponsive / useScaleHelpers）。
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+import { useState, useEffect, useMemo } from 'react';
+import { Dimensions, PixelRatio, Platform, ScaledSize } from 'react-native';
+import { Spacing, TabletSpacing, FontSize, TabletFontSize, IconSize, TabletIconSize, InputSize, TabletInputSize } from '../styles/theme';
+
+// ── Breakpoint system ──────────────────────────────────────────────
+/** 设备断点枚举：sm=小屏手机、md=中屏/大屏手机、lg=平板 */
+export type Breakpoint = 'sm' | 'md' | 'lg';
+
+const BP_SM_MAX = 375;   // small phone (iPhone SE, etc.)
+const BP_MD_MAX = 768;   // tablet threshold
+
+/** 根据屏幕宽度算出当前断点 */
+function calcBreakpoint(width: number): Breakpoint {
+  if (width < BP_SM_MAX) return 'sm';
+  if (width < BP_MD_MAX) return 'md';
+  return 'lg';
+}
+
+// ── Base dimensions (iPhone 11/12/13 as design reference) ──────
+const BASE_WIDTH = 375;
+const BASE_HEIGHT = 812;
+
+// ── Static getters (initial values) ─────────────────────────────────
+let _window: ScaledSize = Dimensions.get('window');
+let _screen: ScaledSize = Dimensions.get('screen');
+
+export function getWindow() { return _window; }
+export function getScreen() { return _screen; }
+
+/** 基于当前屏幕宽度与基准宽度的比例缩放尺寸 */
+export const scale = (size: number) => (_window.width / BASE_WIDTH) * size;
+
+/** 基于当前屏幕高度与基准高度的比例缩放尺寸 */
+export const verticalScale = (size: number) => (_window.height / BASE_HEIGHT) * size;
+
+/** Moderate scale: dampened on large screens */
+export const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
+
+/** Font size: width-scaled + pixel-rounded */
+export const rem = (size: number) => {
+  const newSize = scale(size);
+  if (Platform.OS === 'ios') {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize));
+  }
+  return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
+};
+
+/** % of screen width (like CSS vw) */
+export const vw = (percent: number) => (_window.width * percent) / 100;
+
+/** % of screen height (like CSS vh) */
+export const vh = (percent: number) => (_window.height * percent) / 100;
+
+/**
+ * Adaptive size that blends width and height scaling.
+ * On tall/narrow screens, gives weight to height to prevent
+ * oversized elements from width-only scaling.
+ * factor: 0 = width-only, 1 = height-only, default 0.3
+ */
+export function adaptSize(size: number, factor = 0.3): number {
+  const ws = (_window.width / BASE_WIDTH) * size;
+  const hs = (_window.height / BASE_HEIGHT) * size;
+  return ws * (1 - factor) + hs * factor;
+}
+
+/** 当前断点（快照，非响应式） */
+export function currentBreakpoint(): Breakpoint {
+  return calcBreakpoint(_window.width);
+}
+
+/** 是否为平板设备（快照，非响应式） */
+export function isTablet(): boolean {
+  return _window.width >= BP_MD_MAX;
+}
+
+/** Max content width for preventing infinite stretch on wide screens */
+export function maxContentWidth(): number {
+  if (_window.width < BP_MD_MAX) return _window.width;
+  return Math.round(Math.min(_window.width * 0.75, 800));
+}
+
+// Keep exported constant for non-reactive usage (backward compat)
+export const MAX_CONTENT_WIDTH = maxContentWidth();
+
+// ── Reactive Hook ───────────────────────────────────────────────────
+
+export interface ResponsiveInfo {
+  width: number;
+  height: number;
+  bp: Breakpoint;
+  isTablet: boolean;
+  isSmallPhone: boolean;
+  maxContentWidth: number;
+  fontScale: number;
+  orientation: 'portrait' | 'landscape';
+  /** Safe horizontal padding for content containers */
+  contentPaddingH: number;
+  /** Breakpoint-aware spacing (replaces static Spacing on tablets) */
+  spacing: typeof Spacing;
+  /** Breakpoint-aware font sizes (replaces static FontSize on tablets) */
+  fontSize: typeof FontSize;
+  /** Breakpoint-aware icon sizes */
+  iconSize: typeof IconSize;
+  /** Breakpoint-aware input sizes */
+  inputSize: typeof InputSize;
+  /** width / height ratio */
+  aspectRatio: number;
+  /** aspectRatio < 0.52 — ultra-narrow like iPhone SE 1st gen (320x568) */
+  isUltraNarrow: boolean;
+  /** aspectRatio < 0.58 — narrow like iPhone 12/13 Mini */
+  isNarrow: boolean;
+  /** aspectRatio > 0.65 — wide like landscape tablets */
+  isWide: boolean;
+}
+
+/** 根据断点选择手机或平板的间距对象 */
+function buildSpacing(bp: Breakpoint) {
+  return bp === 'lg' ? TabletSpacing : Spacing;
+}
+
+/** 根据断点选择手机或平板的字号对象 */
+function buildFontSize(bp: Breakpoint) {
+  return bp === 'lg' ? TabletFontSize : FontSize;
+}
+
+/** 根据断点选择手机或平板的图标尺寸对象 */
+function buildIconSize(bp: Breakpoint) {
+  return bp === 'lg' ? TabletIconSize : IconSize;
+}
+
+/** 根据断点选择手机或平板的输入框尺寸对象 */
+function buildInputSize(bp: Breakpoint) {
+  return bp === 'lg' ? TabletInputSize : InputSize;
+}
+
+let _responsiveCache: ResponsiveInfo | null = null;
+let _listeners = new Set<() => void>();
+
+function buildResponsiveInfo(win: ScaledSize): ResponsiveInfo {
+  const bp = calcBreakpoint(win.width);
+  const isTabletDevice = win.width >= BP_MD_MAX;
+  const aspectRatio = win.width / Math.max(win.height, 1);
+  return {
+    width: win.width,
+    height: win.height,
+    bp,
+    isTablet: isTabletDevice,
+    isSmallPhone: win.width < BP_SM_MAX,
+    maxContentWidth: win.width,
+    fontScale: win.fontScale ?? PixelRatio.getFontScale(),
+    orientation: win.width > win.height ? 'landscape' : 'portrait',
+    contentPaddingH:
+      bp === 'sm' ? 12 :
+      bp === 'md' ? 16 :
+      20,
+    spacing: buildSpacing(bp),
+    fontSize: buildFontSize(bp),
+    iconSize: buildIconSize(bp),
+    inputSize: buildInputSize(bp),
+    aspectRatio,
+    isUltraNarrow: aspectRatio < 0.52,
+    isNarrow: aspectRatio < 0.58 && aspectRatio >= 0.52,
+    isWide: aspectRatio > 0.65,
+  };
+}
+
+/** 通知所有监听者（各组件中的 useResponsive Hook）重新计算 */
+function notifyListeners() {
+  const info = buildResponsiveInfo(_window);
+  _responsiveCache = info;
+  _listeners.forEach((fn) => fn());
+}
+
+/** 监听窗口尺寸变化，更新静态变量并广播给所有 Hook */
+Dimensions.addEventListener('change', ({ window: win }) => {
+  _window = win;
+  _screen = Dimensions.get('screen');
+  (MAX_CONTENT_WIDTH as number) = _window.width;
+  notifyListeners();
+});
+
+/**
+ * React hook: returns reactive ResponsiveInfo updated on dimension change.
+ */
+export function useResponsive(): ResponsiveInfo {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const listener = () => forceUpdate((n) => n + 1);
+    _listeners.add(listener);
+    return () => { _listeners.delete(listener); };
+  }, []);
+
+  return _responsiveCache ?? buildResponsiveInfo(_window);
+}
+
+/**
+ * Returns scaling helpers bound to current dimensions (for use in render).
+ * Use these instead of the module-level scale()/rem()/etc. for truly reactive sizing.
+ */
+export function useScaleHelpers() {
+  const { width, height } = useResponsive();
+
+  return useMemo(() => ({
+    scale: (size: number) => (width / BASE_WIDTH) * size,
+    verticalScale: (size: number) => (height / BASE_HEIGHT) * size,
+    moderateScale: (size: number, factor = 0.5) => {
+      const s = (width / BASE_WIDTH) * size;
+      return size + (s - size) * factor;
+    },
+    rem: (size: number) => {
+      const ns = (width / BASE_WIDTH) * size;
+      return Platform.OS === 'ios'
+        ? Math.round(PixelRatio.roundToNearestPixel(ns))
+        : Math.round(PixelRatio.roundToNearestPixel(ns)) - 1;
+    },
+    vw: (pct: number) => (width * pct) / 100,
+    vh: (pct: number) => (height * pct) / 100,
+  }), [width, height]);
+}
+
+// ── Responsive value helper (breakpoint-based) ──────────────────────
+/**
+ * Returns a different value for each breakpoint.
+ * Usage: bpValue({ sm: 12, md: 16, lg: 20 })
+ */
+export function bpValue<T>(values: Partial<Record<Breakpoint, T>> & { default: T }): T {
+  const bp = currentBreakpoint();
+  return values[bp] ?? values.default;
+}

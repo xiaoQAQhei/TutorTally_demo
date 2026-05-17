@@ -1,18 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
+/**
+ * ── 模块功能 ─────────────────────────────────────────────
+ * StudentBillingDetailScreen - 学生账单详情页（Modal 弹窗）
+ *
+ * 以全屏 Modal 形式展示单个学生的完整账单历史。
+ * 包含：
+ * - 顶部头部（学生名、科目、课时费）
+ * - 汇总卡片（总收入/已收款/待收款）
+ * - 月度分布列表（按月汇总课程节数、时长、金额）
+ * - 每节课的明细行（日期、备注、时长、金额、状态徽章）
+ */
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, Modal, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Student, StudentSubject, Lesson } from '../models';
 import { getLessonsByStudentId, getSubjectsByStudentId } from '../database';
 import {
-  Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows, LessonStatusColors,
+  Colors, FontWeight, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
+import { useResponsive, scale } from '../utils/responsive';
 
+/** Props：传入学生对象、显示状态、关闭回调 */
 interface Props {
   student: Student | null;
   visible: boolean;
   onClose: () => void;
 }
 
+/** 月度分组数据结构：月份、课程列表、合计金额、总时长 */
 interface MonthlyGroup {
   month: string;
   lessons: Lesson[];
@@ -26,10 +40,91 @@ const MONTH_NAMES: Record<string, string> = {
   '09': '9月', '10': '10月', '11': '11月', '12': '12月',
 };
 
+/**
+ * StudentBillingDetailScreen 组件
+ *
+ * 以全屏 Modal 展示学生账单详情，包含汇总卡片和分月明细列表。
+ * 当传入的 student 变化时自动加载该学生的课程和科目数据。
+ */
 const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose }) => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);             // 该学生的全部课程
+  const [subjects, setSubjects] = useState<StudentSubject[]>([]);   // 该学生的科目
+  const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
 
+  // ═══════════════ 样式 ═══════════════
+  const styles = useMemo(() => ({
+    // ═══════════════ 页面容器 ═══════════════
+    container: { flex: 1, backgroundColor: Colors.background, width: '100%' as const, alignSelf: 'center' as const },
+
+    // ═══════════════ 顶部栏 ═══════════════
+    header: {
+      flexDirection: 'row' as const, alignItems: 'center' as const,
+      backgroundColor: Colors.card, paddingTop: 50, paddingBottom: spacing.md,
+      paddingHorizontal: spacing.lg, ...Shadows.subtle,
+    },
+    closeBtn: { width: 40, height: 40, justifyContent: 'center' as const, alignItems: 'center' as const },
+    headerCenter: { flex: 1, alignItems: 'center' as const },
+    headerTitle: { fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
+    headerSubRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginTop: spacing.xs },
+    subjectDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.xs },
+    headerSub: { fontSize: fontSize.small, color: Colors.caption },
+    scrollContent: { padding: spacing.xl },
+
+    // ═══════════════ 汇总卡片（三列数字）═══════════════
+    summaryRow: { flexDirection: 'row' as const, gap: spacing.sm, marginBottom: spacing.xl },
+    summaryCard: {
+      flex: 1, borderRadius: BorderRadius.smallCard,
+      padding: spacing.md, alignItems: 'center' as const,
+    },
+    summaryLabel: { fontSize: fontSize.small, color: Colors.caption, marginBottom: spacing.xs },
+    summaryValue: { fontSize: fontSize.amount, fontWeight: FontWeight.bold, marginBottom: 2 },
+    summarySub: { fontSize: fontSize.small, color: Colors.caption },
+
+    // ═══════════════ 分月列表 ═══════════════
+    sectionTitle: {
+      fontSize: fontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
+      marginBottom: spacing.md,
+    },
+    monthCard: {
+      backgroundColor: Colors.card, borderRadius: BorderRadius.card,
+      padding: spacing.lg, marginBottom: spacing.md,
+    },
+    monthHeader: {
+      flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const,
+      paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider,
+      marginBottom: spacing.sm,
+    },
+    monthLabel: { fontSize: fontSize.body, fontWeight: FontWeight.bold, color: Colors.title },
+    monthStats: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
+    monthStat: { fontSize: fontSize.small, color: Colors.caption },
+    monthSep: { fontSize: fontSize.small, color: Colors.divider },
+    monthAmount: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold },
+
+    // ═══════════════ 课程行 ═══════════════
+    lessonRow: {
+      flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const,
+      paddingVertical: spacing.sm,
+    },
+    lessonLeft: { flex: 1 },
+    lessonDate: { fontSize: fontSize.caption, color: Colors.title, fontWeight: FontWeight.medium },
+    lessonNotes: { fontSize: fontSize.small, color: Colors.caption, marginTop: 2 },
+    lessonRight: { flexDirection: 'row' as const, alignItems: 'center' as const },
+    lessonDuration: { fontSize: fontSize.small, color: Colors.caption },
+    lessonAmount: { fontSize: fontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title, width: scale(80), textAlign: 'right' as const, marginHorizontal: spacing.xs },
+
+    // ═══════════════ 状态徽章 ═══════════════
+    inlineBadgeBase: {
+      paddingHorizontal: spacing.sm, paddingVertical: 2,
+      borderRadius: BorderRadius.pill, minWidth: scale(68), alignItems: 'center' as const,
+    },
+    inlineBadgeText: { fontSize: fontSize.small, fontWeight: FontWeight.semiBold },
+
+    // ═══════════════ 空状态 ═══════════════
+    emptyState: { padding: 40, alignItems: 'center' as const },
+    emptyText: { fontSize: fontSize.body, color: Colors.caption, marginTop: spacing.md },
+  }), [spacing, fontSize, iconSize]);
+
+  // ── 当 student 变化时加载课程和科目数据 ──
   useEffect(() => {
     if (student) {
       getLessonsByStudentId(student.id).then(setLessons);
@@ -37,15 +132,19 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
     }
   }, [student]);
 
+  // ── 如果没有传入学生，不渲染内容 ──
   if (!student) return null;
 
+  // ── 科目颜色（取第一个科目的颜色） ──
   const subjectColor = subjects?.[0]?.color || Colors.primary;
 
+  // ── 汇总统计 ──
   const totalAmount = lessons.reduce((s, l) => s + l.amount, 0);
   const paidAmount = lessons.filter((l) => l.status === 'paid').reduce((s, l) => s + l.amount, 0);
   const pendingAmount = totalAmount - paidAmount;
   const totalHours = lessons.reduce((s, l) => s + l.duration, 0);
 
+  /** 按月分组：将课程按 YYYY-MM 分组，并计算每组的总金额和总时长 */
   const monthlyGroups: MonthlyGroup[] = (() => {
     const map: Record<string, MonthlyGroup> = {};
     lessons.forEach((l) => {
@@ -58,6 +157,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
     return Object.values(map).sort((a, b) => b.month.localeCompare(a.month));
   })();
 
+  /** 格式化月份显示，如 "2026-05" → "2026年5月" */
   const formatMonth = (m: string) => {
     const parts = m.split('-');
     return `${parts[0]}年${MONTH_NAMES[parts[1]] || parts[1] + '月'}`;
@@ -65,11 +165,11 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: maxContentWidth }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="chevron-back" size={24} color={Colors.title} />
+            <Ionicons name="chevron-back" size={iconSize.lg} color={Colors.title} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>{student.name}</Text>
@@ -141,7 +241,7 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="document-text-outline" size={48} color={Colors.caption} />
+              <Ionicons name="document-text-outline" size={isTablet ? 56 : 48} color={Colors.caption} />
               <Text style={styles.emptyText}>暂无课程记录</Text>
             </View>
           }
@@ -150,64 +250,5 @@ const StudentBillingDetailScreen: React.FC<Props> = ({ student, visible, onClose
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.card, paddingTop: 50, paddingBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg, ...Shadows.subtle,
-  },
-  closeBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title },
-  headerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  subjectDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.xs },
-  headerSub: { fontSize: FontSize.small, color: Colors.caption },
-  scrollContent: { padding: Spacing.xl, paddingBottom: 40 },
-  summaryRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
-  summaryCard: {
-    flex: 1, borderRadius: BorderRadius.smallCard,
-    padding: Spacing.md, alignItems: 'center',
-  },
-  summaryLabel: { fontSize: FontSize.small, color: Colors.caption, marginBottom: Spacing.xs },
-  summaryValue: { fontSize: FontSize.amount, fontWeight: FontWeight.bold, marginBottom: 2 },
-  summarySub: { fontSize: FontSize.small, color: Colors.caption },
-  sectionTitle: {
-    fontSize: FontSize.h3, fontWeight: FontWeight.bold, color: Colors.title,
-    marginBottom: Spacing.md,
-  },
-  monthCard: {
-    backgroundColor: Colors.card, borderRadius: BorderRadius.card,
-    padding: Spacing.lg, marginBottom: Spacing.md,
-  },
-  monthHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.divider,
-    marginBottom: Spacing.sm,
-  },
-  monthLabel: { fontSize: FontSize.body, fontWeight: FontWeight.bold, color: Colors.title },
-  monthStats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  monthStat: { fontSize: FontSize.small, color: Colors.caption },
-  monthSep: { fontSize: FontSize.small, color: Colors.divider },
-  monthAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold },
-  lessonRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  lessonLeft: { flex: 1 },
-  lessonDate: { fontSize: FontSize.caption, color: Colors.title, fontWeight: FontWeight.medium },
-  lessonNotes: { fontSize: FontSize.small, color: Colors.caption, marginTop: 2 },
-  lessonRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  lessonDuration: { fontSize: FontSize.small, color: Colors.caption },
-  lessonAmount: { fontSize: FontSize.body, fontWeight: FontWeight.semiBold, color: Colors.title },
-  inlineBadgeBase: {
-    paddingHorizontal: Spacing.sm, paddingVertical: 2,
-    borderRadius: BorderRadius.pill,
-  },
-  inlineBadgeText: { fontSize: FontSize.small, fontWeight: FontWeight.semiBold },
-  emptyState: { padding: 40, alignItems: 'center' },
-  emptyText: { fontSize: FontSize.body, color: Colors.caption, marginTop: Spacing.md },
-});
 
 export default StudentBillingDetailScreen;

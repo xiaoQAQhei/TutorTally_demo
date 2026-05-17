@@ -1,14 +1,25 @@
 {
   "cli": {
-    "version": ">= 3.0.0",
-    "appVersionSource": "local"
+    "version": ">= 18.10.0",
+    "appVersionSource": "remote"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
     "preview": {
+      "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "sdk-49"
       }
     },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
     "production": {}
   }
 }

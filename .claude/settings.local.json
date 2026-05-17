@@ -26,20 +26,26 @@
       "Bash(Select-String \"19006|19007|8081|8082\")",
       "PowerShell(Stop-Process *)",
       "PowerShell(Get-Process *)",
-      "Bash(Get-ChildItem C:\\\\Users\\\\xiaoQAQhei\\\\Desktop\\\\test *)"
+      "Bash(Get-ChildItem C:\\\\Users\\\\xiaoQAQhei\\\\Desktop\\\\test *)",
+      "PowerShell(npm install *)",
+      "PowerShell(npx expo export --platform web 2>&1 | Select-Object -Last 30)",
+      "Bash(jobs -l)",
+      "Bash(kill %1)",
+      "PowerShell(node scripts/gen_sample_xlsx.js)",
+      "PowerShell(npm uninstall *)",
+      "Bash(cp \"export_example_按月_2026-05.xlsx\" /tmp/month.zip)",
+      "Bash(unzip -o /tmp/month.zip xl/styles.xml xl/worksheets/sheet1.xml -d /tmp/xlsx_out)",
+      "Bash(cp \"export_example_全量.xlsx\" /tmp/all.zip)",
+      "Bash(unzip -o /tmp/all.zip xl/styles.xml xl/worksheets/sheet1.xml -d /tmp/all_out)",
+      "Bash(unzip -o /tmp/month.zip xl/styles.xml xl/worksheets/sheet1.xml -d /tmp/m_out)",
+      "Bash(cp \"export_example_按月_2026-05.xlsx\" /tmp/check.zip)",
+      "Bash(unzip -o /tmp/check.zip xl/styles.xml -d /tmp/check)",
+      "Read(//tmp/check/xl/**)",
+      "WebFetch(domain:expo.dev)",
+      "WebFetch(domain:storage.googleapis.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:code-review-graph.com)"
     ]
   },
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then files=$(git status --porcelain | awk '{print $2}' | tr '\\n' ' '); ts=$(date '+%Y-%m-%d %H:%M'); msg=\"auto: $(date '+%m-%d %H:%M') | $files\"; entry=\"## $ts | $msg\\n$(printf '%s\\n' $files | sed 's/^/- /')\\n\"; if [ -f logs/CHANGELOG.md ]; then (head -1 logs/CHANGELOG.md; printf '%b\\n' \"$entry\"; tail -n +2 logs/CHANGELOG.md) > logs/.cl_tmp && mv logs/.cl_tmp logs/CHANGELOG.md; fi; git add -A && git commit -m \"$msg\" && git push; fi"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }

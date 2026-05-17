@@ -1,8 +1,20 @@
+/**
+ * ── import.ts ──────────────────────────────────────────────────────────────
+ * CSV 导入模块：基于 expo-document-picker 和 expo-file-system。
+ * 支持从 CSV 文件导入学生、科目、课程、支付、重复规则等数据。
+ * 文件格式：以 "# 标题" 分割的多个 CSV 段落，支持引号内逗号。
+ * ────────────────────────────────────────────────────────────────────────────
+ */
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { addStudent, addSubject, addLesson, addPayment, addRecurringRule } from '../database';
 import { LessonStatus } from '../models';
 
+/**
+ * 解析单个 CSV 段落文本为对象数组。
+ * 首行为表头，后续每行解析为一个对象。
+ * 支持双引号包裹的字段（含逗号）和双引号转义。
+ */
 function parseCsvSection(text: string): Record<string, any>[] {
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
@@ -28,6 +40,10 @@ function parseCsvSection(text: string): Record<string, any>[] {
   });
 }
 
+/**
+ * 将完整文件文本按 "# 标题" 分割为多个段落，每段独立解析为对象数组。
+ * 返回 Record<段落标题, 记录数组>。
+ */
 function parseSections(text: string): Record<string, Record<string, any>[]> {
   const sections: Record<string, Record<string, any>[]> = {};
   const parts = text.split(/^# /m).filter(Boolean);
@@ -40,6 +56,12 @@ function parseSections(text: string): Record<string, Record<string, any>[]> {
   return sections;
 }
 
+/**
+ * 打开文件选择器选取 CSV 文件，解析后导入数据到数据库。
+ * 按 students → student_subjects → lessons → payments → recurring_rules 顺序导入，
+ * 使用 _uuid 映射维持关联关系。
+ * @returns 导入记录数和错误信息列表
+ */
 export async function pickAndImportCsv(): Promise<{ imported: number; errors: string[] }> {
   const result = await DocumentPicker.getDocumentAsync({ type: 'text/*' });
   if (result.canceled) return { imported: 0, errors: [] };
@@ -48,8 +70,9 @@ export async function pickAndImportCsv(): Promise<{ imported: number; errors: st
   const content = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.UTF8 });
   const sections = parseSections(content);
   const errors: string[] = [];
-  const idMap = new Map<string, number>();
+  const idMap = new Map<string, number>(); // 记录 _uuid 到实际数据库 id 的映射
 
+  // ── 导入学生 ──
   for (const row of sections.students || []) {
     try {
       const id = await addStudent({
@@ -61,6 +84,7 @@ export async function pickAndImportCsv(): Promise<{ imported: number; errors: st
     } catch (e: any) { errors.push(`Student ${row.name}: ${e.message}`); }
   }
 
+  // ── 导入科目 ──
   for (const row of sections.student_subjects || []) {
     try {
       const id = await addSubject({
@@ -72,6 +96,7 @@ export async function pickAndImportCsv(): Promise<{ imported: number; errors: st
     } catch (e: any) { errors.push(`Subject: ${e.message}`); }
   }
 
+  // ── 导入课程 ──
   for (const row of sections.lessons || []) {
     try {
       const id = await addLesson({
@@ -87,6 +112,7 @@ export async function pickAndImportCsv(): Promise<{ imported: number; errors: st
     } catch (e: any) { errors.push(`Lesson: ${e.message}`); }
   }
 
+  // ── 导入支付记录 ──
   for (const row of sections.payments || []) {
     try {
       await addPayment({
@@ -98,6 +124,7 @@ export async function pickAndImportCsv(): Promise<{ imported: number; errors: st
     } catch (e: any) { errors.push(`Payment: ${e.message}`); }
   }
 
+  // ── 导入重复规则 ──
   for (const row of sections.recurring_rules || []) {
     try {
       await addRecurringRule({

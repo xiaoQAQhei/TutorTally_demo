@@ -4,7 +4,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 ## 关键规则
 
-### 每轮对话开始：汇报上次改动
+### 每轮对话开始：汇报上次改动 + 查看进度
 在本轮对话开始时，必须执行以下步骤：
 1. 运行 `git log -1 --stat` 查看最新 commit（由 Stop hook 自动提交的）
 2. 运行 `git diff HEAD~1 --stat` 查看改动文件
@@ -17,6 +17,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 ```
 
 4. 如果最近 commit 是 Stop hook 自动提交的且没有实质改动，说明「上次没有实质改动」
+5. 读取 `PROGRESS.md`，了解当前待完成和已完成状态，告知用户当前进度梗概
 
 ### 每轮对话结束：启动子 agent 写改动日志
 在本轮回复结束前，启动一个后台子 agent（run_in_background: true），让它做以下事：
@@ -35,7 +36,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 启动子 agent 的 prompt 模板：
 ```
-写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动，然后在 logs/CHANGELOG.md 开头插入人话总结（格式见项目 CLAUDE.md）。只写日志文件。
+写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 sed 在文件开头插入人话总结（格式见项目 CLAUDE.md），不要读整个文件——只读前 5 行确认格式存在即可。只写日志文件。
 ```
 
 ### 用户表示收工（睡觉/下班/结束工作）时：写入进度文件
@@ -51,9 +52,40 @@ React Native (Expo) 应用，用于管理家教课程账单。
 
 格式保持与 `PROGRESS.md` 现有结构一致（`- [x]` / `- [ ]`）。
 
-### 关闭终端（Stop hook）时的行为
-Stop hook 在终端关闭时自动触发，执行以下操作（已配置在 `.claude/settings.local.json`）：
-1. 生成 changelog 条目并写入 `logs/CHANGELOG.md`
-2. `git add -A && git commit` 提交所有改动
-3. `git push` 推送到远程，PR 自动更新
-Stop hook **无法**执行需要 AI 理解上下文的操作（如总结进度、写入 PROGRESS.md），这些只在用户主动说"收工"时由 AI 完成。
+### 新项目结构文档规范
+每次接手或创建新项目时，必须先了解项目结构并在 CLAUDE.md 中写明：
+- 目录结构说明：每个目录/子目录的职责
+- 代码归属规则：什么代码该放在哪个文件（如：动画→hooks文件、样式→useMemo、类型→models、数据库操作→database等）
+- 关键约定：命名规范、导入路径规则、状态管理模式等
+
+### 动画/逻辑解耦规范
+- 动画逻辑必须放在 `src/styles/animations.ts`（通用动画 hooks）或 `src/utils/animationHooks.ts`（课程卡片专用动画）中
+- Screen 组件只负责调用 hook 和 JSX 渲染，不写 `Animated.timing/spring` 等动画创建代码
+- 状态管理（useState/useRef）不跨功能共享——每个独立功能有自己独立的状态（如两个按钮用两套独立的 hook 实例）
+- 避免在组件文件中写 `new Animated.Value()` 或 `Animated.spring/timing` 调用，统一封装到 hook 里
+
+### 样式编写规范
+- 所有样式必须放在 useMemo styles 对象中统一管理
+- 禁止在 JSX 中写内联 `style={{}}` 对象（唯一例外：动态颜色值可通过 `[styles.xxx, { color: dynamicColor }]` 覆盖）
+- 布局/尺寸/字体/间距等所有非颜色属性都必须走 useMemo
+
+### 响应式规范
+- 禁止硬编码像素值。所有尺寸必须使用 responsive.ts 的响应式变量（fontSize.*、spacing.*、iconSize.*、inputSize.* 等）
+- 新创建的组件/变量中不允许出现数字字面量作为尺寸值（如 height: 44、padding: 12、size={28} 等）
+
+### 关闭终端时的行为
+Stop hook 已停用（`settings.local.json` 中移除）。不再自动 commit 或 push。
+所有 git 操作由我手动执行，commit 信息写人话。
+
+### Plan 模式规则
+进入 plan 模式后，必须先画 ASCII 示意图向用户确认，经确认后方可继续写 plan 或实现。
+- 涉及 UI 布局、交互方式、视觉设计的需求，必须画出布局示意图
+- 示意图使用 ASCII 字符绘制，标注关键元素位置和交互方式
+- 用户确认示意图后再进入下一步
+
+### 每次写代码必须要写上中文注释
+- 函数/区块前 → `// ── 说明文字 ──`
+- useMemo styles 项后 → `// 对应 UI 元素`
+- JSX 视觉区块前 → `{/* ── 说明 ── */}`
+- 复杂逻辑行后 → `// 说明`
+- 新增或改动的代码任何位置都必须同步加注释，不改注释等于没改完
