@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ── 模块功能 ─────────────────────────────────────────────
  * LessonScreen - 课程管理页面
  *
@@ -167,6 +167,7 @@ const LessonScreen: React.FC = () => {
   const cardHeightRef = useRef<Map<number, number>>(new Map());              // 卡片实际高度缓存
   const cardPosRef = useRef<(Map<number, { x: number; y: number }>)[]>([new Map(), new Map(), new Map(), new Map()]); // 卡片容器内位置缓存（onLayout + measureInWindow）
   const [showScrollTop, setShowScrollTop] = useState(false);                  // 回到顶部按钮可见性
+  const [shredCollapsingId, setShredCollapsingId] = useState<number | null>(null); // 删除碎纸时折叠中的卡片 ID
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
   const batchCollapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
   const subjectsCache = useRef<Map<number, StudentSubject[]>>(new Map());                                // 学生科目缓存
@@ -375,6 +376,7 @@ const LessonScreen: React.FC = () => {
   const shatterMgr = useShatterManager();                                                         // 碎纸管理器
   const [cancellingId, setCancellingId] = useState<number | null>(null);                         // 当前正在执行取消动画的课程 ID
   const cancelAnimSV = useSharedValue(0);                                                         // 取消删除线动画值（0→1）
+  const cancelFadeRN = useRef(new RNAnimated.Value(1)).current;                                  // 取消渐隐：1→0（淡出）
   const containerRef = useRef<View>(null);                                                        // 页面容器引用（用于碎纸定位）
   const containerOffRef = useRef({ x: 0, y: 0 });                                                   // 容器屏幕偏移（onLayout 捕获）
   const cardRefs = useRef<(Map<number, any>)[]>([new Map(), new Map(), new Map(), new Map()]);                                          // 卡片 DOM 引用（用于碎纸定位）
@@ -715,12 +717,18 @@ const LessonScreen: React.FC = () => {
       setCancellingId(lesson.id);
       cancelAnimSV.value = 0;
       // 用 Reanimated withTiming 替代 Animated.timing：删除线动画 350ms + 800ms 停留后回调
-      cancelAnimSV.value = withTiming(1, { duration: 350 }, (finished) => {
+      cancelAnimSV.value = withTiming(1, { duration: 600 }, (finished) => {
         if (finished) {
           runOnJS(() => {
-            setCancellingId(null);
             setTimeout(() => {
-              setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+              // 卡片渐隐动画：透明度从 0.6 淡出到 0（useNativeDriver 原生驱动）
+              RNAnimated.timing(cancelFadeRN, {
+                toValue: 0, duration: 500, useNativeDriver: true,
+              }).start(() => {
+                setCancellingId(null);
+                cancelFadeRN.setValue(1);
+                setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+              });
             }, 800);
           })();
         }
@@ -752,9 +760,22 @@ const LessonScreen: React.FC = () => {
     const doDelete = () => {
       const cardView = cardRefs.current[FILTER_INDEX[filterStatus]].get(id);
       const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
+        // ── LayoutAnimation 平滑收缩卡片高度（消除空白占位） ──
+        if (!batchCollapseAnims.current.has(id)) {
+          batchCollapseAnims.current.set(id, new RNAnimated.Value(cardH));
+        }
+        const collapseAnim = batchCollapseAnims.current.get(id)!;
+        collapseAnim.setValue(cardH);
+        RNAnimated.timing(collapseAnim, {
+          toValue: 0, duration: 400, useNativeDriver: false, easing: Easing.out(Easing.cubic),
+        }).start(() => {
+          batchCollapseAnims.current.delete(id);
+        });
+
         const strips = shatterMgr.triggerShatter(id, cardH, () => {
           setShredPortal(null);
-          Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setShredCollapsingId(null);
+          // 卡片已在 height:0，移除时无需额外动画
           setLessons(prev => prev.filter(l => l.id !== id));
           cardRefs.current[FILTER_INDEX[filterStatus]].delete(id); cardPosRef.current[FILTER_INDEX[filterStatus]].delete(id); cardWidthRef.current.delete(id); cardHeightRef.current.delete(id);
           deleteLesson(id).catch((e) => { const target = lessons.find(l => l.id === id); if (target) setLessons(prev => [...prev, target]); showToast('删除失败，请重试', 'error'); });
@@ -1084,14 +1105,19 @@ const LessonScreen: React.FC = () => {
       <RNAnimated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
+          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? (cancellingId === lessonId ? RNAnimated.multiply(0.6, cancelFadeRN) : 0.6) : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
           ],
         }, shatterMgr.activeId === lessonId ? {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
-          // 不设 height 折叠，碎纸条动画结束后由 LayoutAnimation 处理布局过渡
+          overflow: 'hidden',
+          ...(batchCollapseAnims.current.has(lessonId) ? {
+          height: batchCollapseAnims.current.get(lessonId)!,
+          padding: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
+          marginBottom: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
+          } : { height: 0 }),
         } : batchCollapseAnims.current.has(lessonId) ? {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
