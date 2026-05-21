@@ -220,8 +220,8 @@ const LessonScreen: React.FC = () => {
     },
     tabBtnText: { fontSize: fontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption },
     badge: {                                                                                          // 计数徽章（灰色圆形）
-      position: 'absolute' as const, top: -16, alignSelf: 'center',
-      width: 20, height: 20, borderRadius: 10,
+      position: 'absolute' as const, top: -spacing.lg, alignSelf: 'center',
+      width: spacing.xl, height: spacing.xl, borderRadius: scale(10),
       backgroundColor: Colors.caption, justifyContent: 'center' as const, alignItems: 'center' as const,
     },
     badgeText: { fontSize: 11, color: Colors.white, fontWeight: '600' },
@@ -591,7 +591,7 @@ const LessonScreen: React.FC = () => {
         setMorphing({ id: lesson.id, targetStatus: nextStatus });
         setTimeout(() => {
           RNAnimated.parallel([
-            RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
+            RNAnimated.timing(slideX, { toValue: SCREEN_W + 200, duration: 350, useNativeDriver: true }),
             RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
           ]).start(() => {
             // 不重置 slideX/slideOp，保持滑出位置
@@ -639,7 +639,7 @@ const LessonScreen: React.FC = () => {
       setMorphing({ id: lessonId, targetStatus });
       setTimeout(() => {
         RNAnimated.parallel([
-          RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
+          RNAnimated.timing(slideX, { toValue: SCREEN_W + 200, duration: 350, useNativeDriver: true }),
           RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
         ]).start(() => {
           // 不重置 slideX/slideOp，保持滑出位置等待收缩动画
