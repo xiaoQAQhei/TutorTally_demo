@@ -12,7 +12,7 @@ import {
   View, Text, FlatList, TouchableOpacity, TextInput, Animated as RNAnimated, LayoutAnimation, Easing,
   ScrollView, Dimensions, Platform,
 } from 'react-native';
-import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS } from 'react-native-reanimated';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS, Easing as REasing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
@@ -123,17 +123,24 @@ const LessonScreen: React.FC = () => {
     }
   }, [scrollX, SCREEN_W]);
 
-  // 横滑跟踪：直接更新 scrollX（避免 RNAnimated.event 额外开销）
+  // 横滑跟踪：更新 scrollX + 实时追踪当前 Tab 索引（用于徽章显示）
   const onPageScroll = (e: any) => {
     scrollX.setValue(e.nativeEvent.contentOffset.x);
     scrollXRef.current = e.nativeEvent.contentOffset.x;
+    const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    if (idx >= 0 && idx <= 3 && idx !== activeFilterIdxRef.current) {
+      activeFilterIdxRef.current = idx;
+      setActiveFilterIdx(idx);
+    }
   };
 
-  // 抬手吸附：更新 filterStatus
+  // 抬手吸附：更新 filterStatus + 同步 activeFilterIdx
   const onMomentumEnd = useCallback((e: any) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
     const key = FILTER_OPTIONS[idx].key;
     setFilterStatus(key);
+    activeFilterIdxRef.current = idx;
+    setActiveFilterIdx(idx);
     reFilterAnim.value = withTiming(idx, { duration: 150 });
       }, [SCREEN_W]);
 
@@ -167,6 +174,18 @@ const LessonScreen: React.FC = () => {
   const cardHeightRef = useRef<Map<number, number>>(new Map());              // 卡片实际高度缓存
   const cardPosRef = useRef<(Map<number, { x: number; y: number }>)[]>([new Map(), new Map(), new Map(), new Map()]); // 卡片容器内位置缓存（onLayout + measureInWindow）
   const [showScrollTop, setShowScrollTop] = useState(false);                  // 回到顶部按钮可见性
+  const [activeFilterIdx, setActiveFilterIdx] = useState(0);                  // 当前激活的 Tab 索引（滚动时实时更新）
+  const activeFilterIdxRef = useRef(0);                                        // 避免重复 setState
+  // ── 计数徽章上浮动画 ──
+  const badgeAnim = useSharedValue(0);                                          // 0→1（上浮淡入）
+  const badgeAnimStyle = useAnimatedStyle(() => ({
+    opacity: badgeAnim.value,
+    transform: [{ translateY: interpolate(badgeAnim.value, [0, 1], [8, 0]) }],
+  }));
+  useEffect(() => {
+    badgeAnim.value = 0;
+    badgeAnim.value = withTiming(1, { duration: 500, easing: REasing.out(REasing.cubic) });
+  }, [activeFilterIdx]);
   const [shredCollapsingId, setShredCollapsingId] = useState<number | null>(null); // 删除碎纸时折叠中的卡片 ID
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
   const batchCollapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
@@ -183,16 +202,16 @@ const LessonScreen: React.FC = () => {
 
     // ═══════════════ Tab 筛选栏（左三一组 + 右侧单独）═══════════════
     tabBarWrap: {                                                                                     // Tab 栏外层容器
-      paddingHorizontal: spacing.xl, paddingTop: spacing.xs, paddingBottom: spacing.sm,
+      paddingHorizontal: spacing.xl, paddingTop: spacing.md + spacing.sm, paddingBottom: spacing.sm,
       flexDirection: 'row', gap: spacing.sm,
     },
     tabGroup: {                                                                                       // 左边三个一组
       flex: 3, flexDirection: 'row', backgroundColor: Colors.card, borderRadius: BorderRadius.pill,
-      borderWidth: 1.5, borderColor: Colors.divider, overflow: 'hidden', position: 'relative' as const,
+      borderWidth: 1.5, borderColor: Colors.divider, position: 'relative' as const,
     },
     tabSolo: {                                                                                        // 全部单独
       flex: 1, backgroundColor: Colors.card, borderRadius: BorderRadius.pill,
-      borderWidth: 1.5, borderColor: Colors.divider, overflow: 'hidden', position: 'relative' as const,
+      borderWidth: 1.5, borderColor: Colors.divider, position: 'relative' as const,
       alignItems: 'center', justifyContent: 'center',
     },
     tabBtn: {                                                                                         // Tab 按钮
@@ -200,6 +219,12 @@ const LessonScreen: React.FC = () => {
       alignItems: 'center', justifyContent: 'center', zIndex: 2,
     },
     tabBtnText: { fontSize: fontSize.caption, fontWeight: FontWeight.medium, color: Colors.caption },
+    badge: {                                                                                          // 计数徽章（灰色圆形）
+      position: 'absolute' as const, top: -16, alignSelf: 'center',
+      width: 20, height: 20, borderRadius: 10,
+      backgroundColor: Colors.caption, justifyContent: 'center' as const, alignItems: 'center' as const,
+    },
+    badgeText: { fontSize: 11, color: Colors.white, fontWeight: '600' },
     tabSlider: {                                                                                      // 滑块指示器
       position: 'absolute' as const, top: 2, bottom: 2, left: 2, right: 2,
       borderRadius: BorderRadius.pill - 2, zIndex: 1,
@@ -376,7 +401,6 @@ const LessonScreen: React.FC = () => {
   const shatterMgr = useShatterManager();                                                         // 碎纸管理器
   const [cancellingId, setCancellingId] = useState<number | null>(null);                         // 当前正在执行取消动画的课程 ID
   const cancelAnimSV = useSharedValue(0);                                                         // 取消删除线动画值（0→1）
-  const cancelFadeRN = useRef(new RNAnimated.Value(1)).current;                                  // 取消渐隐：1→0（淡出）
   const containerRef = useRef<View>(null);                                                        // 页面容器引用（用于碎纸定位）
   const containerOffRef = useRef({ x: 0, y: 0 });                                                   // 容器屏幕偏移（onLayout 捕获）
   const cardRefs = useRef<(Map<number, any>)[]>([new Map(), new Map(), new Map(), new Map()]);                                          // 卡片 DOM 引用（用于碎纸定位）
@@ -710,19 +734,13 @@ const LessonScreen: React.FC = () => {
     const doCancel = () => {
       setCancellingId(lesson.id);
       cancelAnimSV.value = 0;
-      // 用 Reanimated withTiming 替代 Animated.timing：删除线动画 350ms + 800ms 停留后回调
+      // 删除线展开 600ms → 停留 800ms → 移除卡片
       cancelAnimSV.value = withTiming(1, { duration: 600 }, (finished) => {
         if (finished) {
           runOnJS(() => {
             setTimeout(() => {
-              // 卡片渐隐动画：透明度从 0.6 淡出到 0（useNativeDriver 原生驱动）
-              RNAnimated.timing(cancelFadeRN, {
-                toValue: 0, duration: 500, useNativeDriver: true,
-              }).start(() => {
-                setCancellingId(null);
-                cancelFadeRN.setValue(1);
-                setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
-              });
+              setCancellingId(null);
+              setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
             }, 800);
           })();
         }
@@ -845,29 +863,19 @@ const LessonScreen: React.FC = () => {
     }
   }, [pendingFilter, clearFilter]);
 
-  /** 一键确认下课：条件满足时延迟2s显示，中途切tab取消延迟 */
+  /** 一键确认下课：切 tab 退场动画（淡出+上滑），条件满足时延迟 2s 入场 */
+  const prevCplIdx = useRef(activeFilterIdx);
   useEffect(() => {
-    if (filterStatus === 'upcoming' && schedulableCount >= 5 && !isCplRunning.current) {
-      cpl.enter();
-    } else if (cpl.visible && cpl.hasAnimated.current) {
-      cpl.exit();
-    } else {
-      cpl.cancel();  // 条件不满足时取消延迟定时器
-    }
-    return () => cpl.cancel();
-  }, [filterStatus, schedulableCount]);
+    if (prevCplIdx.current !== activeFilterIdx) { cpl.exit(); prevCplIdx.current = activeFilterIdx; }
+    if (activeFilterIdx === 0 && schedulableCount >= 5 && !isCplRunning.current) cpl.enter();
+  }, [activeFilterIdx, schedulableCount]);
 
-  /** 一键收款：条件满足时延迟2s显示，中途切tab取消延迟 */
+  /** 一键收款：同上 */
+  const prevCollIdx = useRef(activeFilterIdx);
   useEffect(() => {
-    if (filterStatus === 'unpaid' && collectableCount >= 5 && !isCollRunning.current) {
-      coll.enter();
-    } else if (coll.visible && coll.hasAnimated.current) {
-      coll.exit();
-    } else {
-      coll.cancel();
-    }
-    return () => coll.cancel();
-  }, [filterStatus, collectableCount]);
+    if (prevCollIdx.current !== activeFilterIdx) { coll.exit(); prevCollIdx.current = activeFilterIdx; }
+    if (activeFilterIdx === 1 && collectableCount >= 5 && !isCollRunning.current) coll.enter();
+  }, [activeFilterIdx, collectableCount]);
 
   /** 选中学生变化或弹窗打开时自动查询科目并填充课时费 */
   useEffect(() => {
@@ -1099,7 +1107,7 @@ const LessonScreen: React.FC = () => {
       <RNAnimated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
-          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? (cancellingId === lessonId ? RNAnimated.multiply(0.6, cancelFadeRN) : 0.6) : 1,
+          opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
           transform: [
             { translateX: slideTestAnims.current.get(lessonId)! },
           ],
@@ -1162,6 +1170,11 @@ const LessonScreen: React.FC = () => {
           )}
           {FILTER_OPTIONS.slice(0, 3).map((opt, i) => (
             <TouchableOpacity key={opt.key} style={styles.tabBtn} activeOpacity={0.75} onPress={() => switchTab(opt.key)}>
+              {FILTER_INDEX[opt.key] === activeFilterIdx && (
+                <Reanimated.View style={[styles.badge, badgeAnimStyle]}>
+                  <Text style={styles.badgeText}>{opt.key === 'upcoming' ? counts.upcoming : opt.key === 'unpaid' ? counts.unpaid : counts.paid}</Text>
+                </Reanimated.View>
+              )}
               <RNAnimated.Text style={[styles.tabBtnText, {
                 color: scrollX.interpolate({
                   inputRange: [SCREEN_W*(i-1), SCREEN_W*i, SCREEN_W*(i+1)],
@@ -1178,6 +1191,11 @@ const LessonScreen: React.FC = () => {
             opacity: scrollX.interpolate({ inputRange: [2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 1], extrapolate: 'clamp' }),
           }]} />
           <View style={styles.tabBtn}>
+            {activeFilterIdx === 3 && (
+              <Reanimated.View style={[styles.badge, badgeAnimStyle]}>
+                <Text style={styles.badgeText}>{counts.all}</Text>
+              </Reanimated.View>
+            )}
             <RNAnimated.Text style={[styles.tabBtnText, {
               color: scrollX.interpolate({
                 inputRange: [2*SCREEN_W, 3*SCREEN_W, 4*SCREEN_W],

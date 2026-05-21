@@ -181,10 +181,19 @@ export function useBatchAnim(delayMs = 0) {
     if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
 
+  /** 立即重置状态：隐藏按钮 + 清空动画（切 tab 刷新用） */
+  const reset = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    hasAnimated.current = false;
+    anim.value = 0;
+    height.setValue(0);
+    setVisible(false);
+  }, []);
+
   // translateY 由 anim 派生：0→1 映射到 -20→0
   const translateY = useDerivedValue(() =>
     interpolate(anim.value, [0, 1], [-20, 0])
   );
 
-  return { anim, height, translateY, opacity: anim, visible, enter, exit, cancel, hasAnimated };
+  return { anim, height, translateY, opacity: anim, visible, enter, exit, cancel, reset, hasAnimated };
 }

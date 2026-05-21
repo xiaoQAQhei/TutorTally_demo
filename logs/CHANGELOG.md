@@ -1,3 +1,14 @@
+## [2026-05-22] [00:09] 学生删除：关联设置开关 + 渐隐动画
+- 删除学生弹窗由设置页「状态变更前提醒」控制，关闭时直接删除，开启时弹窗确认
+- 删除时卡片渐隐 500ms（原生驱动）
+  - 文件: src/screens/StudentScreen.tsx
+
+## [2026-05-22] [00:04] 修复取消动画和删除动画：渐隐 + 高度收缩
+- 取消动画：删除线展开 (600ms) → 停留 (800ms) → 卡片渐隐 (500ms, 原生驱动)
+- 删除动画：碎纸同步高度收缩 (400ms)，消除空白占位
+- 修复 LayoutAnimation 在安卓不生效的问题
+  - 文件: src/screens/LessonScreen.tsx
+
 ## [2026-05-21] Animated -> Reanimated 迁移 + Tab 滑块修复 + 碎纸删除定位修复
 - Animated -> Reanimated 迁移：animations.ts、animationHooks.ts、StatusBadge、Toast、DropdownSelect、TimeRangePicker、StatCard、EmptyState、GradientFAB、BottomSheet、HomeScreen、StudentScreen、RecurringRulesScreen、LessonScreen
 - Tab 滑块修复（从 reFilterAnim 改回 scrollX 驱动）

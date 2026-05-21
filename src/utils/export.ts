@@ -84,9 +84,11 @@ function buildStudentSheet(student: Student, subjects: StudentSubject[], lessons
   }
   if (options.includeHeader) { data.unshift([cell(options.title || '家教课程总账单', TITLE_STYLE)]); rh.push(ROW_HEIGHTS.title); data.splice(1,0,[cell(`学生: ${student.name}${sInfo ? `  ${sInfo}` : ''}`, BOLD14_STYLE)]); rh.push(ROW_HEIGHTS.subheader); data.splice(2,0,[]); rh.push(ROW_HEIGHTS.empty); }
   const headers = ['日期','学科','时间段','时长','金额','状态']; if (options.includeNotes) headers.push('备注'); if (options.includePaymentInfo) headers.push('支付信息');
-  data.push(headers.map(h => cell(h))); rh.push(ROW_HEIGHTS.header);
-  for (const r of data.splice(3)) { data.push(r); rh.push(ROW_HEIGHTS.data); }
-  if (options.includeLegend) { data.push([]); rh.push(ROW_HEIGHTS.empty); data.push([cell(''),cell(''),cell(''),cell(''),cell(''),cell('✓ 已收款',PAID_STYLE),cell('待收款',PENDING_STYLE)]); rh.push(ROW_HEIGHTS.legend); }
+  // 表头插入到信息区（标题+学生+空行）之后、数据行之前
+  const headerIdx = options.includeHeader ? 3 : 0;
+  data.splice(headerIdx, 0, headers.map(h => cell(h))); rh.splice(headerIdx, 0, ROW_HEIGHTS.header);
+  for (const r of data.splice(headerIdx + 1)) { data.push(r); rh.push(ROW_HEIGHTS.data); }
+  if (options.includeLegend) { data.push([]); rh.push(ROW_HEIGHTS.data); data.push([cell(''),cell(''),cell(''),cell(''),cell('✓ 已收款',PAID_STYLE),cell('待收款',PENDING_STYLE)]); rh.push(ROW_HEIGHTS.legend); }
   if (options.includeTotal) { data.push([cell('合计:',BOLD16_STYLE),cell(''),cell(`${lessons.length}节`,BOLD16_STYLE),cell(`${totalH.toFixed(1)}h`,BOLD16_STYLE),cell(formatCurrency(paidA,options.currencySymbol),{...PAID_STYLE,font:{bold:true,sz:16}}),cell(formatCurrency(pendA,options.currencySymbol),{...PENDING_STYLE,font:{bold:true,sz:16}}),cell(formatCurrency(totalA,options.currencySymbol),BOLD16_STYLE)]); rh.push(ROW_HEIGHTS.total); }
   return { sheet: data, rowHeights: rh };
 }
