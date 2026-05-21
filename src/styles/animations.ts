@@ -6,6 +6,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 import { useRef, useEffect, useCallback, useState } from 'react';
+import { Animated as RNAnimated, Easing as RNEasing } from 'react-native';
 import {
   useSharedValue,
   useDerivedValue,
@@ -128,8 +129,8 @@ export function useBounce(onPress?: () => void) {
  * @param delayMs - 满足条件后延迟显示的时间（毫秒），默认 0
  */
 export function useBatchAnim(delayMs = 0) {
-  const anim = useSharedValue(0);          // opacity
-  const height = useSharedValue(0);         // scaleY (0→1)
+  const anim = useSharedValue(0);          // opacity（Reanimated，UI 线程）
+  const height = useRef(new RNAnimated.Value(0)).current; // height（RNAnimated，驱动真实高度）
   const hasAnimated = useRef(false);        // 入场动画是否播放过
   const [visible, setVisible] = useState(false); // 是否在 DOM 中
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -139,10 +140,12 @@ export function useBatchAnim(delayMs = 0) {
     if (visible && !hasAnimated.current) {
       hasAnimated.current = true;
       anim.value = 0;
-      height.value = 0;
-      // height 改为 0→1 驱动 scaleY（原生驱动兼容），透明度同步展开
+      height.setValue(0);
+      // 透明度 Reanimated（UI线程）+ 高度 RNAnimated（平滑展开）
       anim.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
-      height.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.cubic) });
+      RNAnimated.timing(height, {
+        toValue: 45, duration: 2000, useNativeDriver: false, easing: RNEasing.out(RNEasing.cubic),
+      }).start();
     }
   }, [visible]);
 
@@ -165,12 +168,11 @@ export function useBatchAnim(delayMs = 0) {
     if (timerRef.current) clearTimeout(timerRef.current);
     hasAnimated.current = false;
     return new Promise((resolve) => {
-      // 用 runOnJS 在动画完成回调中切换 JS 线程状态
       anim.value = withTiming(0, { duration: 200 }, (finished) => {
         runOnJS(setVisible)(false);
         runOnJS(resolve)();
       });
-      height.value = withTiming(0, { duration: 200 });
+      RNAnimated.timing(height, { toValue: 0, duration: 200, useNativeDriver: false }).start();
     });
   }, []);
 

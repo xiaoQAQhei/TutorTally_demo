@@ -392,15 +392,9 @@ const LessonScreen: React.FC = () => {
     transform: [{ translateY: cpl.translateY.value }],
     opacity: cpl.opacity.value,
   }));
-  const cplHeightStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleY: cpl.height.value }],
-  }));
   const collWrapStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: coll.translateY.value }],
     opacity: coll.opacity.value,
-  }));
-  const collHeightStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleY: coll.height.value }],
   }));
   // ── 高亮覆盖层 Reanimated 动画样式 ──
   const highlightOverlayStyle = useAnimatedStyle(() => ({
@@ -1247,22 +1241,22 @@ const LessonScreen: React.FC = () => {
                   <>
                     {idx === 0 && cpl.visible && (
                       <Reanimated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md }, cplWrapStyle]}>
-                      <View style={{ overflow: 'hidden' }}><Reanimated.View style={cplHeightStyle}>
+                      <RNAnimated.View style={{ overflow: 'hidden', height: cpl.height }}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.dangerLight, borderColor:Colors.danger+'30' }]} activeOpacity={0.75} onPress={handleBatchComplete}>
                           <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
                           <Text style={[styles.batchBtnText, { color:Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
                         </TouchableOpacity>
-                      </Reanimated.View></View>
+                      </RNAnimated.View>
                       </Reanimated.View>
                     )}
                     {idx === 1 && coll.visible && (
                       <Reanimated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md }, collWrapStyle]}>
-                      <View style={{ overflow: 'hidden' }}><Reanimated.View style={collHeightStyle}>
+                      <RNAnimated.View style={{ overflow: 'hidden', height: coll.height }}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.paidLight, borderColor:Colors.paid+'30' }]} activeOpacity={0.75} onPress={handleBatchCollect}>
                           <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
                           <Text style={[styles.batchBtnText, { color:Colors.paid }]}>一键收款（{collectableCount}节）</Text>
                         </TouchableOpacity>
-                      </Reanimated.View></View>
+                      </RNAnimated.View>
                       </Reanimated.View>
                     )}
                   </>
