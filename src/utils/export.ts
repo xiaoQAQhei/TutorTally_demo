@@ -180,7 +180,7 @@ export async function exportByMonth(month: string, options: Partial<ExportOption
       sheet.push([]); rh.push(ROW_HEIGHTS.empty);
       updateProgress(onProgress, { stage: 'processing', message: `正在处理 ${s.name}...`, current: 20 + (++done / students.length) * 50, total: 100 });
     }
-    if (opts.includeLegend) { sheet.push([]); rh.push(ROW_HEIGHTS.empty); sheet.push([cell(''),cell(''),cell(''),cell(''),cell(''),cell('✓ 已收款',PAID_STYLE),cell('待收款',PENDING_STYLE)]); rh.push(ROW_HEIGHTS.legend); }
+    if (opts.includeLegend) { sheet.push([]); rh.push(ROW_HEIGHTS.empty); sheet.push([cell(''),cell(''),cell(''),cell(''),cell('✓ 已收款',PAID_STYLE),cell('待收款',PENDING_STYLE)]); rh.push(ROW_HEIGHTS.legend); }
     if (opts.includeTotal) { sheet.push([cell('总计:',BOLD16_STYLE),cell(''),cell(`${tC}节`,BOLD16_STYLE),cell(`${tH.toFixed(1)}h`,BOLD16_STYLE),cell(formatCurrency(tP,opts.currencySymbol),{...PAID_STYLE,font:{bold:true,sz:16}}),cell(formatCurrency(tPe,opts.currencySymbol),{...PENDING_STYLE,font:{bold:true,sz:16}}),cell(formatCurrency(tA,opts.currencySymbol),BOLD16_STYLE)]); rh.push(ROW_HEIGHTS.total); }
     updateProgress(onProgress, { stage: 'generating', current: 80, total: 100 });
     const wb = xlsx.utils.book_new(); const ws = xlsx.utils.aoa_to_sheet(sheet); ws['!cols'] = COL_WIDTHS; ws['!rows'] = rh;

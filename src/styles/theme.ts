@@ -97,7 +97,7 @@ export const TabletSpacing = {
   sm: scale(3),
   md: scale(7),
   lg: scale(11),
-  xl: scale(15),
+  xl: scale(14),
   xxl: scale(19),
   xxxl: scale(27),
 };

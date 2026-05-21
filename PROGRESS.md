@@ -1,7 +1,8 @@
 # 项目进程记录
 
 > 家教课程账单应用 (React Native / Expo)
-> 最后更新：2026-05-21
+> 家教课程账单应用 (React Native / Expo)
+> 最后更新：2026-05-22
 
 ## 当前状态
 
@@ -13,7 +14,6 @@
 
 ### Bug 修复
 - [ ] StudentScreen 科目编辑行 flex:1 不生效 — 疑似 TextInput 最小宽度覆盖 flex 计算
-- [ ] Tab 计数徽章弹出动画定位需调试
 
 ### 功能待开发
 - [ ] 周期规则排除日期 UI — excludedDates 字段已有但表单无入口
@@ -23,12 +23,20 @@
 ### 可优化项
 - [ ] 最近 30 天课表视图
 - [ ] 周期规则卡片显示下次生成日期
-- [ ] Reanimated Layout Animations — 卡片移除时兄弟卡片平滑上移（当前通过 LayoutAnimation 兼容）
 
 ## 已构建
 - `android/app/build/outputs/apk/release/app-release.apk` — Release APK（29.7MB）
 
 ## 已完成功能
+
+### 2026-05-22 会话
+- [x] 取消动画：删除线 600ms + 停留 800ms 后移除（去掉导致闪退的渐隐）
+- [x] 删除动画：碎纸同步高度收缩 400ms，消除空白占位
+- [x] 学生删除：关联设置开关 + 渐隐动画 500ms
+- [x] 一键按键动画：scaleY 改回真实高度驱动 + 退场动画 + 切 tab 刷新
+- [x] Tab 计数徽章（灰色圆形 + 上浮动画 + 响应式适配）
+- [x] 平板滑动对齐修复（onLayout 实测 ScrollView 宽度）
+- [x] 状态流转动画：translateX 改为 SCREEN_W + 200，平板右侧闪烁修复
 
 ### 2026-05-21 会话
 - [x] Animated → Reanimated 迁移完成 — 15 个文件，零新增 tsc 错误
