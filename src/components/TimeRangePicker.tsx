@@ -7,10 +7,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView,
-  NativeSyntheticEvent, NativeScrollEvent, Animated,
+  NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive, scale, verticalScale } from '../utils/responsive';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 
 // 每行选项的基础高度
 const BASE_ITEM_H = 36;
@@ -318,18 +319,26 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
       : `${totalMinutes} 分钟`
     : '结束时间不能早于或等于开始时间';
 
-  // ── 弹出动画 ──
-  const translateY = useRef(new Animated.Value(sheetHeight)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  // ── 弹出动画（Reanimated） ──
+  const sheetHeightRef = useRef(sheetHeight);
+  sheetHeightRef.current = sheetHeight;
+  const translateY = useSharedValue(sheetHeight);
+  const overlayOpacity = useSharedValue(0);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
 
   useEffect(() => {
     if (visible) {
-      translateY.setValue(sheetHeight);
-      overlayOpacity.setValue(0);
-      Animated.parallel([
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 14, bounciness: 4 }),
-        Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]).start();
+      translateY.value = sheetHeightRef.current;
+      overlayOpacity.value = 0;
+      translateY.value = withSpring(0, { dampingRatio: 0.5 });
+      overlayOpacity.value = withTiming(1, { duration: 300 });
     }
   }, [visible]);
 
@@ -347,12 +356,12 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.container}>
         {/* 半透明遮罩 */}
-        <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: overlayOpacity }]}>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, overlayAnimatedStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         </Animated.View>
 
         {/* 底部面板 */}
-        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <Animated.View style={[styles.sheet, sheetAnimatedStyle]}>
           {/* 拖拽手柄 */}
           <View style={styles.handleRow}>
             <View style={styles.handle} />

@@ -16,7 +16,7 @@ import Reanimated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import { STRIP_COUNT, DURATION } from '../utils/animationHooks';
+import { STRIP_COUNT, DURATION } from '../utils/stripConstants';
 
 /** ShredderStrip 组件属性 */
 interface ShredderStripProps {

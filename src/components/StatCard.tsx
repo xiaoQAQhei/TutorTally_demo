@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, BorderRadius, Shadows, Spacing } from '../styles/theme';
 import { useFadeIn, useScale } from '../styles/animations';
@@ -31,13 +32,23 @@ const StatCard: React.FC<StatCardProps> = ({
   const { scale, scaleDown, scaleUp } = useScale();
   const { isTablet, fontSize, iconSize } = useResponsive();
 
+  // ── Reanimated 动画样式 ──
+  const fadeInStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   // ── 卡片内容（淡入动画） ──
   const content = (
     <Animated.View
       style={[
         styles.card,
         Shadows.subtle,
-        { opacity, transform: [{ translateY }], padding: Spacing.lg },
+        fadeInStyle,
+        { padding: Spacing.lg },
       ]}
     >
       {/* 图标容器 */}
@@ -67,7 +78,7 @@ const StatCard: React.FC<StatCardProps> = ({
       onPressIn={scaleDown}
       onPressOut={scaleUp}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
+      <Animated.View style={scaleStyle}>
         {content}
       </Animated.View>
     </TouchableOpacity>

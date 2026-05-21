@@ -5,7 +5,8 @@
  * ────────────────────────────────────────────────────────────────────────
  */
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive } from '../utils/responsive';
@@ -32,8 +33,8 @@ function DropdownSelect<T>({
 }: DropdownSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);                        // 实际可见态（Modal visible）
   const [menuPos, setMenuPos] = useState({ left: 0, top: 0, width: 0 });  // 按钮屏幕位置
-  const rotateAnim = useRef(new Animated.Value(0)).current;            // 箭头旋转动画值
-  const menuAnim = useRef(new Animated.Value(0)).current;              // 入场/出场动画（0→1 淡入缩放）
+  const rotateAnim = useSharedValue(0);                                 // 箭头旋转动画值
+  const menuAnim = useSharedValue(0);                                   // 入场/出场动画（0→1 淡入缩放）
   const triggerRef = useRef<any>(null);                                // 触发按钮 DOM 引用
   const { spacing, fontSize, iconSize, inputSize } = useResponsive();
   const selected = options.find(o => o.value === selectedValue);
@@ -74,20 +75,18 @@ function DropdownSelect<T>({
     triggerRef.current?.measureInWindow((x: number, y: number, w: number) => {
       setMenuPos({ left: x, top: y, width: w });
       setIsOpen(true);
-      menuAnim.setValue(0);
-      Animated.parallel([
-        Animated.spring(rotateAnim, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 4 }),
-        Animated.spring(menuAnim, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 3 }),
-      ]).start();
+      menuAnim.value = 0;
+      rotateAnim.value = withSpring(1, { duration: 200, dampingRatio: 0.65 });  // 箭头快速翻转，轻微回弹
+      menuAnim.value = withSpring(1, { duration: 250, dampingRatio: 0.75 });    // 菜单平滑展开，少回弹
     });
   }, [disabled, rotateAnim, menuAnim]);
 
   /** 关闭下拉菜单：淡出 → 隐藏 Modal */
   const closeMenu = useCallback(() => {
-    Animated.parallel([
-      Animated.spring(rotateAnim, { toValue: 0, useNativeDriver: true, speed: 14, bounciness: 4 }),
-      Animated.timing(menuAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-    ]).start(() => setIsOpen(false));
+    rotateAnim.value = withSpring(0, { duration: 200, dampingRatio: 0.65 });
+    menuAnim.value = withTiming(0, { duration: 150 }, (finished) => {
+      if (finished) runOnJS(setIsOpen)(false);
+    });
   }, [rotateAnim, menuAnim]);
 
   /** 选中选项 → 回调 → 关闭菜单 */
@@ -96,10 +95,17 @@ function DropdownSelect<T>({
     closeMenu();
   }, [onSelect, closeMenu]);
 
-  // 箭头旋转插值：0°→180°
-  const chevronRotate = rotateAnim.interpolate({
-    inputRange: [0, 1], outputRange: ['0deg', '180deg'],
-  });
+  // ── reanimated 动画样式 ──
+  // 箭头旋转：0°→180°
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(rotateAnim.value, [0, 1], [0, 180])}deg` }],
+  }));
+
+  // 菜单浮层：透明度 0→1 + 缩放 0.92→1
+  const menuAnimStyle = useAnimatedStyle(() => ({
+    opacity: menuAnim.value,
+    transform: [{ scale: interpolate(menuAnim.value, [0, 1], [0.92, 1]) }],
+  }));
 
   return (
     <>
@@ -114,7 +120,7 @@ function DropdownSelect<T>({
           {selected ? selected.label : placeholder}
         </Text>
         {!disabled && (
-          <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+          <Animated.View style={chevronStyle}>
             <Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} />
           </Animated.View>
         )}
@@ -128,9 +134,7 @@ function DropdownSelect<T>({
           <Animated.View
             style={[styles.menuBox, {
               top: menuPos.top + inputSize.input + spacing.xs, left: menuPos.left, width: menuPos.width,
-              opacity: menuAnim,
-              transform: [{ scale: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
-            }]}
+            }, menuAnimStyle]}
           >
             {options.length === 0 ? (
               <Text style={styles.emptyText}>暂无数据</Text>

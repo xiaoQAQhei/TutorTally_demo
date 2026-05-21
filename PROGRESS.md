@@ -1,7 +1,7 @@
 # 项目进程记录
 
 > 家教课程账单应用 (React Native / Expo)
-> 最后更新：2026-05-17
+> 最后更新：2026-05-21
 
 ## 当前状态
 
@@ -23,8 +23,22 @@
 ### 可优化项
 - [ ] 最近 30 天课表视图
 - [ ] 周期规则卡片显示下次生成日期
+- [ ] Reanimated Layout Animations — 卡片移除时兄弟卡片平滑上移（当前通过 LayoutAnimation 兼容）
+
+## 已构建
+- `android/app/build/outputs/apk/release/app-release.apk` — Release APK（29.7MB）
 
 ## 已完成功能
+
+### 2026-05-21 会话
+- [x] Animated → Reanimated 迁移完成 — 15 个文件，零新增 tsc 错误
+- [x] 核心动画迁移：slide/slideOp/highlightAnim/filterAnim → useSharedValue
+- [x] 箭头旋转/Toast/BottomSheet/DropdownSelect/StatusBadge → Reanimated
+- [x] useCancelAnimation/useSlideManager 重构（Map→ 组件内 SharedValue）
+- [x] Tab 滑块重新追踪 scrollX（修复横滑时滑块不动）
+- [x] 碎纸删除定位改实时 measureInWindow（修复滚动后纸条错位）
+- [x] 碎纸删除移除 height 折叠（避免 JS 线程卡顿）
+- [x] APK 构建：android/app/build/outputs/apk/release/app-release.apk
 
 ### 2026-05-17 会话（本日）
 - [x] 导出功能完整重做 — ExportFlowModal 多步弹窗（格式→范围→选月份/学生→预览→导出）

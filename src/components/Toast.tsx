@@ -4,10 +4,20 @@
  * 支持成功/错误两种类型，带对应图标和颜色。
  * 使用绝对定位而非 Modal，
  * 配合高 zIndex 浮在所有内容之上，且不阻挡触摸事件。
+ *
+ * 动画使用 react-native-reanimated（useSharedValue / useAnimatedStyle），
+ * 避免 react-native Animated 的 JS 线程性能开销。
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive, verticalScale } from '../utils/responsive';
@@ -21,28 +31,34 @@ interface ToastProps {
 }
 
 const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismiss }) => {
-  const translateY = useRef(new Animated.Value(100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  // ── 动画共享值（初始隐藏：向下偏移 100，透明） ──
+  const translateY = useSharedValue(100);
+  const opacity = useSharedValue(0);
   const { isTablet, maxContentWidth, iconSize } = useResponsive();
 
   // 平板端限制最大宽度
   const toastMaxWidth = isTablet ? Math.min(maxContentWidth * 0.8, 500) : undefined;
 
+  // ── 动画样式：translateY + opacity ──
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   // ── 显示时：滑入 → 2.5s 后滑出 → 触发 onDismiss ──
   useEffect(() => {
     if (visible) {
-      // 滑入动画
-      Animated.parallel([
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 12, bounciness: 3 }),
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]).start();
+      // 滑入动画（translateY 弹性进入，opacity 渐变进入）
+      translateY.value = withSpring(0, { dampingRatio: 0.5 });
+      opacity.value = withTiming(1, { duration: 200 });
 
       // 2.5 秒后自动滑出并关闭
       const timer = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(translateY, { toValue: 100, duration: 200, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        ]).start(() => onDismiss());
+        // 滑出：都用 withTiming，完成后回调 JS 线程
+        opacity.value = withTiming(0, { duration: 200 }, (finished) => {
+          if (finished) runOnJS(onDismiss)();
+        });
+        translateY.value = withTiming(100, { duration: 200 });
       }, 2500);
 
       return () => clearTimeout(timer);
@@ -58,7 +74,7 @@ const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismi
       <Animated.View
         style={[
           styles.container,
-          { opacity, transform: [{ translateY }] },
+          animatedStyle,
           type === 'success' ? styles.successBg : styles.errorBg,
           toastMaxWidth ? { maxWidth: toastMaxWidth, alignSelf: 'center' } : null,
         ]}

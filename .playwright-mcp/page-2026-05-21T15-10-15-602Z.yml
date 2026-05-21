@@ -1,0 +1,128 @@
+- generic [ref=e128]:
+  - generic [ref=e130]:
+    - generic [ref=e133]: NapCat
+    - generic [ref=e134]:
+      - generic [ref=e135]:
+        - button "基础信息" [ref=e137] [cursor=pointer]:
+          - img [ref=e138]
+          - text: 基础信息
+        - button "网络配置" [active] [ref=e145] [cursor=pointer]:
+          - img [ref=e146]
+          - text: 网络配置
+        - button "猫猫日志" [ref=e149] [cursor=pointer]:
+          - img [ref=e150]
+          - text: 猫猫日志
+        - button "接口调试" [ref=e155] [cursor=pointer]:
+          - img [ref=e156]
+          - text: 接口调试
+        - button "实时调试" [ref=e160] [cursor=pointer]:
+          - img [ref=e161]
+          - text: 实时调试
+        - button "文件管理" [ref=e165] [cursor=pointer]:
+          - img [ref=e166]
+          - text: 文件管理
+        - button "插件管理" [ref=e170] [cursor=pointer]:
+          - img [ref=e171]
+          - text: 插件管理
+        - button "插件商店" [ref=e177] [cursor=pointer]:
+          - img [ref=e178]
+          - text: 插件商店
+        - button "扩展页面" [ref=e185] [cursor=pointer]:
+          - img [ref=e186]
+          - text: 扩展页面
+        - button "系统终端" [ref=e190] [cursor=pointer]:
+          - img [ref=e191]
+          - text: 系统终端
+        - button "系统配置" [ref=e195] [cursor=pointer]:
+          - img [ref=e196]
+          - text: 系统配置
+        - button "关于我们" [ref=e201] [cursor=pointer]:
+          - img [ref=e202]
+          - text: 关于我们
+      - generic [ref=e205]:
+        - button "切换主题" [ref=e206] [cursor=pointer]:
+          - img [ref=e207]
+          - text: 切换主题
+        - button "退出登录" [ref=e210] [cursor=pointer]:
+          - img [ref=e211]
+          - text: 退出登录
+  - generic [ref=e214]:
+    - generic [ref=e215]:
+      - button [ref=e217] [cursor=pointer]:
+        - img [ref=e218]
+      - navigation "导航栏" [ref=e221]:
+        - list [ref=e222]:
+          - listitem [ref=e223]:
+            - link "网络配置" [disabled] [ref=e368]:
+              - generic [ref=e369]: 网络配置
+    - generic [ref=e371]:
+      - generic [ref=e372]:
+        - button "新建" [ref=e373] [cursor=pointer]:
+          - img [ref=e374]
+          - text: 新建
+        - button [ref=e377] [cursor=pointer]:
+          - img [ref=e378]
+      - generic "Network Configs" [ref=e380]:
+        - tablist "Network Configs" [ref=e381]:
+          - tab "全部" [selected] [ref=e382] [cursor=pointer]:
+            - generic [ref=e384]: 全部
+          - tab "HTTP服务器" [ref=e385] [cursor=pointer]:
+            - generic [ref=e386]: HTTP服务器
+          - tab "HTTP客户端" [ref=e387] [cursor=pointer]:
+            - generic [ref=e388]: HTTP客户端
+          - tab "HTTP SSE服务器" [ref=e389] [cursor=pointer]:
+            - generic [ref=e390]: HTTP SSE服务器
+          - tab "Websocket服务器" [ref=e391] [cursor=pointer]:
+            - generic [ref=e392]: Websocket服务器
+          - tab "Websocket客户端" [ref=e393] [cursor=pointer]:
+            - generic [ref=e394]: Websocket客户端
+      - tabpanel "全部" [ref=e395]:
+        - generic [ref=e396]:
+          - generic [ref=e397]:
+            - generic [ref=e398]:
+              - generic [ref=e401]: 小黑
+              - switch [ref=e404] [cursor=pointer]
+            - generic [ref=e407]:
+              - generic [ref=e408]:
+                - generic [ref=e409]: 类型
+                - generic [ref=e410]: Websocket客户端
+              - generic [ref=e411]:
+                - generic [ref=e412]: URL
+                - generic [ref=e413]: ws://127.0.0.1:6199/ws
+            - generic [ref=e415]:
+              - button "编辑" [ref=e416] [cursor=pointer]:
+                - img [ref=e417]
+                - text: 编辑
+              - button "默认" [ref=e419] [cursor=pointer]:
+                - img [ref=e420]
+                - text: 默认
+              - button "删除" [ref=e424] [cursor=pointer]:
+                - img [ref=e425]
+                - text: 删除
+          - generic [ref=e429]:
+            - generic [ref=e430]:
+              - generic [ref=e433]: my-api
+              - switch [checked] [ref=e436] [cursor=pointer]
+            - generic [ref=e439]:
+              - generic [ref=e440]:
+                - generic [ref=e441]: 类型
+                - generic [ref=e442]: HTTP服务器
+              - generic [ref=e443]:
+                - generic [ref=e444]: 主机
+                - generic [ref=e445]: 127.0.0.1
+              - generic [ref=e446]:
+                - generic [ref=e447]: 端口
+                - generic [ref=e448]: "3000"
+              - generic [ref=e449]:
+                - generic [ref=e450]: 消息格式
+                - generic [ref=e451]: array
+            - generic [ref=e453]:
+              - button "编辑" [ref=e454] [cursor=pointer]:
+                - img [ref=e455]
+                - text: 编辑
+              - button "调试" [ref=e457] [cursor=pointer]:
+                - img [ref=e458]
+                - text: 调试
+              - button "删除" [ref=e462] [cursor=pointer]:
+                - img [ref=e463]
+                - text: 删除

@@ -7,8 +7,9 @@
  * 支持一键生成未来课程（从开始日期到结束日期，按规则自动排课）。
  * 可排除特定日期（excludedDates 字段，当前未暴露 UI）。
  */
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Animated } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { RecurringRule, Student, StudentSubject, Lesson } from '../models';
@@ -52,9 +53,9 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [datePickerMode, setDatePickerMode] = useState<'start' | 'end'>('start');
-  const timeArrowRot = useRef(new Animated.Value(0)).current;
-  const startArrowRot = useRef(new Animated.Value(0)).current;
-  const endArrowRot = useRef(new Animated.Value(0)).current;
+  const timeArrowRot = useSharedValue(0);
+  const startArrowRot = useSharedValue(0);
+  const endArrowRot = useSharedValue(0);
   const { showToast } = useToast();
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
@@ -78,15 +79,21 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
     }
   }, [selectedSubjectId, subjects]);
 
-  // ── 选择器箭头旋转动画 ──
+  // ── 选择器箭头旋转动画（reanimated） ──
   useEffect(() => {
-    Animated.timing(timeArrowRot, { toValue: showTimePicker ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    timeArrowRot.value = withTiming(showTimePicker ? 1 : 0, { duration: 200 });
   }, [showTimePicker]);
+  const timeArrowRotStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(timeArrowRot.value, [0, 1], [0, 180])}deg` }],
+  }));
   useEffect(() => {
-    Animated.timing(startArrowRot, { toValue: showCalendar && datePickerMode === 'start' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    startArrowRot.value = withTiming(showCalendar && datePickerMode === 'start' ? 1 : 0, { duration: 200 });
   }, [showCalendar, datePickerMode]);
+  const startArrowRotStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(startArrowRot.value, [0, 1], [0, 180])}deg` }],
+  }));
   useEffect(() => {
-    Animated.timing(endArrowRot, { toValue: showCalendar && datePickerMode === 'end' ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    endArrowRot.value = withTiming(showCalendar && datePickerMode === 'end' ? 1 : 0, { duration: 200 });
   }, [showCalendar, datePickerMode]);
 
   const getStudentName = (id: number) => students.find(s => s.id === id)?.name || '未知';
@@ -278,7 +285,7 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
         <TouchableOpacity style={[styles.pickerTouch, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]} onPress={() => setShowTimePicker(true)}>
           <Ionicons name="time-outline" size={iconSize.md} color={Colors.primary} />
           <Text style={[{ flex: 1 }, timeSlot ? styles.pickerTouchText : styles.pickerPlaceholder]}>{timeSlot || '选择时间段'}</Text>
-          <Animated.View style={{ transform: [{ rotate: timeArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+          <Animated.View style={timeArrowRotStyle}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
         </TouchableOpacity>
         <View style={styles.formRow}>
           <View style={styles.formHalf}>
@@ -300,7 +307,7 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
         <TouchableOpacity style={[styles.pickerTouch, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }]} onPress={() => openDatePicker('end')}>
           <Ionicons name="calendar-outline" size={iconSize.md} color={Colors.primary} />
           <Text style={[{ flex: 1 }, endDate ? styles.pickerTouchText : styles.pickerPlaceholder]}>{endDate || '选择结束日期'}</Text>
-          <Animated.View style={{ transform: [{ rotate: startArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+          <Animated.View style={startArrowRotStyle}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSave}>
           <Text style={styles.saveButtonText}>{editingRule ? '更新规则' : '创建规则'}</Text>

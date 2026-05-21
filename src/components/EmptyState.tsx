@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../styles/theme';
 import { useFadeIn } from '../styles/animations';
@@ -30,12 +31,18 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   const { opacity, translateY } = useFadeIn();
   const { isTablet } = useResponsive();
 
+  // ── Reanimated 动画样式 ──
+  const fadeInStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   // ── 响应式图标尺寸 ──
   const iconSize = moderateScale(isTablet ? 110 : 100);
   const iconInner = isTablet ? 64 : 56;
 
   return (
-    <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.container, fadeInStyle]}>
       {/* 图标容器 */}
       <View style={[styles.iconContainer, { width: iconSize, height: iconSize, borderRadius: iconSize / 2 }]}>
         <Ionicons name={icon as any} size={iconInner} color={Colors.caption} />

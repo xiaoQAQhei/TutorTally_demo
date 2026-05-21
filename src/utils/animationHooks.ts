@@ -1,120 +1,14 @@
 /**
  * ── animationHooks.ts ──────────────────────────────────────────────────────
  * 动画工具 Hooks 模块：提供课程卡片交互所需的动画逻辑。
- * 包含：水平滑动（useSlideManager）和碎裂消散（useShatterManager）两个 Hook。
+ * 当前仅保留碎裂消散（useShatterManager），取消动画和滑动动画已迁移至
+ * 消费者（LessonScreen）自行使用 react-native-reanimated 管理。
  * ────────────────────────────────────────────────────────────────────────────
  */
 import { useRef, useState, useCallback } from 'react';
-import { Animated, Easing } from 'react-native';
-
-// ── useCancelAnimation ──────────────────────────────────────────────────────
-/**
- * 管理课程卡片的"取消"删除线动画。
- * 每张卡片对应一个 Animated.Value（0→1），配合卡片宽度实现删除线从左到右展开效果。
- */
-export function useCancelAnimation() {
-  const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const anims = useRef<Map<number, Animated.Value>>(new Map()).current;
-
-  /** 获取或创建指定课程 id 的 Animated.Value */
-  const getAnim = useCallback((id: number) => {
-    if (!anims.has(id)) anims.set(id, new Animated.Value(0));
-    return anims.get(id)!;
-  }, []);
-
-  /**
-   * 触发取消动画：删除线从 0 展开到卡片宽度。
-   * @param id - 课程 id
-   * @param onDone - 动画完成后回调（默认 800ms 后触发）
-   */
-  const trigger = useCallback((id: number, onDone?: () => void) => {
-    setCancellingId(id);
-    const anim = getAnim(id);
-    anim.setValue(0);
-    Animated.timing(anim, { toValue: 1, duration: 350, useNativeDriver: false }).start(() => {
-      setTimeout(() => {
-        setCancellingId(null);
-        onDone?.();
-      }, 800);
-    });
-  }, [getAnim]);
-
-  /** 如果课程已取消但不在动画中，将动画值置为 1（已展开的删除线） */
-  const markCancelled = useCallback((id: number) => {
-    if (cancellingId !== id) {
-      getAnim(id).setValue(1);
-    }
-  }, [cancellingId]);
-
-  /**
-   * 获取删除线的插值样式。
-   * @param id - 课程 id
-   * @param cardWidth - 卡片宽度
-   */
-  const getLineStyle = useCallback((id: number, cardWidth: number) => ({
-    width: getAnim(id).interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, cardWidth + 20],
-    }),
-  }), [getAnim]);
-
-  /**
-   * 获取"已取消"标签的透明度插值样式。
-   * @param id - 课程 id
-   */
-  const getLabelStyle = useCallback((id: number) => ({
-    opacity: getAnim(id).interpolate({
-      inputRange: [0.5, 1],
-      outputRange: [0, 1],
-    }),
-  }), [getAnim]);
-
-  return { cancellingId, trigger, markCancelled, getLineStyle, getLabelStyle };
-}
-
-// ── useSlideManager ────────────────────────────────────────────────────────
-/**
- * 管理多个卡片的水平滑动动画。
- * 每个卡片通过独立 id 维护一个 Animated.Value，支持触发滑动并获取变换矩阵。
- */
-export function useSlideManager() {
-  // Map<卡片id, Animated.Value>，缓存在 useRef 中避免重复创建
-  const values = useRef<Map<number, Animated.Value>>(new Map()).current;
-
-  /** 获取或创建指定 id 对应的 Animated.Value */
-  const getValue = useCallback((id: number) => {
-    if (!values.has(id)) values.set(id, new Animated.Value(0));
-    return values.get(id)!;
-  }, []);
-
-  /**
-   * 触发指定卡片的滑动动画：向右滑出再滑回原位。
-   * @param id - 卡片唯一标识
-   */
-  const triggerSlide = useCallback((id: number) => {
-    const anim = getValue(id);
-    anim.setValue(0);
-    Animated.sequence([
-      Animated.timing(anim, { toValue: 35, duration: 200, useNativeDriver: false }),
-      Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: false }),
-    ]).start();
-  }, [getValue]);
-
-  /** 获取指定卡片的 Animated 变换样式（translateX） */
-  const getTransform = useCallback((id: number) => {
-    const anim = getValue(id);
-    return [{ translateX: anim }];
-  }, [getValue]);
-
-  return { triggerSlide, getTransform };
-}
+import { STRIP_COUNT, DURATION } from './stripConstants';
 
 // ── useShatterManager ──────────────────────────────────────────────────────
-/** 碎裂效果卡片条数（将卡片纵向切割为 8 条） */
-export const STRIP_COUNT = 8;
-/** 碎裂动画总时长（毫秒） */
-export const DURATION = 700;
-
 /** 每个碎片的配置参数 */
 export interface ShatterStripConfig {
   index: number;       // 碎片索引（0 ~ STRIP_COUNT-1）

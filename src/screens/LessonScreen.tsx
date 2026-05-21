@@ -9,9 +9,10 @@
  */
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput, Animated, LayoutAnimation, Easing,
+  View, Text, FlatList, TouchableOpacity, TextInput, Animated as RNAnimated, LayoutAnimation, Easing,
   ScrollView, Dimensions, Platform,
 } from 'react-native';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student, StudentSubject, Payment, LessonStatus } from '../models';
@@ -29,7 +30,7 @@ import DropdownSelect from '../components/DropdownSelect';
 import {
   Colors, FontWeight, BorderRadius, Shadows, LessonStatusColors,
 } from '../styles/theme';
-import { useSlideManager, useShatterManager, useCancelAnimation } from '../utils/animationHooks';
+import { useShatterManager } from '../utils/animationHooks';
 import { useBatchAnim } from '../styles/animations';
 import { ShredderStrip } from '../components/ShredderStrip';
 import { scale, moderateScale, useResponsive } from '../utils/responsive';
@@ -43,6 +44,49 @@ const FILTER_OPTIONS: { key: FilterStatus; label: string; color: string }[] = [
   { key: 'paid', label: '已收款', color: Colors.paid },
   { key: 'all', label: '全部', color: '#6b7280' },
 ];
+
+// ── 删除线动画常量样式（模块级，不依赖响应式） ──
+const strikethroughOverlayStyle = {
+  position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0,
+  justifyContent: 'center' as const, alignItems: 'center' as const, zIndex: 10,
+  overflow: 'visible' as const,
+};
+const strikethroughLineBaseStyle = {
+  position: 'absolute' as const, left: -30, height: 2,
+  backgroundColor: '#9CA3AF',
+};
+const strikethroughLabelBaseStyle = {
+  fontSize: 13, color: '#6B7280', fontWeight: '600' as const,
+  backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 2,
+  borderRadius: 999, overflow: 'hidden' as const,
+};
+
+// ── 动画删除线组件 ──
+/**
+ * 使用 react-native-reanimated 实现删除线展开和标签淡入动画。
+ * 替代旧的 Animated.Value + interpolate 模式。
+ */
+const AnimatedStrikethrough = React.memo(({
+  anim,
+  cardWidth,
+}: {
+  anim: Reanimated.SharedValue<number>;
+  cardWidth: number;
+}) => {
+  const lineStyle = useAnimatedStyle(() => ({
+    width: interpolate(anim.value, [0, 1], [0, cardWidth + 20]),
+  }));
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(anim.value, [0.5, 1], [0, 1]),
+  }));
+
+  return (
+    <View style={strikethroughOverlayStyle} pointerEvents="none">
+      <Reanimated.View style={[strikethroughLineBaseStyle, lineStyle]} />
+      <Reanimated.Text style={[strikethroughLabelBaseStyle, labelStyle]}>已取消</Reanimated.Text>
+    </View>
+  );
+});
 
 /**
  * LessonScreen 组件
@@ -64,27 +108,22 @@ const LessonScreen: React.FC = () => {
   const FILTER_INDEX: Record<FilterStatus, number> = { upcoming: 0, unpaid: 1, paid: 2, all: 3 };
   const SCREEN_W = Dimensions.get('window').width;                          // 屏幕宽度（分页基准）
   const pageScrollRef = useRef<ScrollView>(null);                           // 横向 ScrollView 引用
-  const scrollX = useRef(new Animated.Value(0)).current;                    // 横向滚动偏移量
+  const scrollX = useRef(new RNAnimated.Value(0)).current;                    // 横向滚动偏移量
   const scrollXRef = useRef(0);                                              // 横向滚动偏移量（非动画版，用于 measure 计算）
-  const filterAnim = useRef(new Animated.Value(FILTER_INDEX[filterStatus])).current;  // 初始值与当前筛选状态一致
-  const tabColorAnim = useRef(new Animated.Value(FILTER_INDEX[filterStatus])).current; // 滑块颜色插值
+  const reFilterAnim = useSharedValue(FILTER_INDEX[filterStatus]);                         // Reanimated Tab 滑块动画值
   const switchTab = useCallback((key: FilterStatus) => {
     setFilterStatus(key);
     const idx = FILTER_INDEX[key];
-    // 动画 + 横滑滚动
-    const anims = [
-      Animated.timing(filterAnim, { toValue: idx, duration: 250, useNativeDriver: true }),
-      Animated.timing(tabColorAnim, { toValue: idx, duration: 250, useNativeDriver: false }),
-    ];
+    // filterAnim 已原生驱动，直接动画（tabColorAnim 死代码已删除）
+    reFilterAnim.value = withTiming(idx, { duration: 250 });
     if (pageScrollRef.current) {
       pageScrollRef.current.scrollTo({ x: idx * SCREEN_W, animated: true });
       // 手动设值，避免 onScroll 覆盖
-      Animated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: false }).start();
+      RNAnimated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: false }).start();
     }
-    Animated.parallel(anims).start();
-  }, [filterAnim, tabColorAnim, scrollX, SCREEN_W]);
+  }, [scrollX, SCREEN_W]);
 
-  // 横滑跟踪：直接更新 scrollX（避免 Animated.event 额外开销）
+  // 横滑跟踪：直接更新 scrollX（避免 RNAnimated.event 额外开销）
   const onPageScroll = (e: any) => {
     scrollX.setValue(e.nativeEvent.contentOffset.x);
     scrollXRef.current = e.nativeEvent.contentOffset.x;
@@ -95,11 +134,8 @@ const LessonScreen: React.FC = () => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
     const key = FILTER_OPTIONS[idx].key;
     setFilterStatus(key);
-    Animated.parallel([
-      Animated.timing(filterAnim, { toValue: idx, duration: 150, useNativeDriver: true }),
-      Animated.timing(tabColorAnim, { toValue: idx, duration: 150, useNativeDriver: false }),
-    ]).start();
-      }, [filterAnim, tabColorAnim, SCREEN_W]);
+    reFilterAnim.value = withTiming(idx, { duration: 150 });
+      }, [SCREEN_W]);
 
   const [modalVisible, setModalVisible] = useState(false);                   // 添加/编辑弹窗
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);   // 正在编辑的课程
@@ -119,9 +155,9 @@ const LessonScreen: React.FC = () => {
   // ── 跨页面交互 ──
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
   const [highlightedId, setHighlightedId] = useState<number | null>(null);   // 高亮课程 ID
-  const highlightAnim = useRef(new Animated.Value(0)).current;               // 高亮闪烁动画
-  const calArrowRot = useRef(new Animated.Value(0)).current;
-  const timeArrowRot = useRef(new Animated.Value(0)).current;
+  const highlightAnim = useSharedValue(0);                                        // 高亮闪烁动画（SharedValue）
+  const calArrowRot = useSharedValue(0);                                          // 日历箭头旋转动画（SharedValue）
+  const timeArrowRot = useSharedValue(0);                                         // 时段箭头旋转动画（SharedValue）
   const flatListRefs = useRef<(FlatList | null)[]>([]);                      // 4 个分页列表引用
 
   // ── 响应式 + 屏幕 ──
@@ -132,7 +168,7 @@ const LessonScreen: React.FC = () => {
   const cardPosRef = useRef<(Map<number, { x: number; y: number }>)[]>([new Map(), new Map(), new Map(), new Map()]); // 卡片容器内位置缓存（onLayout + measureInWindow）
   const [showScrollTop, setShowScrollTop] = useState(false);                  // 回到顶部按钮可见性
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
-  const batchCollapseAnims = useRef<Map<number, Animated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
+  const batchCollapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
   const subjectsCache = useRef<Map<number, StudentSubject[]>>(new Map());                                // 学生科目缓存
   const [currentSubjects, setCurrentSubjects] = useState<StudentSubject[]>([]);                          // 当前选中学生的科目列表
 
@@ -332,13 +368,13 @@ const LessonScreen: React.FC = () => {
 
   // ── 动画状态 ──
   const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null); // 正在执行状态流转动画的课程
-  const slideTestAnims = useRef<Map<number, Animated.Value>>(new Map());                        // 状态流转：水平位移
-  const slideOpacityAnims = useRef<Map<number, Animated.Value>>(new Map());                     // 状态流转：透明度
-  const collapseAnims = useRef<Map<number, Animated.Value>>(new Map());                         // 删除碎纸动画：高度收缩
-  const collapseStarted = useRef<Set<number>>(new Set());                                       // 标记已开始收缩的课程 ID
-  const slideMgr = useSlideManager();                                                            // 滑动管理器
+  const slideTestAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                        // 状态流转：水平位移
+  const slideOpacityAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                     // 状态流转：透明度
+  const collapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                         // 删除碎纸动画：高度收缩
+  // collapseStarted 已移除（碎纸不再需要 height 折叠动画）                                       // 标记已开始收缩的课程 ID
   const shatterMgr = useShatterManager();                                                         // 碎纸管理器
-  const cancelAnim = useCancelAnimation();                                                        // 取消删除线动画
+  const [cancellingId, setCancellingId] = useState<number | null>(null);                         // 当前正在执行取消动画的课程 ID
+  const cancelAnimSV = useSharedValue(0);                                                         // 取消删除线动画值（0→1）
   const containerRef = useRef<View>(null);                                                        // 页面容器引用（用于碎纸定位）
   const containerOffRef = useRef({ x: 0, y: 0 });                                                   // 容器屏幕偏移（onLayout 捕获）
   const cardRefs = useRef<(Map<number, any>)[]>([new Map(), new Map(), new Map(), new Map()]);                                          // 卡片 DOM 引用（用于碎纸定位）
@@ -349,6 +385,32 @@ const LessonScreen: React.FC = () => {
   } | null>(null);
   const cpl = useBatchAnim(2000);                                                                          // 一键确认下课动画（停留2s后显示）
   const coll = useBatchAnim(2000);                                                                         // 一键收款动画（停留2s后显示）
+  // ── 批量按钮 Reanimated 动画样式 ──
+  const cplWrapStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: cpl.translateY.value }],
+    opacity: cpl.opacity.value,
+  }));
+  const cplHeightStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: cpl.height.value }],
+  }));
+  const collWrapStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: coll.translateY.value }],
+    opacity: coll.opacity.value,
+  }));
+  const collHeightStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: coll.height.value }],
+  }));
+  // ── 高亮覆盖层 Reanimated 动画样式 ──
+  const highlightOverlayStyle = useAnimatedStyle(() => ({
+    opacity: highlightAnim.value,
+  }));
+  // ── 表单箭头 Reanimated 动画样式 ──
+  const calArrowStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(calArrowRot.value, [0, 1], [0, 180])}deg` }],
+  }));
+  const timeArrowStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(timeArrowRot.value, [0, 1], [0, 180])}deg` }],
+  }));
   const isCplRunning = useRef(false);                                                                      // 一键确认下课执行中
   const isCollRunning = useRef(false);                                                                     // 一键收款执行中
 
@@ -497,10 +559,10 @@ const LessonScreen: React.FC = () => {
     const doChange = () => {
       if (filterStatus !== 'all' && (nextStatus === 'completed' || nextStatus === 'pendingPayment' || nextStatus === 'paid')) {
         if (!slideTestAnims.current.has(lesson.id)) {
-          slideTestAnims.current.set(lesson.id, new Animated.Value(0));
+          slideTestAnims.current.set(lesson.id, new RNAnimated.Value(0));
         }
         if (!slideOpacityAnims.current.has(lesson.id)) {
-          slideOpacityAnims.current.set(lesson.id, new Animated.Value(1));
+          slideOpacityAnims.current.set(lesson.id, new RNAnimated.Value(1));
         }
         const slideX = slideTestAnims.current.get(lesson.id)!;
         const slideOp = slideOpacityAnims.current.get(lesson.id)!;
@@ -508,19 +570,19 @@ const LessonScreen: React.FC = () => {
         slideOp.setValue(1);
         setMorphing({ id: lesson.id, targetStatus: nextStatus });
         setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
-            Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
+          RNAnimated.parallel([
+            RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
+            RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
           ]).start(() => {
             // 不重置 slideX/slideOp，保持滑出位置
             setMorphing(null);
             // 高度收缩 → LayoutAnimation → 移除卡片 → DB 写入 → 刷新
             const cardH = cardHeightRef.current.get(lesson.id) || 200;
             if (!batchCollapseAnims.current.has(lesson.id))
-              batchCollapseAnims.current.set(lesson.id, new Animated.Value(cardH));
+              batchCollapseAnims.current.set(lesson.id, new RNAnimated.Value(cardH));
             const collapseAnim = batchCollapseAnims.current.get(lesson.id)!;
             collapseAnim.setValue(cardH);
-            Animated.timing(collapseAnim, {
+            RNAnimated.timing(collapseAnim, {
               toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic),
             }).start(() => {
               Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -548,17 +610,17 @@ const LessonScreen: React.FC = () => {
   /** 依次触发单个卡片的滑动动画，返回 Promise */
   const animateOneSlide = (lessonId: number, targetStatus: LessonStatus): Promise<void> => {
     return new Promise((resolve) => {
-      if (!slideTestAnims.current.has(lessonId)) slideTestAnims.current.set(lessonId, new Animated.Value(0));
-      if (!slideOpacityAnims.current.has(lessonId)) slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
+      if (!slideTestAnims.current.has(lessonId)) slideTestAnims.current.set(lessonId, new RNAnimated.Value(0));
+      if (!slideOpacityAnims.current.has(lessonId)) slideOpacityAnims.current.set(lessonId, new RNAnimated.Value(1));
       const slideX = slideTestAnims.current.get(lessonId)!;
       const slideOp = slideOpacityAnims.current.get(lessonId)!;
       slideX.setValue(0);
       slideOp.setValue(1);
       setMorphing({ id: lessonId, targetStatus });
       setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
-          Animated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
+        RNAnimated.parallel([
+          RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
+          RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
         ]).start(() => {
           // 不重置 slideX/slideOp，保持滑出位置等待收缩动画
           setMorphing(null);
@@ -580,11 +642,11 @@ const LessonScreen: React.FC = () => {
         await setLessonStatus(l.id, 'pendingPayment');
         // 高度收缩动画：让下方卡片平滑上移
         const cardH = cardHeightRef.current.get(l.id) || 200;
-        if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new Animated.Value(cardH));
+        if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
-          Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
+          RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
@@ -616,11 +678,11 @@ const LessonScreen: React.FC = () => {
         await animateOneSlide(l.id, 'paid');
         await setLessonStatus(l.id, 'paid');
         const cardH = cardHeightRef.current.get(l.id) || 200;
-        if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new Animated.Value(cardH));
+        if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
-          Animated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
+          RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
@@ -650,8 +712,18 @@ const LessonScreen: React.FC = () => {
    */
   const handleCancelLesson = (lesson: Lesson) => {
     const doCancel = () => {
-      cancelAnim.trigger(lesson.id, () => {
-        setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+      setCancellingId(lesson.id);
+      cancelAnimSV.value = 0;
+      // 用 Reanimated withTiming 替代 Animated.timing：删除线动画 350ms + 800ms 停留后回调
+      cancelAnimSV.value = withTiming(1, { duration: 350 }, (finished) => {
+        if (finished) {
+          runOnJS(() => {
+            setCancellingId(null);
+            setTimeout(() => {
+              setLessonStatus(lesson.id, 'cancelled').then(loadLessons);
+            }, 800);
+          })();
+        }
       });
     };
     if (confirmBeforeChange) {
@@ -690,17 +762,12 @@ const LessonScreen: React.FC = () => {
         setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id });
       };
       if (cardView) {
-        // 优先用缓存的容器内位置（onLayout 时捕获）
-        const cached = cardPosRef.current[FILTER_INDEX[filterStatus]].get(id);
-        if (cached) {
-          doShatter(cached.x, cached.y, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
-        } else {
-          requestAnimationFrame(() => {
-            (cardView as any).measureInWindow((_x: number, _y: number, _w: number, _h: number) => {
-              doShatter(_x - containerOffRef.current.x, _y - containerOffRef.current.y, _w, _h);
-            });
+        // 实时 measureInWindow 获取当前位置（避免列表滚动后缓存位置错位）
+        requestAnimationFrame(() => {
+          (cardView as any).measureInWindow((_x: number, _y: number, _w: number, _h: number) => {
+            doShatter(_x - containerOffRef.current.x, _y - containerOffRef.current.y, _w || cardWidthRef.current.get(id) || 400, _h || cardHeightRef.current.get(id) || 200);
           });
-        }
+        });
       } else {
         doShatter(0, 0, cardWidthRef.current.get(id) || 400, cardHeightRef.current.get(id) || 200);
       }
@@ -814,22 +881,28 @@ const LessonScreen: React.FC = () => {
 
     const idx = filteredLessons.findIndex((l) => l.id === highlightLessonId);
     if (idx !== -1) {
-      highlightAnim.stopAnimation();
-      highlightAnim.setValue(0);
+      highlightAnim.value = 0;
       setHighlightedId(highlightLessonId);
-      
+
       requestAnimationFrame(() => {
         flatListRefs.current[FILTER_INDEX[filterStatus]]?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
       });
-      
-      Animated.sequence([
-        Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
-        Animated.delay(2000),
-        Animated.timing(highlightAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
-      ]).start(() => {
-        setHighlightedId(null);
-        clearHighlight();
-      });
+
+      // highlightAnim 驱动 opacity（基于 Reanimated withTiming）
+      highlightAnim.value = withTiming(1, { duration: 400 });
+      const timerId = setTimeout(() => {
+        highlightAnim.value = withTiming(0, { duration: 600 }, (finished) => {
+          if (finished) runOnJS(() => {
+            setHighlightedId(null);
+            clearHighlight();
+          })();
+        });
+      }, 2400);
+
+      return () => {
+        clearTimeout(timerId);
+        highlightAnim.value = 0;
+      };
     }
   }, [highlightLessonId, filteredLessons, lessons, filterStatus, clearHighlight]);
 
@@ -849,11 +922,12 @@ const LessonScreen: React.FC = () => {
     const isMorphingCard = morphing?.id === lessonId;
     const displayStatus = isMorphingCard ? morphing!.targetStatus : lesson.status;
     const isCancelled = lesson.status === 'cancelled';
-    const isCancellingCard = cancelAnim.cancellingId === lessonId;
+    const isCancellingCard = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancellingCard;
 
-    if (isCancelled && !isCancellingCard) {
-      cancelAnim.markCancelled(lessonId);
+    // 如果课程已取消但非当前动画卡片，直接设置动画值为 1（全展开态）
+    if (isCancelled && cancellingId !== lessonId) {
+      cancelAnimSV.value = 1;
     }
 
     return (
@@ -902,10 +976,10 @@ const LessonScreen: React.FC = () => {
             </View>
           ) : null}
           {showCancelAnim && interactive && (
-            <View style={styles.strikethroughOverlay} pointerEvents="none">
-              <Animated.View style={[styles.strikethroughLine, cancelAnim.getLineStyle(lessonId, cardWidthRef.current.get(lessonId) || 400)]} />
-              <Animated.Text style={[styles.strikethroughLabel, cancelAnim.getLabelStyle(lessonId)]}>已取消</Animated.Text>
-            </View>
+            <AnimatedStrikethrough
+              anim={cancelAnimSV}
+              cardWidth={cardWidthRef.current.get(lessonId) || 400}
+            />
           )}
           {showCancelAnim && !interactive && isCancelled && (
             <View style={styles.strikethroughOverlay} pointerEvents="none">
@@ -959,7 +1033,7 @@ const LessonScreen: React.FC = () => {
   /**
    * renderLesson - 渲染整个课程卡片（含动画容器）
    *
-   * 包裹 Animated.View，处理：
+   * 包裹 RNAnimated.View，处理：
    * - 状态流转的滑动动画（slideTestAnims）
    * - 取消课程的删除线动画（cancelAnims）
    * - 碎纸删除的高度收缩动画（collapseAnims）
@@ -969,10 +1043,10 @@ const LessonScreen: React.FC = () => {
    */
   // ── 选择器箭头旋转动画 ──
   useEffect(() => {
-    Animated.timing(calArrowRot, { toValue: showCalendar ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    calArrowRot.value = withTiming(showCalendar ? 1 : 0, { duration: 200 });
   }, [showCalendar]);
   useEffect(() => {
-    Animated.timing(timeArrowRot, { toValue: showTimePicker ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    timeArrowRot.value = withTiming(showTimePicker ? 1 : 0, { duration: 200 });
   }, [showTimePicker]);
 
   const renderLesson = ({ item }: { item: Lesson }, pageIdx: number = 3) => {
@@ -983,47 +1057,31 @@ const LessonScreen: React.FC = () => {
     const displayStatus = isMorphing ? morphing!.targetStatus : item.status;
     const borderColor = displayStatus === 'paid' ? Colors.paid : displayStatus === 'pendingPayment' ? Colors.pending : displayStatus === 'cancelled' ? Colors.caption : Colors.primary;
     const isCancelled = item.status === 'cancelled';
-    const isCancelling = cancelAnim.cancellingId === lessonId;
+    const isCancelling = cancellingId === lessonId;
     const showCancelAnim = isCancelled || isCancelling;
     const isHighlighted = item.id === highlightedId;
 
     if (!slideTestAnims.current.has(lessonId)) {
-      slideTestAnims.current.set(lessonId, new Animated.Value(0));
+      slideTestAnims.current.set(lessonId, new RNAnimated.Value(0));
     }
     if (!slideOpacityAnims.current.has(lessonId)) {
-      slideOpacityAnims.current.set(lessonId, new Animated.Value(1));
+      slideOpacityAnims.current.set(lessonId, new RNAnimated.Value(1));
     }
 
     // Collapse animation when shredding
     const cardH = cardHeightRef.current.get(lessonId) || 200;
     if (!collapseAnims.current.has(lessonId)) {
-      collapseAnims.current.set(lessonId, new Animated.Value(cardH));
+      collapseAnims.current.set(lessonId, new RNAnimated.Value(cardH));
     }
     const collapseAnim = collapseAnims.current.get(lessonId)!;
-    if (shatterMgr.activeId === lessonId && !collapseStarted.current.has(lessonId)) {
-      collapseStarted.current.add(lessonId);
-      collapseAnim.setValue(cardH);
-      Animated.timing(collapseAnim, {
-        toValue: 0, duration: 350, useNativeDriver: false, easing: Easing.out(Easing.cubic),
-      }).start();
-    }
-    if (shatterMgr.activeId !== lessonId) {
-      collapseStarted.current.delete(lessonId);
-    }
-
+    // 碎纸模式不启动 height 折叠动画（碎纸条 Reanimated 动画已覆盖视觉效果，避免 JS 线程卡顿）
     const cardInner = (interactive: boolean) => renderCardContent(item, interactive);
 
-    const cardBg = showCancelAnim
-      ? '#F3F4F6'
-      : isHighlighted
-      ? highlightAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [Colors.card, Colors.primary + '18'],
-        })
-      : Colors.card;
+    // ── 高亮背景改用 opacity 覆盖层，不再插值 backgroundColor ──
+    const cardBg = showCancelAnim ? '#F3F4F6' : Colors.card;
 
     return (
-      <Animated.View
+      <RNAnimated.View
         style={[styles.card, Shadows.standard, {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
@@ -1033,10 +1091,7 @@ const LessonScreen: React.FC = () => {
         }, shatterMgr.activeId === lessonId ? {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
-          height: collapseAnim,
-          padding: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
-          marginBottom: collapseAnim.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
-          overflow: 'hidden',
+          // 不设 height 折叠，碎纸条动画结束后由 LayoutAnimation 处理布局过渡
         } : batchCollapseAnims.current.has(lessonId) ? {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
@@ -1057,10 +1112,18 @@ const LessonScreen: React.FC = () => {
           }
         }}
       >
+        {/* ── 高亮闪烁覆盖层（原生驱动 opacity 替代 backgroundColor 插值） ── */}
+        {isHighlighted && (
+          <Reanimated.View style={[{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: Colors.primary + '18',
+            borderRadius: BorderRadius.card,
+          }, highlightOverlayStyle]} pointerEvents="none" />
+        )}
         <View style={shatterMgr.activeId === lessonId ? { opacity: 0 } : null}>
           {cardInner(true)}
         </View>
-      </Animated.View>
+      </RNAnimated.View>
     );
   };
 
@@ -1070,7 +1133,7 @@ const LessonScreen: React.FC = () => {
       <View style={styles.tabBarWrap}>
         <View style={styles.tabGroup} onLayout={(e) => setTabBarW(e.nativeEvent.layout.width)}>
           {tabBarW > 0 && (
-            <Animated.View style={[styles.tabSlider, {
+            <RNAnimated.View style={[styles.tabSlider, {
               width: scrollX.interpolate({ inputRange: [0, 2*SCREEN_W, 3*SCREEN_W], outputRange: [tabBarW/3, tabBarW/3, 0], extrapolate: 'clamp' }),
               backgroundColor: scrollX.interpolate({ inputRange: [0, SCREEN_W, 2*SCREEN_W, 3*SCREEN_W], outputRange: ['#6366F1',Colors.pending,Colors.paid,'#6b7280'] }),
               transform: [{ translateX: scrollX.interpolate({ inputRange: [0, 2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 2*tabBarW/3, 3*tabBarW/3], extrapolate: 'clamp' }) }],
@@ -1079,35 +1142,35 @@ const LessonScreen: React.FC = () => {
           )}
           {FILTER_OPTIONS.slice(0, 3).map((opt, i) => (
             <TouchableOpacity key={opt.key} style={styles.tabBtn} activeOpacity={0.75} onPress={() => switchTab(opt.key)}>
-              <Animated.Text style={[styles.tabBtnText, {
+              <RNAnimated.Text style={[styles.tabBtnText, {
                 color: scrollX.interpolate({
                   inputRange: [SCREEN_W*(i-1), SCREEN_W*i, SCREEN_W*(i+1)],
                   outputRange: [Colors.caption, '#FFF', Colors.caption],
                   extrapolate: 'clamp',
                 }),
-              }]}>{opt.label}</Animated.Text>
+              }]}>{opt.label}</RNAnimated.Text>
             </TouchableOpacity>
           ))}
         </View>
         <TouchableOpacity style={styles.tabSolo} activeOpacity={0.75} onPress={() => switchTab('all')}>
-          <Animated.View style={[styles.tabSlider, {
+          <RNAnimated.View style={[styles.tabSlider, {
             backgroundColor: scrollX.interpolate({ inputRange: [0, SCREEN_W, 2*SCREEN_W, 3*SCREEN_W], outputRange: ['#6366F1',Colors.pending,Colors.paid,'#6b7280'] }),
             opacity: scrollX.interpolate({ inputRange: [2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 1], extrapolate: 'clamp' }),
           }]} />
           <View style={styles.tabBtn}>
-            <Animated.Text style={[styles.tabBtnText, {
+            <RNAnimated.Text style={[styles.tabBtnText, {
               color: scrollX.interpolate({
                 inputRange: [2*SCREEN_W, 3*SCREEN_W, 4*SCREEN_W],
                 outputRange: [Colors.caption, '#FFF', Colors.caption],
                 extrapolate: 'clamp',
               }),
-            }]}>全部</Animated.Text>
+            }]}>全部</RNAnimated.Text>
           </View>
         </TouchableOpacity>
       </View>
 
       {/* ── 横滑分页内容 ── */}
-      <Animated.ScrollView
+      <RNAnimated.ScrollView
         ref={pageScrollRef as any}
         horizontal
         pagingEnabled
@@ -1157,24 +1220,24 @@ const LessonScreen: React.FC = () => {
                 ListHeaderComponent={
                   <>
                     {idx === 0 && cpl.visible && (
-                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: cpl.translateY }], opacity: cpl.opacity }]}>
-                      <Animated.View style={{ maxHeight: cpl.height }}>
+                      <Reanimated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md }, cplWrapStyle]}>
+                      <View style={{ overflow: 'hidden' }}><Reanimated.View style={cplHeightStyle}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.dangerLight, borderColor:Colors.danger+'30' }]} activeOpacity={0.75} onPress={handleBatchComplete}>
                           <Ionicons name="time-outline" size={iconSize.lg} color={Colors.danger} />
                           <Text style={[styles.batchBtnText, { color:Colors.danger }]}>一键确认下课（{schedulableCount}节）</Text>
                         </TouchableOpacity>
-                      </Animated.View>
-                      </Animated.View>
+                      </Reanimated.View></View>
+                      </Reanimated.View>
                     )}
                     {idx === 1 && coll.visible && (
-                      <Animated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md, transform:[{ translateY: coll.translateY }], opacity: coll.opacity }]}>
-                      <Animated.View style={{ maxHeight: coll.height }}>
+                      <Reanimated.View style={[styles.batchBtnWrap, { marginBottom: spacing.md }, collWrapStyle]}>
+                      <View style={{ overflow: 'hidden' }}><Reanimated.View style={collHeightStyle}>
                         <TouchableOpacity style={[styles.batchBtn, { backgroundColor:Colors.paidLight, borderColor:Colors.paid+'30' }]} activeOpacity={0.75} onPress={handleBatchCollect}>
                           <Ionicons name="wallet-outline" size={iconSize.lg} color={Colors.paid} />
                           <Text style={[styles.batchBtnText, { color:Colors.paid }]}>一键收款（{collectableCount}节）</Text>
                         </TouchableOpacity>
-                      </Animated.View>
-                      </Animated.View>
+                      </Reanimated.View></View>
+                      </Reanimated.View>
                     )}
                   </>
                 }
@@ -1182,7 +1245,7 @@ const LessonScreen: React.FC = () => {
             )}
           </View>
         ))}
-      </Animated.ScrollView>
+      </RNAnimated.ScrollView>
 
 
       {showScrollTop && (
@@ -1267,7 +1330,7 @@ const LessonScreen: React.FC = () => {
                 <Text style={[styles.datePickerText, !date && styles.datePickerPlaceholder]}>
                   {date ? date.slice(5) : '选择日期'}
                 </Text>
-                <Animated.View style={{ transform: [{ rotate: calArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+                <Reanimated.View style={calArrowStyle}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Reanimated.View>
               </TouchableOpacity>
             </View>
             <View style={styles.formHalf}>
@@ -1276,7 +1339,7 @@ const LessonScreen: React.FC = () => {
                 <Text style={[styles.datePickerText, !timeSlot && styles.datePickerPlaceholder]}>
                 {timeSlot || '选择时段'}
               </Text>
-              <Animated.View style={{ transform: [{ rotate: timeArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+              <Reanimated.View style={timeArrowStyle}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Reanimated.View>
             </TouchableOpacity>
           </View>
         </View>
