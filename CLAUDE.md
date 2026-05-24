@@ -89,3 +89,22 @@ Stop hook 已停用（`settings.local.json` 中移除）。不再自动 commit �
 - JSX 视觉区块前 → `{/* ── 说明 ── */}`
 - 复杂逻辑行后 → `// 说明`
 - 新增或改动的代码任何位置都必须同步加注释，不改注释等于没改完
+
+### Android 本地构建（不用 EAS 云构建）
+打包 APK 时使用本地 Gradle 构建，**不要用 `eas build`**（太慢，云端排队）。
+
+**构建命令：**
+```bash
+# Debug APK（开发测试用）
+cd android && ./gradlew assembleDebug
+# 输出：android/app/build/outputs/apk/debug/app-debug.apk
+
+# Release APK（发布用，需要签名配置）
+cd android && ./gradlew assembleRelease
+# 输出：android/app/build/outputs/apk/release/app-release.apk
+```
+
+**注意事项：**
+- 构建前确保 `android/local.properties` 中 SDK 路径正确
+- Release 构建需要 `android/app/release.keystore` 和 `android/key.properties` 可用
+- Windows 上用 `gradlew.bat` 替代 `./gradlew`
