@@ -10,7 +10,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, Animated as RNAnimated, LayoutAnimation, Easing,
-  ScrollView, Dimensions, Platform,
+  ScrollView, Dimensions,
 } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS, Easing as REasing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,23 +114,22 @@ const LessonScreen: React.FC = () => {
   const switchTab = useCallback((key: FilterStatus) => {
     setFilterStatus(key);
     const idx = FILTER_INDEX[key];
-    // filterAnim 已原生驱动，直接动画（tabColorAnim 死代码已删除）
-    reFilterAnim.value = withTiming(idx, { duration: 250 });
+    setActiveFilterIdx(idx);                                   // 同步 activeFilterIdx（与 onMomentumEnd 一致）
+    reFilterAnim.value = withTiming(idx, { duration: 150 });   // 微调滑块动画
     if (pageScrollRef.current) {
+      // scrollTo 本身通过 onPageScroll 驱动 scrollX，不手动 RNAnimated.timing（否则与原生滚动竞争导致抖动）
       pageScrollRef.current.scrollTo({ x: idx * SCREEN_W, animated: true });
-      // 手动设值，避免 onScroll 覆盖
-      RNAnimated.timing(scrollX, { toValue: idx * SCREEN_W, duration: 250, useNativeDriver: false }).start();
     }
-  }, [scrollX, SCREEN_W]);
+  }, [SCREEN_W]);
 
-  // 横滑跟踪：更新 scrollX + 实时追踪当前 Tab 索引（用于徽章显示）
+  // 横滑跟踪：ref guard 保证只在跨越页面边界时触发 setState（~3次/swipe，非每帧）
   const onPageScroll = (e: any) => {
     scrollX.setValue(e.nativeEvent.contentOffset.x);
     scrollXRef.current = e.nativeEvent.contentOffset.x;
     const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
     if (idx >= 0 && idx <= 3 && idx !== activeFilterIdxRef.current) {
       activeFilterIdxRef.current = idx;
-      setActiveFilterIdx(idx);
+      setActiveFilterIdx(idx);  // 仅跨页面边界时触发，徽章/按钮跟随滚动实时切换
     }
   };
 
@@ -182,13 +181,14 @@ const LessonScreen: React.FC = () => {
     opacity: badgeAnim.value,
     transform: [{ translateY: interpolate(badgeAnim.value, [0, 1], [8, 0]) }],
   }));
+  // 徽章动画依赖 activeFilterIdx（跨页面边界时触发，跟随滚动实时切换）
   useEffect(() => {
     badgeAnim.value = 0;
     badgeAnim.value = withTiming(1, { duration: 500, easing: REasing.out(REasing.cubic) });
   }, [activeFilterIdx]);
   const [shredCollapsingId, setShredCollapsingId] = useState<number | null>(null); // 删除碎纸时折叠中的卡片 ID
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
-  const batchCollapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                             // 批量操作中卡片高度收缩动画
+  const batchCollapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                             // 批量/删除时的高度收缩动画（JS线程，配合LayoutAnimation平滑过渡）
   const subjectsCache = useRef<Map<number, StudentSubject[]>>(new Map());                                // 学生科目缓存
   const [currentSubjects, setCurrentSubjects] = useState<StudentSubject[]>([]);                          // 当前选中学生的科目列表
 
@@ -396,8 +396,7 @@ const LessonScreen: React.FC = () => {
   const [morphing, setMorphing] = useState<{ id: number; targetStatus: LessonStatus } | null>(null); // 正在执行状态流转动画的课程
   const slideTestAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                        // 状态流转：水平位移
   const slideOpacityAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                     // 状态流转：透明度
-  const collapseAnims = useRef<Map<number, RNAnimated.Value>>(new Map());                         // 删除碎纸动画：高度收缩
-  // collapseStarted 已移除（碎纸不再需要 height 折叠动画）                                       // 标记已开始收缩的课程 ID
+  // collapseAnims 已移除（死代码）；batchCollapseAnims 已移至 refs 区，配合 LayoutAnimation 使用
   const shatterMgr = useShatterManager();                                                         // 碎纸管理器
   const [cancellingId, setCancellingId] = useState<number | null>(null);                         // 当前正在执行取消动画的课程 ID
   const cancelAnimSV = useSharedValue(0);                                                         // 取消删除线动画值（0→1）
@@ -596,7 +595,7 @@ const LessonScreen: React.FC = () => {
           ]).start(() => {
             // 不重置 slideX/slideOp，保持滑出位置
             setMorphing(null);
-            // 高度收缩 → LayoutAnimation → 移除卡片 → DB 写入 → 刷新
+            // 高度收缩动画 → LayoutAnimation → 移除卡片 → DB 写入 → 刷新
             const cardH = cardHeightRef.current.get(lesson.id) || 200;
             if (!batchCollapseAnims.current.has(lesson.id))
               batchCollapseAnims.current.set(lesson.id, new RNAnimated.Value(cardH));
@@ -605,7 +604,7 @@ const LessonScreen: React.FC = () => {
             RNAnimated.timing(collapseAnim, {
               toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic),
             }).start(() => {
-              Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               setLessons((prev) => prev.filter((x) => x.id !== lesson.id));
               slideTestAnims.current.get(lesson.id)?.setValue(0);
               batchCollapseAnims.current.delete(lesson.id);
@@ -615,7 +614,7 @@ const LessonScreen: React.FC = () => {
           });
         }, 300);
       } else {
-        Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);  // 原生驱动高度收缩，已在 App.tsx 为 Android 启用
         setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
       }
     };
@@ -660,14 +659,14 @@ const LessonScreen: React.FC = () => {
       for (const l of targetLessons) {
         await animateOneSlide(l.id, 'pendingPayment');
         await setLessonStatus(l.id, 'pendingPayment');
-        // 高度收缩动画：让下方卡片平滑上移
+        // 高度收缩动画 → LayoutAnimation → 移除 → 让下方卡片平滑上移
         const cardH = cardHeightRef.current.get(l.id) || 200;
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
           RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
@@ -697,13 +696,14 @@ const LessonScreen: React.FC = () => {
       for (const l of targetLessons) {
         await animateOneSlide(l.id, 'paid');
         await setLessonStatus(l.id, 'paid');
+        // 高度收缩动画 → LayoutAnimation → 移除
         const cardH = cardHeightRef.current.get(l.id) || 200;
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
         await new Promise<void>((resolve) => {
           RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            Platform.OS === 'ios' && LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
@@ -772,22 +772,22 @@ const LessonScreen: React.FC = () => {
     const doDelete = () => {
       const cardView = cardRefs.current[FILTER_INDEX[filterStatus]].get(id);
       const doShatter = (x: number, y: number, cardW: number, cardH: number) => {
-        // ── LayoutAnimation 平滑收缩卡片高度（消除空白占位） ──
+        // 高度收缩动画：消除碎纸期间卡片占位空白（幽灵框），JS线程驱动一次
         if (!batchCollapseAnims.current.has(id)) {
           batchCollapseAnims.current.set(id, new RNAnimated.Value(cardH));
         }
         const collapseAnim = batchCollapseAnims.current.get(id)!;
         collapseAnim.setValue(cardH);
         RNAnimated.timing(collapseAnim, {
-          toValue: 0, duration: 400, useNativeDriver: false, easing: Easing.out(Easing.cubic),
-        }).start(() => {
-          batchCollapseAnims.current.delete(id);
-        });
+          toValue: 0, duration: 350, useNativeDriver: false, easing: Easing.out(Easing.cubic),
+        }).start();
 
+        // 碎纸视觉动画 + LayoutAnimation 原生驱动收尾
         const strips = shatterMgr.triggerShatter(id, cardH, () => {
           setShredPortal(null);
           setShredCollapsingId(null);
-          // 卡片已在 height:0，移除时无需额外动画
+          batchCollapseAnims.current.delete(id);
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setLessons(prev => prev.filter(l => l.id !== id));
           cardRefs.current[FILTER_INDEX[filterStatus]].delete(id); cardPosRef.current[FILTER_INDEX[filterStatus]].delete(id); cardWidthRef.current.delete(id); cardHeightRef.current.delete(id);
           deleteLesson(id).catch((e) => { const target = lessons.find(l => l.id === id); if (target) setLessons(prev => [...prev, target]); showToast('删除失败，请重试', 'error'); });
@@ -863,7 +863,7 @@ const LessonScreen: React.FC = () => {
     }
   }, [pendingFilter, clearFilter]);
 
-  /** 一键确认下课：切 tab 退场动画（淡出+上滑），条件满足时延迟 2s 入场 */
+  /** 一键确认下课：切 tab 退场（淡出+上滑），页面切换时实时响应 */
   const prevCplIdx = useRef(activeFilterIdx);
   useEffect(() => {
     if (prevCplIdx.current !== activeFilterIdx) { cpl.exit(); prevCplIdx.current = activeFilterIdx; }
@@ -1058,8 +1058,8 @@ const LessonScreen: React.FC = () => {
    *
    * 包裹 RNAnimated.View，处理：
    * - 状态流转的滑动动画（slideTestAnims）
-   * - 取消课程的删除线动画（cancelAnims）
-   * - 碎纸删除的高度收缩动画（collapseAnims）
+   * - 取消课程的删除线动画（cancelAnimSV）
+   * - 删除碎纸视觉（shatterMgr）+ LayoutAnimation 原生驱动高度收缩
    * - 高亮闪烁动画（highlightAnim）
    * 测量卡片实际尺寸并缓存（用于 getItemLayout 和删除线宽度）。
    * @param item 课程对象
@@ -1091,13 +1091,8 @@ const LessonScreen: React.FC = () => {
       slideOpacityAnims.current.set(lessonId, new RNAnimated.Value(1));
     }
 
-    // Collapse animation when shredding
+    // 高度收缩动画（batchCollapseAnims 驱动 height → 0）
     const cardH = cardHeightRef.current.get(lessonId) || 200;
-    if (!collapseAnims.current.has(lessonId)) {
-      collapseAnims.current.set(lessonId, new RNAnimated.Value(cardH));
-    }
-    const collapseAnim = collapseAnims.current.get(lessonId)!;
-    // 碎纸模式不启动 height 折叠动画（碎纸条 Reanimated 动画已覆盖视觉效果，避免 JS 线程卡顿）
     const cardInner = (interactive: boolean) => renderCardContent(item, interactive);
 
     // ── 高亮背景改用 opacity 覆盖层，不再插值 backgroundColor ──
@@ -1119,7 +1114,7 @@ const LessonScreen: React.FC = () => {
           height: batchCollapseAnims.current.get(lessonId)!,
           padding: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
           marginBottom: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
-          } : { height: 0 }),
+          } : { height: 0 }),  // 无动画值则直接隐藏（消除幽灵框）
         } : batchCollapseAnims.current.has(lessonId) ? {
           backgroundColor: 'transparent',
           borderLeftWidth: 0,
@@ -1170,7 +1165,7 @@ const LessonScreen: React.FC = () => {
           )}
           {FILTER_OPTIONS.slice(0, 3).map((opt, i) => (
             <TouchableOpacity key={opt.key} style={styles.tabBtn} activeOpacity={0.75} onPress={() => switchTab(opt.key)}>
-              {FILTER_INDEX[opt.key] === activeFilterIdx && (
+              {FILTER_INDEX[opt.key] === activeFilterIdx && (  // ref guard 保证仅跨页面边界时触发，跟随滚动实时切换
                 <Reanimated.View style={[styles.badge, badgeAnimStyle]}>
                   <Text style={styles.badgeText}>{opt.key === 'upcoming' ? counts.upcoming : opt.key === 'unpaid' ? counts.unpaid : counts.paid}</Text>
                 </Reanimated.View>
@@ -1191,7 +1186,7 @@ const LessonScreen: React.FC = () => {
             opacity: scrollX.interpolate({ inputRange: [2*SCREEN_W, 3*SCREEN_W], outputRange: [0, 1], extrapolate: 'clamp' }),
           }]} />
           <View style={styles.tabBtn}>
-            {activeFilterIdx === 3 && (
+            {activeFilterIdx === 3 && (  // ref guard 保证仅跨页面边界时触发，跟随滚动实时切换
               <Reanimated.View style={[styles.badge, badgeAnimStyle]}>
                 <Text style={styles.badgeText}>{counts.all}</Text>
               </Reanimated.View>

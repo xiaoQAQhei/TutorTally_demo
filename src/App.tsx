@@ -5,7 +5,12 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, UIManager, Platform } from 'react-native';
+
+// ── Android 启用 LayoutAnimation（支持原生驱动的布局过渡动画，避免 JS 线程卡顿） ──
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
