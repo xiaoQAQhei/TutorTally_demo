@@ -10,7 +10,7 @@ import {
   ScrollView, useWindowDimensions, PanResponder,
 } from 'react-native';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, cancelAnimation,
+  useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, cancelAnimation, Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
@@ -153,7 +153,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
       heightOffset.value = 0;
       translateY.value = sheetHeight;
       overlayOpacity.value = withTiming(1, { duration: 300 });
-      translateY.value = withSpring(0, { dampingRatio: 0.4 });
+      translateY.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });  // 纯缓出，不露底
     } else if (rendering) {
       const finishExit = () => { setRendering(false); };
       heightOffset.value = withTiming(0, { duration: 250 });
