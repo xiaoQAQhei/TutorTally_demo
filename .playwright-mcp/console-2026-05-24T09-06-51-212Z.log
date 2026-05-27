@@ -1,0 +1,37 @@
+[     153ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[     166ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+    at fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:2094)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+[     200ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[     202ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+    at fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:2094)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+[     598ms] [ERROR] SSE连接出错: I @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50
+[     598ms] [ERROR] EventSource's response has a Content-Type specifying an unsupported type: application/json; charset=utf-8. Aborting the connection. @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:43
+[     801ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async d.getOB11Config (http://127.0.0.1:6099/webui/assets/qq_manager-8s2H0Sdl.js:1:85)
+    at async refreshConfig (http://127.0.0.1:6099/webui/assets/use-config-Bk4JqfTs.js:1:540)
+[     849ms] [LOG] SW registered:  ServiceWorkerRegistration @ http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:60
+[     854ms] Error: Unauthorized
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+    at fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:2094)
+    at async Ja.checkWebUiLogined (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6100)
+[    1203ms] [LOG] Passkey login failed or not available: Error: No passkeys registered
+    at http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:50:6007
+    at async fr.request (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:49:1998)
+    at async Ja.generatePasskeyAuthenticationOptions (http://127.0.0.1:6099/webui/assets/index-Bqn9ggA_.js:51:1683)
+    at async S (http://127.0.0.1:6099/webui/assets/web_login-By_mr7m7.js:1:1320) @ http://127.0.0.1:6099/webui/assets/web_login-By_mr7m7.js:0
+[   42627ms] [ERROR] ne @ http://127.0.0.1:6099/webui/assets/react-dom-CwaHFgt6.js:236
+[   42627ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_CLOSED @ https://hitokoto.152710.xyz/:0
+[ 2653357ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:6099/webui/config?tab=token:0
+[ 2653357ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:6099/webui/config?tab=token:0

@@ -32,11 +32,12 @@ React Native (Expo) 应用，用于管理家教课程账单。
   - 文件: [涉及的文件列表]
 ```
 
-4. 子 agent 只写日志，不改代码
+4. **如果本轮添加了新功能/新组件/新概念**，同步更新 `logs/glossary.md`（参考其现有格式追加对应条目）
+5. 子 agent 只写日志文件，不改代码
 
 启动子 agent 的 prompt 模板：
 ```
-写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 Read 工具读前 5 行确认格式。用 Write 工具将本轮人话总结（格式见项目 CLAUDE.md）插入文件开头，后面拼接原有全部内容。禁止用 sed、python -c 等命令行方式修改文件——Windows 下会导致 UTF-8 中文双重编码损坏。只写日志文件。
+写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 Read 工具读前 5 行确认格式。用 Write 工具将本轮人话总结（格式见项目 CLAUDE.md）插入文件开头，后面拼接原有全部内容。如果本轮添加了新功能/新组件/新概念，还需要更新 logs/glossary.md（参考现有格式追加对应条目）。禁止用 sed、python -c 等命令行方式修改文件——Windows 下会导致 UTF-8 中文双重编码损坏。只写日志文件。
 ```
 
 ### 用户表示收工（睡觉/下班/结束工作）时：写入进度文件

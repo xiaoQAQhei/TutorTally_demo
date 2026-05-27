@@ -1,3 +1,19 @@
+## [2026-05-27] Slide-out + Collapse 闪烁修复（最终方案）
+
+**问题**：slide-out 完成后卡片在原位置闪烁一下才进入 collapse。反复修了多次，每次都在不同层次打补丁（0-duration reset、RAF 延迟、render override），但都没解决根本原因。
+
+**根因**：slide 回调里 `slideX.setValue(0)` 把 translateX 从 400 拉回 0，但 React 还没重渲染应用 collapse 的 `backgroundColor: 'transparent'`。这一两帧里卡片 translateX=0 + 全尺寸 + cardBg → 闪。
+
+**正确解法**：slide 完成后**不 reset slideX/slideOp**，让卡片保持在 translateX=400（屏幕外）。collapse 块本身已设 `backgroundColor: 'transparent'` + animated height，卡片在屏幕外透明坍缩，下方卡片通过 LayoutAnimation 上移——用户完全看不到 flashing card。
+
+**经验教训**：不要在半路上把动画值归零再等 React 接棒。应该让前一阶段的残留值（x=400）自然延续到下一阶段，下一阶段的样式（transparent + collapse）自己盖掉视觉效果。
+- 将 slide-out 从 `useNativeDriver: true` 改回 `false`（消除 JS/原生双侧值不一致，回归老版本稳定架构）
+- 去掉 slide 回调中的 `slideX.setValue(0)` / `slideOp.setValue(1)`（闪烁根因）
+- 去掉 0-duration native driver reset（无效补丁）
+- 去掉 RAF 延迟（无效补丁）
+- 去掉 render 层 collapse override（不再需要）
+- 文件: src/screens/LessonScreen.tsx
+
 ## [2026-05-22] [01:52] 修复平板状态流转动画右侧闪烁
 - 将 translateX toValue 从 400 改为 SCREEN_W + 200，确保平板卡片完全滑出屏幕
 - setMorphing(null) 后透明度跳回 1 时卡片已不可见，消除右侧闪烁

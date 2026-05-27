@@ -169,10 +169,16 @@ const StudentScreen: React.FC = () => {
    * 新增时创建学生记录及科目，更新时先记录调价历史再更新。
    */
   const handleSave = async () => {
-    if (!name || editSubjects.length === 0 || editSubjects.some(s => !s.subject || !s.hourlyRate)) {
-      showToast('请填写学生姓名和至少一个科目（含科目名和课时费）', 'error');
-      return;
+    const missing: string[] = [];
+    if (!name) missing.push('姓名');
+    if (editSubjects.length === 0) missing.push('至少一个科目');
+    else {
+      editSubjects.forEach((s, i) => {
+        if (!s.subject) missing.push(`科目${i + 1}名称`);
+        if (!s.hourlyRate) missing.push(`科目${i + 1}课时费`);
+      });
     }
+    if (missing.length > 0) { showToast(`请填写：${missing.join('、')}`, 'error'); return; }
     if (editingStudent) {
       await updateStudent({ ...editingStudent, name, phone, address, updatedAt: new Date().toISOString() } as any);
       for (const es of editSubjects) {

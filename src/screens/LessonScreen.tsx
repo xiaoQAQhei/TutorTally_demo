@@ -389,10 +389,13 @@ const LessonScreen: React.FC = () => {
   const calculateAmount = () => { if (!duration) return 0; return (parseFloat(lessonRate) || 0) * parseFloat(duration); };
 
   const handleSave = async () => {
-    if (!selectedStudentId || !date || !timeSlot || !duration || !lessonRate) {
-      showToast('请选择学生、日期、时段并填写课时和课时费', 'error');
-      return;
-    }
+    const missing: string[] = [];
+    if (!selectedStudentId) missing.push('学生');
+    if (!date) missing.push('日期');
+    if (!timeSlot) missing.push('时段');
+    if (!duration) missing.push('课时');
+    if (!lessonRate) missing.push('课时费');
+    if (missing.length > 0) { showToast(`请填写：${missing.join('、')}`, 'error'); return; }
     const amount = calculateAmount();
     const parts = timeSlot.split('-');
     if (parts.length === 2) {
@@ -429,16 +432,17 @@ const LessonScreen: React.FC = () => {
         setMorphing({ id: lesson.id, targetStatus: nextStatus });
         setTimeout(() => {
           RNAnimated.parallel([
-            RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
-            RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
+            RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
+            RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
           ]).start(() => {
-            // 不在此处 setMorphing(null)，否则 opacity 从 slideOpacityAnims(0) 跳回 1，卡片闪烁
+            // 不 reset slideX/slideOp —— 否则卡片在 React 重渲染完成前置 translateX=0、全尺寸可见，产生闪烁
+            // 保留 translateX=400/opacity=0，collapse 块会设透明背景，重渲染后卡片在屏幕外坍缩
             const cardH = cardHeightRef.current.get(lesson.id) || 200;
             if (!batchCollapseAnims.current.has(lesson.id)) batchCollapseAnims.current.set(lesson.id, new RNAnimated.Value(cardH));
             const collapseAnim = batchCollapseAnims.current.get(lesson.id)!;
             collapseAnim.setValue(cardH);
+            setMorphing(null);  // 触发重渲染 → collapse 透明+坍缩生效，卡片在 x=400 屏幕外
             RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-              setMorphing(null);  // collapse 完成后再清 morphing
               LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
               setLessons((prev) => prev.filter((x) => x.id !== lesson.id));
               slideTestAnims.current.get(lesson.id)?.setValue(0);
@@ -446,7 +450,7 @@ const LessonScreen: React.FC = () => {
               slideOpacityAnims.current.get(lesson.id)?.setValue(1);
               setLessonStatus(lesson.id, nextStatus).then(() => loadLessons());
             });
-          });
+          });  // slide callback close
         }, 300);
       } else {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -471,7 +475,7 @@ const LessonScreen: React.FC = () => {
         RNAnimated.parallel([
           RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
           RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
-        ]).start(() => { resolve(); });  // 不在 slide 完成时清 morphing，避免闪烁
+        ]).start(() => { resolve(); });  // 保留 slide 残留值，由 collapse 透明块接管
       }, 300);
     });
   };
@@ -488,9 +492,9 @@ const LessonScreen: React.FC = () => {
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
+        setMorphing(null);  // 先触发重渲染，raf 等一帧再启动 collapse 确保 View 已绑定
         await new Promise<void>((resolve) => {
           RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            setMorphing(null);  // collapse 完成后清 morphing，避免卡片闪烁
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
@@ -520,9 +524,9 @@ const LessonScreen: React.FC = () => {
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
+        setMorphing(null);  // 先触发重渲染，raf 等一帧再启动 collapse 确保 View 已绑定
         await new Promise<void>((resolve) => {
           RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
-            setMorphing(null);  // collapse 完成后清 morphing，避免卡片闪烁
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);

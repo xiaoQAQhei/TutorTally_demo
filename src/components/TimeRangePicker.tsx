@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive, scale, verticalScale } from '../utils/responsive';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 
 // 每行选项的基础高度
 const BASE_ITEM_H = 36;
@@ -337,7 +337,7 @@ const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     if (visible) {
       translateY.value = sheetHeightRef.current;
       overlayOpacity.value = 0;
-      translateY.value = withSpring(0, { dampingRatio: 0.5 });
+      translateY.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
       overlayOpacity.value = withTiming(1, { duration: 300 });
     }
   }, [visible]);
