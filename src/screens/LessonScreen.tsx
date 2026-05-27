@@ -289,7 +289,7 @@ const LessonScreen: React.FC = () => {
       backgroundColor: interpolateColor(idx, [0, 1, 2, 3],
         [FILTER_OPTIONS[0].color, FILTER_OPTIONS[1].color, FILTER_OPTIONS[2].color, FILTER_OPTIONS[3].color],
       ),
-      transform: [{ translateX: interpolate(idx, [0, 1, 2, 3], [0, slotW, 2 * slotW, 2 * slotW]) }],
+      transform: [{ translateX: interpolate(idx, [0, 1, 2, 3], [0, slotW, 2 * slotW, 3 * slotW]) }],  // idx=3 时滑出右边界，向右收缩
       opacity: interpolate(idx, [2, 3], [1, 0]),
     };
   });
