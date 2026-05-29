@@ -168,7 +168,8 @@ export function useBatchAnim(delayMs = 0) {
     if (timerRef.current) clearTimeout(timerRef.current);
     hasAnimated.current = false;
     return new Promise((resolve) => {
-      anim.value = withTiming(0, { duration: 200 }, (finished) => {
+      // 无条件回调，防 finished=false 导致 Promise 挂起
+      anim.value = withTiming(0, { duration: 200 }, () => {
         runOnJS(setVisible)(false);
         runOnJS(resolve)();
       });

@@ -1,3 +1,8 @@
+## [2026-05-28 23:28] 补写本轮改动日志
+- 根据最新提交 `修正了changelog文件` 和本轮 diff 统计，补充记录近期日志修复、进度文件更新与动画相关文件调整。
+- 本轮工作重点是整理变更记录，并保留当前待排查的冷启动白屏/动画卡死、StudentScreen 科目编辑行 flex 问题等进度信息。
+  - 文件: .claude/settings.local.json, PROGRESS.md, logs/CHANGELOG.md, src/components/BottomSheet.tsx, src/components/ShredderStrip.tsx, src/components/Toast.tsx, src/screens/LessonScreen.tsx, src/styles/animations.ts
+
 ## [2026-05-27] Slide-out + Collapse 闪烁修复（最终方案）
 
 **问题**：slide-out 完成后卡片在原位置闪烁一下才进入 collapse。反复修了多次，每次都在不同层次打补丁（0-duration reset、RAF 延迟、render override），但都没解决根本原因。
@@ -1196,4 +1201,3 @@
   - **类型**: fix
   - **描述**: 添加课程表单中课时费也标记为必填项，缺失时 Toast 提示
   - **文件**: `src/screens/LessonScreen.tsx`
-

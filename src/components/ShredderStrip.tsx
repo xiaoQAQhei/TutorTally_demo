@@ -45,10 +45,9 @@ export function ShredderStrip({
       withTiming(1, {
         duration: DURATION,
         easing: Easing.bezier(0.32, 0, 0.67, 0.95),
-      }, (finished) => {
-        if (finished) {
-          runOnJS(onDone)();
-        }
+      }, () => {
+        // 无条件回调，防 finished=false 导致删除回调永不执行
+        runOnJS(onDone)();
       })
     );
   }, []);

@@ -55,8 +55,9 @@ const Toast: React.FC<ToastProps> = ({ visible, message, type = 'error', onDismi
       // 2.5 秒后自动滑出并关闭
       const timer = setTimeout(() => {
         // 滑出：都用 withTiming，完成后回调 JS 线程
-        opacity.value = withTiming(0, { duration: 200 }, (finished) => {
-          if (finished) runOnJS(onDismiss)();
+        // 无条件回调，防 finished=false 导致 wrapper 残留白屏
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+          runOnJS(onDismiss)();
         });
         translateY.value = withTiming(100, { duration: 200 });
       }, 2500);
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingBottom: verticalScale(70), paddingHorizontal: Spacing.xl,
     marginHorizontal: Spacing.xxl,
-    zIndex: 99999, elevation: 99999,  // 极高层级，浮在所有内容之上
+    zIndex: 99999, elevation: 99999, backgroundColor: 'transparent', // 显式透明防 Android elevation 白底
   },
   container: {
     flexDirection: 'row', alignItems: 'center',

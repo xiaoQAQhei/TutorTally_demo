@@ -158,8 +158,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
       const finishExit = () => { setRendering(false); };
       heightOffset.value = withTiming(0, { duration: 250 });
       overlayOpacity.value = withTiming(0, { duration: 250 });
-      translateY.value = withTiming(sheetHeight, { duration: 250 }, (finished) => {
-        if (finished) runOnJS(finishExit)();
+      // 无条件回调，防 finished=false 导致 Modal 不关闭
+      translateY.value = withTiming(sheetHeight, { duration: 250 }, () => {
+        runOnJS(finishExit)();
       });
     }
   }, [visible, sheetHeight, rendering]);

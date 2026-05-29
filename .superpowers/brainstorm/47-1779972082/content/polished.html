@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课记 Logo 方案</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: #e2e8f0; padding: 40px; }
+  h1 { text-align: center; font-size: 32px; margin-bottom: 8px; letter-spacing: 4px; }
+  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 48px; font-size: 16px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; max-width: 1200px; margin: 0 auto; }
+  .card { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; transition: transform .2s; }
+  .card:hover { transform: translateY(-4px); }
+  .card h3 { font-size: 18px; font-weight: 600; letter-spacing: 2px; color: #cbd5e1; }
+  .card p { font-size: 13px; color: #64748b; max-width: 220px; text-align: center; line-height: 1.5; }
+  .icon { width: 220px; height: 220px; border-radius: 48px; position: relative; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05); }
+  .bg-indigo { background: linear-gradient(145deg, #4f46e5, #6366f1, #818cf8); }
+  .bg-deep   { background: linear-gradient(145deg, #1e1b4b, #312e81, #4338ca); }
+  .bg-night  { background: linear-gradient(145deg, #0f172a, #1e293b, #334155); }
+  .glow { position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.25; }
+  .dot { position: absolute; border-radius: 50%; background: white; }
+
+  /* ── 选中状态 ── */
+  .card.selected .icon { box-shadow: 0 0 0 4px #67e8f9, 0 20px 60px rgba(99,102,241,0.6); }
+  .card.selected h3 { color: #67e8f9; }
+
+  /* ── 多选全屏按钮 ── */
+  .compare-bar { display: flex; justify-content: center; gap: 12px; margin-top: 48px; flex-wrap: wrap; }
+  .compare-bar button { padding: 12px 28px; border: 2px solid #475569; background: transparent; color: #cbd5e1;
+    border-radius: 12px; font-size: 14px; cursor: pointer; transition: all .2s; }
+  .compare-bar button:hover { border-color: #6366f1; color: white; background: rgba(99,102,241,0.1); }
+  .compare-bar button.active { border-color: #6366f1; background: #6366f1; color: white; }
+</style>
+</head>
+<body>
+
+<h1>课记 · Logo 方案</h1>
+<p class="subtitle">极简 · 粗线条 · 渐变底 · App 图标规格</p>
+
+<div class="grid" id="grid">
+
+  <!-- ═══ 1. 纯对勾 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-indigo">
+      <div class="glow" style="width:120px;height:120px;top:50px;left:50px;background:white;opacity:0.15;"></div>
+      <svg viewBox="0 0 200 200" width="140" height="140" style="position:absolute;top:40px;left:40px;">
+        <polyline points="32,100 80,148 168,48" stroke="white" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3>1. 对勾</h3>
+    <p>一个元素。紫蓝渐变 + 粗体对勾</p>
+  </div>
+
+  <!-- ═══ 2. 对勾+圆点 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-indigo">
+      <div class="glow" style="width:100px;height:100px;top:60px;left:60px;background:#67e8f9;"></div>
+      <svg viewBox="0 0 200 200" width="128" height="128" style="position:absolute;top:46px;left:46px;">
+        <polyline points="38,98 82,140 162,52" stroke="white" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="dot" style="width:28px;height:28px;top:52px;left:62px;box-shadow:0 0 16px rgba(255,255,255,0.35);"></div>
+    </div>
+    <h3>2. 对勾 + 圆点</h3>
+    <p>圆点=学生，在对勾起笔处</p>
+  </div>
+
+  <!-- ═══ 3. K 字母 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-deep">
+      <div class="glow" style="width:80px;height:80px;top:80px;left:70px;background:#67e8f9;opacity:0.18;"></div>
+      <svg viewBox="0 0 200 200" width="140" height="140" style="position:absolute;top:40px;left:40px;">
+        <line x1="54" y1="24" x2="54" y2="176" stroke="white" stroke-width="20" stroke-linecap="round"/>
+        <polyline points="146,24 54,100 146,176" stroke="white" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3>3. K 字母</h3>
+    <p>课记首字母。深底 + 粗体白 K</p>
+  </div>
+
+  <!-- ═══ 4. 人+对勾 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-deep">
+      <svg viewBox="0 0 220 220" width="170" height="170" style="position:absolute;top:25px;left:25px;">
+        <!-- 人形头 -->
+        <circle cx="64" cy="62" r="24" stroke="white" stroke-width="8" fill="none"/>
+        <!-- 人形身体 V -->
+        <path d="M38,160 L64,96 L90,160" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- 对勾 -->
+        <polyline points="124,72 144,96 194,42" stroke="white" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3>4. 人 + 对勾</h3>
+    <p>左人右勾。点名册的一行</p>
+  </div>
+
+  <!-- ═══ 5. 纸+对勾 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-night">
+      <div style="position:absolute;top:42px;left:42px;width:136px;height:136px;
+        background:rgba(255,255,255,0.04);border:5px solid rgba(255,255,255,0.55);border-radius:16px;"></div>
+      <svg viewBox="0 0 120 120" width="90" height="90" style="position:absolute;top:54px;left:64px;">
+        <polyline points="14,48 40,72 106,16" stroke="white" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3>5. 纸 + 对勾</h3>
+    <p>便签页=记录载体，对勾=划掉确认</p>
+  </div>
+
+  <!-- ═══ 6. 未完成的「正」════ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-night">
+      <svg viewBox="0 0 160 160" width="138" height="138" style="position:absolute;top:41px;left:41px;">
+        <line x1="28" y1="46" x2="132" y2="46" stroke="white" stroke-width="14" stroke-linecap="round"/>
+        <line x1="80" y1="28" x2="80" y2="132" stroke="white" stroke-width="14" stroke-linecap="round"/>
+        <line x1="38" y1="86" x2="122" y2="86" stroke="#67e8f9" stroke-width="14" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h3>6. 未完成的「正」</h3>
+    <p>3 笔正字。最后一笔青蓝=未完</p>
+  </div>
+
+  <!-- ═══ 7. 双线+双点 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-deep">
+      <div style="position:absolute;top:38px;left:68px;width:14px;height:144px;background:white;border-radius:7px;"></div>
+      <div style="position:absolute;top:38px;left:138px;width:14px;height:144px;background:white;border-radius:7px;opacity:0.2;"></div>
+      <div class="dot" style="width:26px;height:26px;top:22px;left:62px;"></div>
+      <div class="dot" style="width:26px;height:26px;top:22px;left:132px;opacity:0.2;"></div>
+    </div>
+    <h3>7. 正字 · 人</h3>
+    <p>竖线=计数条，圆点=学生</p>
+  </div>
+
+  <!-- ═══ 8. 圆环+点 ═══ -->
+  <div class="card" onclick="this.classList.toggle('selected')">
+    <div class="icon bg-indigo">
+      <svg viewBox="0 0 180 180" width="154" height="154" style="position:absolute;top:33px;left:33px;">
+        <circle cx="90" cy="90" r="74" stroke="white" stroke-width="14" fill="none"
+          stroke-dasharray="420 48" stroke-dashoffset="54" stroke-linecap="round"/>
+      </svg>
+      <div class="dot" style="width:28px;height:28px;top:30px;left:96px;box-shadow:0 0 20px rgba(255,255,255,0.3);"></div>
+    </div>
+    <h3>8. 圆环 · 人</h3>
+    <p>未闭合的环=未完的课，点=学生</p>
+  </div>
+
+</div>
+
+<div class="compare-bar" id="compareBar">
+  <span style="color:#64748b;line-height:44px;">点击卡片选中，然后：</span>
+</div>
+
+<script>
+// 点击卡片切换选中状态，视觉由 CSS .selected 控制
+</script>
+</body>
+</html>

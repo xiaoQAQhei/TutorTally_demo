@@ -313,7 +313,7 @@ const LessonScreen: React.FC = () => {
   const [shredPortal, setShredPortal] = useState<{
     pageX: number; pageY: number; cardW: number; cardH: number;
     strips: import('../utils/animationHooks').ShatterStripConfig[];
-    lessonId: number;
+    lessonId: number; lesson: Lesson; // lesson 缓存，防 filteredLessons 为空时查找失败
   } | null>(null);
 
   // ═══════════════ 批量按钮动画 ═══════════════
@@ -473,8 +473,8 @@ const LessonScreen: React.FC = () => {
       setMorphing({ id: lessonId, targetStatus });
       setTimeout(() => {
         RNAnimated.parallel([
-          RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: true }),
-          RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: true }),
+          RNAnimated.timing(slideX, { toValue: 400, duration: 350, useNativeDriver: false }),
+          RNAnimated.timing(slideOp, { toValue: 0, duration: 350, useNativeDriver: false }),
         ]).start(() => { resolve(); });  // 保留 slide 残留值，由 collapse 透明块接管
       }, 300);
     });
@@ -492,15 +492,17 @@ const LessonScreen: React.FC = () => {
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
-        setMorphing(null);  // 先触发重渲染，raf 等一帧再启动 collapse 确保 View 已绑定
+        setMorphing(null);  // 触发重渲染
         await new Promise<void>((resolve) => {
-          RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
+          requestAnimationFrame(() => {  // 等 React 完成重渲染再启动 collapse，确保 View 已绑定
+            RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
             slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
+          });
           });
         });
       }
@@ -524,15 +526,17 @@ const LessonScreen: React.FC = () => {
         if (!batchCollapseAnims.current.has(l.id)) batchCollapseAnims.current.set(l.id, new RNAnimated.Value(cardH));
         const collapseAnim = batchCollapseAnims.current.get(l.id)!;
         collapseAnim.setValue(cardH);
-        setMorphing(null);  // 先触发重渲染，raf 等一帧再启动 collapse 确保 View 已绑定
+        setMorphing(null);  // 触发重渲染
         await new Promise<void>((resolve) => {
-          RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
+          requestAnimationFrame(() => {  // 等 React 完成重渲染再启动 collapse，确保 View 已绑定
+            RNAnimated.timing(collapseAnim, { toValue: 0, duration: 300, useNativeDriver: false, easing: Easing.out(Easing.cubic) }).start(() => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLessons((prev) => prev.filter((x) => x.id !== l.id));
             batchCollapseAnims.current.delete(l.id);
             slideTestAnims.current.get(l.id)?.setValue(0);
             slideOpacityAnims.current.get(l.id)?.setValue(1);
             resolve();
+          });
           });
         });
       }
@@ -566,7 +570,7 @@ const LessonScreen: React.FC = () => {
   };
 
   // ═══════════════ 删除课程 ═══════════════
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: number, lesson: Lesson) => {
     if (shatterMgr.activeId !== null) return;
     const doDelete = () => {
       const cardView = cardRefs.current.get(id);
@@ -582,7 +586,7 @@ const LessonScreen: React.FC = () => {
           cardRefs.current.delete(id); cardPosRef.current.delete(id); cardWidthRef.current.delete(id); cardHeightRef.current.delete(id);
           deleteLesson(id).then(loadLessons).catch(() => { loadLessons(); showToast('删除失败，请重试', 'error'); });
         });
-        setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id });
+        setShredPortal({ pageX: x, pageY: y, cardW, cardH, strips, lessonId: id, lesson });
       };
       // 嵌套 measure 同步获取位置（比 RAF + measureInWindow 更直接）
       if (cardView && containerRef.current) {
@@ -616,12 +620,20 @@ const LessonScreen: React.FC = () => {
   useEffect(() => { if (pendingAction === 'addLesson') { openAddModal(); clearAction(); } }, [pendingAction]);
   useEffect(() => { if (pendingFilter) { switchTab(pendingFilter); clearFilter(); } }, [pendingFilter, clearFilter]);
 
-  // 批量按钮：根据 filterStatus 触发入场/退场
+  // 批量按钮：根据 filterStatus 触发入场/退场（等 exit 完成再 enter，防动画冲突）
   const prevFilterKey = useRef(filterStatus);
   useEffect(() => {
-    if (prevFilterKey.current !== filterStatus) { cpl.exit(); coll.exit(); prevFilterKey.current = filterStatus; }
-    if (filterStatus === 'upcoming' && schedulableCount >= 5 && !isCplRunning.current) cpl.enter();
-    if (filterStatus === 'unpaid' && collectableCount >= 5 && !isCollRunning.current) coll.enter();
+    if (prevFilterKey.current !== filterStatus) {
+      prevFilterKey.current = filterStatus;
+      // 先退场，等动画完成后再根据新 tab 决定是否入场
+      Promise.all([cpl.exit(), coll.exit()]).then(() => {
+        if (filterStatus === 'upcoming' && schedulableCount >= 5 && !isCplRunning.current) cpl.enter();
+        if (filterStatus === 'unpaid' && collectableCount >= 5 && !isCollRunning.current) coll.enter();
+      });
+    } else {
+      if (filterStatus === 'upcoming' && schedulableCount >= 5 && !isCplRunning.current) cpl.enter();
+      if (filterStatus === 'unpaid' && collectableCount >= 5 && !isCollRunning.current) coll.enter();
+    }
   }, [filterStatus, schedulableCount, collectableCount]);
 
   useEffect(() => {
@@ -719,7 +731,7 @@ const LessonScreen: React.FC = () => {
         <View style={styles.actionRow}>
           <View style={styles.actionRowLeft}>
             {interactive && shatterMgr.activeId === null ? (
-              <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(lesson.id)}><Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} /></TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(lesson.id, lesson)}><Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} /></TouchableOpacity>
             ) : (
               <View style={styles.actionButton}><Ionicons name="trash-outline" size={iconSize.md} color={interactive ? Colors.caption : Colors.danger} /></View>
             )}
@@ -769,20 +781,27 @@ const LessonScreen: React.FC = () => {
           borderLeftWidth: 4, borderLeftColor: borderColor, backgroundColor: cardBg,
           opacity: isMorphing ? slideOpacityAnims.current.get(lessonId)! : showCancelAnim ? 0.6 : 1,
           transform: [{ translateX: slideTestAnims.current.get(lessonId)! }],
-        }, shatterMgr.activeId === lessonId ? {
-          backgroundColor: 'transparent', borderLeftWidth: 0, overflow: 'hidden',
-          ...(batchCollapseAnims.current.has(lessonId) ? {
-            height: batchCollapseAnims.current.get(lessonId)!,
-            padding: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
-            marginBottom: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
-          } : { height: 0 }),
-        } : batchCollapseAnims.current.has(lessonId) ? {
-          backgroundColor: 'transparent', borderLeftWidth: 0,
-          height: batchCollapseAnims.current.get(lessonId)!,
-          padding: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
-          marginBottom: batchCollapseAnims.current.get(lessonId)!.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
-          overflow: 'hidden',
-        } : null]}
+        }, shatterMgr.activeId === lessonId ? (() => {
+          // TOCTOU 防护：一次 get 取值，防回调中途 delete 导致 .interpolate() 崩溃
+          const ca = batchCollapseAnims.current.get(lessonId);
+          if (!ca) return { height: 0 };
+          return {
+            backgroundColor: 'transparent', borderLeftWidth: 0, overflow: 'hidden',
+            height: ca,
+            padding: ca.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
+            marginBottom: ca.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
+          };
+        })() : (() => {
+          const ca = batchCollapseAnims.current.get(lessonId);
+          if (!ca) return null;
+          return {
+            backgroundColor: 'transparent', borderLeftWidth: 0,
+            height: ca,
+            padding: ca.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.lg], extrapolate: 'clamp' }),
+            marginBottom: ca.interpolate({ inputRange: [0, cardH], outputRange: [0, spacing.md], extrapolate: 'clamp' }),
+            overflow: 'hidden',
+          };
+        })()]}
         ref={(el) => { if (el) cardRefs.current.set(lessonId, el); }}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height; const w = e.nativeEvent.layout.width;
@@ -885,8 +904,8 @@ const LessonScreen: React.FC = () => {
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.primary} />
 
       {shredPortal && (() => {
-        const portalLesson = filteredLessons.find(l => l.id === shredPortal.lessonId);
-        if (!portalLesson) return null;
+        // 使用缓存的 lesson 数据，防 cold start 时 filteredLessons 为空导致碎片不渲染
+        const portalLesson = shredPortal.lesson;
         const pBorderColor = portalLesson.status === 'paid' ? Colors.paid : portalLesson.status === 'pendingPayment' ? Colors.pending : portalLesson.status === 'cancelled' ? Colors.caption : Colors.primary;
         return (
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, pointerEvents: 'none' }}>

@@ -44,7 +44,10 @@
       "WebFetch(domain:expo.dev)",
       "WebFetch(domain:storage.googleapis.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:code-review-graph.com)"
+      "WebFetch(domain:code-review-graph.com)",
+      "mcp__plugin_figma_figma__whoami",
+      "mcp__plugin_figma_figma__create_new_file",
+      "mcp__plugin_figma_figma__get_screenshot"
     ]
   },
   "hooks": {}
