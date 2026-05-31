@@ -134,8 +134,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           setRendering(false);
           closeRef.current();
         };
-        translateY.value = withTiming(sheetHeight, { duration: 200 }, (finished) => {
-          if (finished) runOnJS(finishClose)();
+        // ── 无条件回调：冷启动时动画可能被取消，finished=false 也会执行，防止 Modal 卡住 ──
+        translateY.value = withTiming(sheetHeight, { duration: 200 }, () => {
+          runOnJS(finishClose)();
         });
         return;
       }

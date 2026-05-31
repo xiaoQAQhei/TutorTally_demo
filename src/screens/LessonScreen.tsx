@@ -282,7 +282,8 @@ const LessonScreen: React.FC = () => {
   // ═══════════════ Tab 滑块动画 ═══════════════
   const tabSliderGroupStyle = useAnimatedStyle(() => {
     const idx = tabSliderPos.value;
-    if (tabBarW <= 0) return {};
+    // ── tabBarW 未测量时隐藏滑块（width=0 防止冷启动时占满整个 tab 栏）──
+    if (tabBarW <= 0) return { width: 0, opacity: 0 };
     const slotW = tabBarW / 3;
     return {
       width: interpolate(idx, [0, 1, 2, 3], [slotW, slotW, slotW, 0]),
@@ -656,7 +657,8 @@ const LessonScreen: React.FC = () => {
       requestAnimationFrame(() => { flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 }); });
       highlightAnim.value = withTiming(1, { duration: 400 });
       const timerId = setTimeout(() => {
-        highlightAnim.value = withTiming(0, { duration: 600 }, (finished) => { if (finished) runOnJS(() => { setHighlightedId(null); clearHighlight(); })(); });
+        // ── 无条件回调：冷启动时动画可能被取消，防止高亮遮罩卡住 ──
+        highlightAnim.value = withTiming(0, { duration: 600 }, () => { runOnJS(() => { setHighlightedId(null); clearHighlight(); })(); });
       }, 2400);
       return () => { clearTimeout(timerId); highlightAnim.value = 0; };
     }
@@ -826,7 +828,8 @@ const LessonScreen: React.FC = () => {
       {/* ── Tab 筛选栏 — 保留原样式，驱动改为 tabSliderPos ── */}
       <View style={styles.tabBarWrap}>
         <View style={styles.tabGroup} onLayout={(e) => setTabBarW(e.nativeEvent.layout.width)}>
-          {tabBarW > 0 && <Reanimated.View style={[styles.tabSlider, tabSliderGroupStyle]} />}
+          {/* ── 始终渲染滑块，tabBarW=0 时 animatedStyle 返回 width:0 隐藏 ── */}
+          <Reanimated.View style={[styles.tabSlider, tabSliderGroupStyle]} />
           {FILTER_OPTIONS.slice(0, 3).map((opt) => (
             <TouchableOpacity key={opt.key} style={styles.tabBtn} activeOpacity={0.75} onPress={() => switchTab(opt.key)}>
               {filterStatus === opt.key && (

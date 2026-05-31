@@ -27,12 +27,12 @@ import {
  * @param slideDistance - 起始偏移距离（px，默认 20）
  */
 export function useFadeIn(duration = 400, delay = 0, slideDistance = 20) {
-  const opacity = useSharedValue(0);
+  // ── 初始 opacity=1 防止冷启动白屏（Reanimated UI 线程未就绪时 opacity=0 会显示空白）──
+  const opacity = useSharedValue(1);
   const translateY = useSharedValue(slideDistance);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      opacity.value = withTiming(1, { duration });
       translateY.value = withTiming(0, { duration });
     }, delay);
     return () => clearTimeout(timer);

@@ -84,8 +84,9 @@ function DropdownSelect<T>({
   /** 关闭下拉菜单：淡出 → 隐藏 Modal */
   const closeMenu = useCallback(() => {
     rotateAnim.value = withSpring(0, { duration: 200, dampingRatio: 0.65 });
-    menuAnim.value = withTiming(0, { duration: 150 }, (finished) => {
-      if (finished) runOnJS(setIsOpen)(false);
+    // ── 无条件回调：冷启动时动画可能被取消，防止菜单卡住 ──
+    menuAnim.value = withTiming(0, { duration: 150 }, () => {
+      runOnJS(setIsOpen)(false);
     });
   }, [rotateAnim, menuAnim]);
 
