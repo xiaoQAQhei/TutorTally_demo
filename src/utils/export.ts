@@ -97,17 +97,23 @@ async function saveAndShareWorkbook(wb: any, filename: string, dialogTitle: stri
   try {
     const xlsx = await ensureXLSX();
     if (Platform.OS === 'web') {
-      const url = URL.createObjectURL(new Blob([xlsx.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      // ── Web 平台：优先用 Web Share API 分享，不支持时降级为下载 ──
+      const blob = new Blob([xlsx.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], filename, { type: blob.type });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: dialogTitle });
+          return filename;
+        }
+      }
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
       return filename;
     }
     const b64 = xlsx.write(wb, { type: 'base64', bookType: 'xlsx' });
     const path = FileSystem.documentDirectory + filename;
     await FileSystem.writeAsStringAsync(path, b64, { encoding: FileSystem.EncodingType.Base64 });
-    if (Platform.OS === 'android') {
-      const { StorageAccessFramework } = FileSystem;
-      try { const p = await StorageAccessFramework.requestDirectoryPermissionsAsync(StorageAccessFramework.getUriForDirectoryInRoot('Download')); if (p.granted) { const d = await StorageAccessFramework.createFileAsync(p.directoryUri, filename.replace('.xlsx',''), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); await StorageAccessFramework.writeAsStringAsync(d, b64, { encoding: FileSystem.EncodingType.Base64 }); return d; } } catch {}
-    }
+    // ── Android / iOS：统一走系统分享面板 ──
     await Sharing.shareAsync(path, { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', dialogTitle });
     return path;
   } catch (e) { throw new ExportError('保存或分享文件失败', 'FILE_ERROR', e); }
