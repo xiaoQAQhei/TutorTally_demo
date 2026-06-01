@@ -34,6 +34,7 @@
     "react-native-screens": "~3.22.0",
     "react-native-svg": "13.9.0",
     "react-native-web": "~0.19.6",
+    "sharp": "^0.34.5",
     "xlsx-js-style": "^1.2.0"
   },
   "overrides": {
