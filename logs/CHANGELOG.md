@@ -1,3 +1,10 @@
+## [2026-06-02 00:41] README 文档全面更新 + 日志规范补充
+- README.md 全面重写：项目描述新增「数据导出」功能说明，移除 iOS 相关内容，新增本地打包 APK 构建命令说明
+- README.md 项目结构树更新：补充 components/contexts/styles/utils 目录及子文件说明，新增 gesture-handler/gifted-charts/xlsx-js-style 依赖记录
+- PROGRESS.md 未来考虑新增「做一个使用教程」
+- logs/README.md 新增禁止用 sed/python -c 修改文件的警告说明
+  - 文件: README.md, PROGRESS.md, logs/README.md, logs/CHANGELOG.md
+
 ## [2026-06-01 23:30] 项目清理 + Android 图标/启动图全面更新 + 移除「导入数据」入口
 - 清理调试和临时文件：删除 demo/tab-switch-animation.html、.playwright-mcp/ 下所有调试日志和页面文件、.superpowers/brainstorm/ 下的 HTML 讨论文件、logs/figma-preview-1.png 等
 - 清理 IDE 配置：删除 .idea/ 下的 .gitignore、markdown.xml、misc.xml、modules.xml、vcs.xml、iml 文件
