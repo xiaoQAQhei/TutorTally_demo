@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ── 家教课程账单 App 图标母版：主字代表课程，印章代表记录与账本 ── -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- ── 宣纸底色渐变 ── -->
+    <linearGradient id="paperGradient" x1="160" y1="92" x2="864" y2="932" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FCF8EF"/>
+      <stop offset="0.48" stop-color="#F3ECDE"/>
+      <stop offset="1" stop-color="#E9DFC9"/>
+    </linearGradient>
+
+    <!-- ── 纸张颗粒，导出 PNG 时由 sharp 保留轻微质感 ── -->
+    <filter id="paperNoise" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="3" seed="8"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.045"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- ── 主字柔和墨晕 ── -->
+    <filter id="inkBleed" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="5"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- ── 印章轻微纸面压痕 ── -->
+    <filter id="stampSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.55"/>
+    </filter>
+
+    <!-- ── 全图圆角裁切，防止纸纹溢出到透明区 ── -->
+    <clipPath id="iconClip">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── 圆角图标主体内容 ── -->
+  <g clip-path="url(#iconClip)">
+    <!-- ── 圆角图标底板 ── -->
+    <rect width="1024" height="1024" rx="230" fill="url(#paperGradient)"/>
+    <rect width="1024" height="1024" fill="#8D7C5F" filter="url(#paperNoise)" opacity="0.55"/>
+
+    <!-- ── 用浅色块切出安全区，避免系统圆角裁切到主体 ── -->
+    <ellipse cx="520" cy="530" rx="355" ry="395" fill="#FFFFFF" opacity="0.055"/>
+
+    <!-- ── 课程主识别：大号「课」字 ── -->
+    <text x="512" y="570"
+          text-anchor="middle"
+          dominant-baseline="central"
+          font-family="'Noto Serif SC', 'Source Han Serif SC', SimSun, serif"
+          font-size="585"
+          font-weight="900"
+          fill="#272636"
+          opacity="0.18"
+          transform="rotate(-3 512 512)"
+          filter="url(#inkBleed)">课</text>
+    <text x="512" y="570"
+          text-anchor="middle"
+          dominant-baseline="central"
+          font-family="'Noto Serif SC', 'Source Han Serif SC', SimSun, serif"
+          font-size="585"
+          font-weight="900"
+          fill="#242332"
+          opacity="0.96"
+          transform="rotate(-3 512 512)">课</text>
+
+    <!-- ── 右下角记账印章：强化账单/记录属性 ── -->
+    <g transform="translate(760 742) rotate(-5)">
+      <rect x="0" y="0" width="126" height="126" rx="10" fill="none" stroke="#C94B3E" stroke-width="6" opacity="0.86" filter="url(#stampSoft)"/>
+      <rect x="11" y="11" width="104" height="104" rx="5" fill="none" stroke="#C94B3E" stroke-width="2.2" opacity="0.44"/>
+      <text x="63" y="72"
+            text-anchor="middle"
+            dominant-baseline="central"
+            font-family="'Noto Serif SC', 'Source Han Serif SC', SimSun, serif"
+            font-size="66"
+            font-weight="900"
+            fill="#C94B3E"
+            opacity="0.82">记</text>
+    </g>
+  </g>
+</svg>

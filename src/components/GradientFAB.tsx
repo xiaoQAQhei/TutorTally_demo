@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Shadows, BorderRadius } from '../styles/theme';
 import { usePulse, useBounce } from '../styles/animations';
@@ -43,6 +44,12 @@ const GradientFAB: React.FC<GradientFABProps> = ({
   };
   const pos = position ?? defaultPos;
 
+  // ── 脉冲与弹跳动画叠加（Reanimated DerivedValue）──
+  const combinedScale = useDerivedValue(() => pulse.value * scale.value);
+  const wrapperStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: combinedScale.value }],
+  }));
+
   return (
     <Animated.View
       style={[
@@ -50,9 +57,8 @@ const GradientFAB: React.FC<GradientFABProps> = ({
         {
           bottom: pos.bottom,
           right: pos.right,
-          // 脉冲与弹跳动画叠加
-          transform: [{ scale: Animated.multiply(pulse, scale) }],
         },
+        wrapperStyle,
       ]}
     >
       <TouchableOpacity

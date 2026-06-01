@@ -44,7 +44,15 @@
       "WebFetch(domain:expo.dev)",
       "WebFetch(domain:storage.googleapis.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:code-review-graph.com)"
+      "WebFetch(domain:code-review-graph.com)",
+      "mcp__plugin_figma_figma__whoami",
+      "mcp__plugin_figma_figma__create_new_file",
+      "mcp__plugin_figma_figma__get_screenshot",
+      "Bash(start *)",
+      "PowerShell(Start-Process -FilePath \"D:\\\\NapCat.Shell.Windows.OneKey\\\\NapCat.44498.Shell\\\\napcat.quick.bat\" -WorkingDirectory \"D:\\\\NapCat.Shell.Windows.OneKey\\\\NapCat.44498.Shell\" -WindowStyle Normal)",
+      "Bash(python -m base64 -d)",
+      "Bash(powershell -Command \"[System.Text.Encoding]::UTF8.GetString\\([System.Convert]::FromBase64String\\(\\(Read-Host\\)\\)\\)\")",
+      "WebFetch(domain:old.reddit.com)"
     ]
   },
   "hooks": {}

@@ -4,8 +4,9 @@
  * 支持点击切换到下一个状态，带弹跳动画反馈。
  */
 
-import React, { useRef, useEffect } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withSequence, withRepeat } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LessonStatusColors, StatusTransitions, FontSize, FontWeight, BorderRadius, Spacing } from '../styles/theme';
 import { LessonStatus } from '../models';
@@ -29,8 +30,8 @@ interface StatusBadgeProps {
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle }) => {
   const { iconSize } = useResponsive();
-  const scale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(1)).current;          // 呼吸动画值
+  const scale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(1);          // 呼吸动画值
   // 获取当前状态可切换到的下一个状态列表
   const nextStatuses = (StatusTransitions[status] || []) as LessonStatus[];
   const tappable = !disabled && nextStatuses.length > 0 && onToggle;
@@ -39,33 +40,39 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, disabled, onToggle })
   const label = LessonStatusColors[status].label;
   const icon = StatusIcons[status];
 
+  // ── 动画样式：缩放 + 呼吸透明度 ──
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: pulseOpacity.value,
+  }));
+
   // ── 点击处理：弹跳动画后触发状态切换 ──
   const handleTap = () => {
     if (!tappable || nextStatuses.length === 0) return;
-    Animated.sequence([
-      Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 30, bounciness: 12 }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }),
-    ]).start();
+    scale.value = withSequence(
+      withSpring(1.25, { dampingRatio: 0.5 }),
+      withSpring(1, { dampingRatio: 0.5 }),
+    );
     onToggle(nextStatuses[0]);
   };
 
   // ── 可点击时触发呼吸动画 ──
   useEffect(() => {
     if (tappable) {
-      const loop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseOpacity, { toValue: 0.7, duration: 1200, useNativeDriver: true }),
-          Animated.timing(pulseOpacity, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ])
+      pulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.7, { duration: 1200 }),
+          withTiming(1, { duration: 1200 }),
+        ),
+        -1,
       );
-      loop.start();
-      return () => loop.stop();
+      return () => { pulseOpacity.value = 1; };
     }
   }, [tappable, pulseOpacity]);
 
   return (
     <TouchableOpacity activeOpacity={tappable ? 0.75 : 1} onPress={handleTap} disabled={!tappable}>
-      <Animated.View style={[styles.badge, { backgroundColor: colors.bg, transform: [{ scale }], opacity: pulseOpacity }]}>
+      <Animated.View style={[styles.badge, { backgroundColor: colors.bg }, animatedStyle]}>
         <Ionicons name={icon} size={iconSize.xs} color={colors.text} />
         <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
         {tappable && <Ionicons name="chevron-forward" size={iconSize.xs} color={colors.text} style={{ opacity: 0.6 }} />}

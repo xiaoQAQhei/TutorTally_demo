@@ -6,9 +6,12 @@
  */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, Modal, TouchableOpacity, Animated,
+  View, Text, StyleSheet, Modal, TouchableOpacity,
   ScrollView, useWindowDimensions, PanResponder,
 } from 'react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS, cancelAnimation, Easing,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive, scale, verticalScale } from '../utils/responsive';
@@ -43,16 +46,37 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   // ── 控制出场动画完成前保持渲染 ──
   const [rendering, setRendering] = useState(false);
 
-  // ── 动画值 ──
-  const translateY = useRef(new Animated.Value(sheetHeight)).current; // 垂直偏移
-  const overlayOpacity = useRef(new Animated.Value(0)).current;       // 遮罩透明度
-  const heightOffset = useRef(new Animated.Value(0)).current;         // 上拉延展高度
-  const baseHeight = useRef(new Animated.Value(sheetHeight)).current; // 面板基础高度（动画版）
+  // ── Reanimated 共享值 ──
+  const translateY = useSharedValue(sheetHeight);     // 垂直偏移
+  const overlayOpacity = useSharedValue(0);            // 遮罩透明度
+  const heightOffset = useSharedValue(0);              // 上拉延展高度
+  const baseHeight = useSharedValue(sheetHeight);      // 面板基础高度（动画版）
+
+  // 同步 sheetHeight 到 baseHeight 共享值
+  useEffect(() => { baseHeight.value = sheetHeight; }, [sheetHeight]);
+
+  // JS 线程追踪 ref（PanResponder 手势中读取最新动画值）
+  const translateYRef = useRef(sheetHeight);
+  const heightOffsetRef = useRef(0);
+
+  // 保持最新 onClose
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
-  // baseHeight 跟随 sheetHeight 变化
-  useEffect(() => { baseHeight.setValue(sheetHeight); }, [sheetHeight]);
+  // ── useAnimatedStyle：驱动面板 transform ──
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  // ── useAnimatedStyle：驱动面板高度（基础高度 + 延展偏移） ──
+  const heightAnimatedStyle = useAnimatedStyle(() => ({
+    height: baseHeight.value + heightOffset.value,
+  }));
+
+  // ── useAnimatedStyle：遮罩透明度 ──
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
 
   // ── 三档快照位置（占屏比） ──
   const SNAP_FRACTIONS = [0.5, 0.82, 0.95];
@@ -71,42 +95,55 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: () => {
-      translateY.stopAnimation();
-      startY.current = (translateY as any)._value || 0;
+      // 停止正在运行的动画，读取当前值到 JS ref
+      cancelAnimation(translateY);
+      cancelAnimation(heightOffset);
+      startY.current = translateY.value;
+      translateYRef.current = translateY.value;
+      heightOffsetRef.current = heightOffset.value;
     },
     onPanResponderMove: (_, gs) => {
       if (gs.dy < 0) {
         // 上拉：面板延展
-        heightOffset.setValue(Math.min(Math.abs(gs.dy), screenH * 0.4));
-        translateY.setValue(0);
+        heightOffset.value = Math.min(Math.abs(gs.dy), screenH * 0.4);
+        heightOffsetRef.current = heightOffset.value;
+        translateY.value = 0;
+        translateYRef.current = 0;
       } else {
         // 下拉：先收回延展，再下移面板
-        const curOff = (heightOffset as any)._value || 0;
+        const curOff = heightOffsetRef.current;
         if (curOff > 0) {
           const shrink = Math.min(gs.dy, curOff);
-          heightOffset.setValue(curOff - shrink);
-          translateY.setValue(gs.dy - shrink);
+          heightOffset.value = curOff - shrink;
+          heightOffsetRef.current = heightOffset.value;
+          translateY.value = gs.dy - shrink;
+          translateYRef.current = translateY.value;
         } else {
-          translateY.setValue(gs.dy);
+          translateY.value = gs.dy;
+          translateYRef.current = gs.dy;
         }
       }
     },
     onPanResponderRelease: () => {
-      const curTY = (translateY as any)._value || 0;
-      const curOff = (heightOffset as any)._value || 0;
+      const curTY = translateYRef.current;
+      const curOff = heightOffsetRef.current;
       const currentFraction = (sheetHeight + curOff - curTY) / screenH;
       // 面板可见比例 < 35% → 关闭
       if (currentFraction < 0.35) {
-        Animated.timing(translateY, { toValue: sheetHeight, duration: 200, useNativeDriver: true })
-          .start(() => { setRendering(false); closeRef.current(); });
+        const finishClose = () => {
+          setRendering(false);
+          closeRef.current();
+        };
+        // ── 无条件回调：冷启动时动画可能被取消，finished=false 也会执行，防止 Modal 卡住 ──
+        translateY.value = withTiming(sheetHeight, { duration: 200 }, () => {
+          runOnJS(finishClose)();
+        });
         return;
       }
       // 快照到最近档位
       const target = snapTarget(currentFraction);
-      Animated.parallel([
-        Animated.timing(heightOffset, { toValue: target.hOff, duration: 200, useNativeDriver: false }),
-        Animated.timing(translateY, { toValue: target.tY, duration: 200, useNativeDriver: true }),
-      ]).start();
+      heightOffset.value = withTiming(target.hOff, { duration: 200 });
+      translateY.value = withTiming(target.tY, { duration: 200 });
     },
   })).current;
 
@@ -114,26 +151,18 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   useEffect(() => {
     if (visible) {
       setRendering(true);
-      heightOffset.setValue(0);
-      translateY.setValue(sheetHeight);
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0, useNativeDriver: true, speed: 14, bounciness: 4,
-        }),
-        Animated.timing(overlayOpacity, {
-          toValue: 1, duration: 300, useNativeDriver: true,
-        }),
-      ]).start();
+      heightOffset.value = 0;
+      translateY.value = sheetHeight;
+      overlayOpacity.value = withTiming(1, { duration: 300 });
+      translateY.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });  // 纯缓出，不露底
     } else if (rendering) {
-      heightOffset.setValue(0);
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: sheetHeight, duration: 250, useNativeDriver: true,
-        }),
-        Animated.timing(overlayOpacity, {
-          toValue: 0, duration: 250, useNativeDriver: true,
-        }),
-      ]).start(() => setRendering(false));
+      const finishExit = () => { setRendering(false); };
+      heightOffset.value = withTiming(0, { duration: 250 });
+      overlayOpacity.value = withTiming(0, { duration: 250 });
+      // 无条件回调，防 finished=false 导致 Modal 不关闭
+      translateY.value = withTiming(sheetHeight, { duration: 250 }, () => {
+        runOnJS(finishExit)();
+      });
     }
   }, [visible, sheetHeight, rendering]);
 
@@ -173,23 +202,14 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
       <View style={styles.container}>
         {/* ── 遮罩：固定拦截触摸 + 动画透明度 ── */}
         <View style={StyleSheet.absoluteFill}>
-          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.overlay, opacity: overlayOpacity }]} />
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.overlay }, overlayAnimatedStyle]} />
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         </View>
 
-        {/* ── 面板主体 ── */}
-        <Animated.View
-          style={[
-            styles.sheet,
-            { height: Animated.add(baseHeight, heightOffset), transform: [{ translateY }] },
-            sheetWidth ? {
-              width: sheetWidth,
-              alignSelf: 'center',
-              borderBottomLeftRadius: BorderRadius.card + 4,
-              borderBottomRightRadius: BorderRadius.card + 4,
-            } : null,
-          ]}
-        >
+        {/* ── 面板主体（外层：Reanimated 驱动 translateY） ── */}
+        <Animated.View style={[styles.sheet, sheetAnimatedStyle, sheetWidth ? { width: sheetWidth, alignSelf: "center", borderBottomLeftRadius: BorderRadius.card + 4, borderBottomRightRadius: BorderRadius.card + 4 } : null]}>
+          {/* ── 内层：Reanimated 驱动 height（基础高度 + 延展偏移） ── */}
+          <Animated.View style={[heightAnimatedStyle]}>
           {/* 顶部拖拽区（手柄 + 标题栏，整个区域可拖） */}
           <View {...panResponder.panHandlers}>
             <View style={styles.handleContainer}>
@@ -211,6 +231,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           ) : (
             <View style={styles.content}>{children}</View>
           )}
+          </Animated.View>
         </Animated.View>
       </View>
     </Modal>

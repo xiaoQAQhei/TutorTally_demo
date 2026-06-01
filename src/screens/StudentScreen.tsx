@@ -8,7 +8,8 @@
  * 修改课时费时会自动记录调价历史。
  */
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Animated as RNAnimated } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAction } from '../contexts/ActionContext';
@@ -34,7 +35,7 @@ import { useResponsive, scale } from '../utils/responsive';
  */
 const StudentScreen: React.FC = () => {
   const { maxContentWidth, spacing, fontSize, isTablet, iconSize } = useResponsive();
-  const { pendingAction, clearAction } = useAction();  // 消费首页"添加学生"的跳转动作
+  const { pendingAction, clearAction, confirmBeforeChange } = useAction();  // 消费首页"添加学生"的跳转动作 + 设置中的确认开关
 
   // ═══════════════ 样式 ═══════════════
   const styles = useMemo(() => ({
@@ -123,8 +124,10 @@ const StudentScreen: React.FC = () => {
   const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]); // 表单：科目列表
   const { showToast } = useToast();
   const [pickingSubject, setPickingSubject] = useState<number | null>(null);
-  const subArrowRot = useRef(new Animated.Value(0)).current;                                                // 科目选择器箭头旋转
+  const subArrowRot = useSharedValue(0);                                                                     // 科目选择器箭头旋转
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
+  const [deletingStudentId, setDeletingStudentId] = useState<number | null>(null); // 正在渐隐退出的学生 ID
+  const deleteFadeAnim = useRef(new RNAnimated.Value(1)).current;                  // 删除渐隐：1→0
 
   // ── 页面聚焦时：加载学生数据，并检查首页触发的"添加学生"动作 ──
   useFocusEffect(useCallback(() => {
@@ -134,10 +137,13 @@ const StudentScreen: React.FC = () => {
       clearAction();
     }
   }, [pendingAction, clearAction]));
-  // ── 科目选择器箭头旋转动画 ──
+  // ── 科目选择器箭头旋转动画（reanimated） ──
   useEffect(() => {
-    Animated.timing(subArrowRot, { toValue: pickingSubject !== null ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    subArrowRot.value = withTiming(pickingSubject !== null ? 1 : 0, { duration: 200 });
   }, [pickingSubject]);
+  const subArrowRotStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(subArrowRot.value, [0, 1], [0, 180])}deg` }],
+  }));
 
 
   /**
@@ -163,10 +169,16 @@ const StudentScreen: React.FC = () => {
    * 新增时创建学生记录及科目，更新时先记录调价历史再更新。
    */
   const handleSave = async () => {
-    if (!name || editSubjects.length === 0 || editSubjects.some(s => !s.subject || !s.hourlyRate)) {
-      showToast('请填写学生姓名和至少一个科目（含科目名和课时费）', 'error');
-      return;
+    const missing: string[] = [];
+    if (!name) missing.push('姓名');
+    if (editSubjects.length === 0) missing.push('至少一个科目');
+    else {
+      editSubjects.forEach((s, i) => {
+        if (!s.subject) missing.push(`科目${i + 1}名称`);
+        if (!s.hourlyRate) missing.push(`科目${i + 1}课时费`);
+      });
     }
+    if (missing.length > 0) { showToast(`请填写：${missing.join('、')}`, 'error'); return; }
     if (editingStudent) {
       await updateStudent({ ...editingStudent, name, phone, address, updatedAt: new Date().toISOString() } as any);
       for (const es of editSubjects) {
@@ -221,9 +233,17 @@ const StudentScreen: React.FC = () => {
    * @param id 学生 ID
    */
   const handleDelete = async (id: number) => {
-    await deleteStudent(id);
-    loadStudents();
-    setConfirmDialog(null);
+    // 渐隐动画（useNativeDriver: true 原生驱动），完成后执行删除
+    setDeletingStudentId(id);
+    RNAnimated.timing(deleteFadeAnim, {
+      toValue: 0, duration: 500, useNativeDriver: true,
+    }).start(async () => {
+      await deleteStudent(id);
+      setDeletingStudentId(null);
+      deleteFadeAnim.setValue(1);
+      loadStudents();
+      setConfirmDialog(null);
+    });
   };
 
   /**
@@ -234,6 +254,11 @@ const StudentScreen: React.FC = () => {
    * @param name 学生姓名（用于提示信息）
    */
   const confirmDelete = (id: number, name: string) => {
+    // 关联设置中的"状态变更前提醒"开关：关则直接删除，开则弹窗确认
+    if (!confirmBeforeChange) {
+      handleDelete(id);
+      return;
+    }
     setConfirmDialog({
       visible: true,
       title: '删除学生',
@@ -262,7 +287,7 @@ const StudentScreen: React.FC = () => {
   const renderStudent = ({ item }: { item: Student }) => {
     const subs = studentSubjects[item.id] || [];
     return (
-      <View style={[styles.card, Shadows.standard]}>
+      <RNAnimated.View style={[styles.card, Shadows.standard, { opacity: deletingStudentId === item.id ? deleteFadeAnim : 1 }]}>
         <View style={styles.cardMain}>
           {/* 头像尺寸：iconSize.avatar.lg（手机48 / 平板52），改大小到 theme.ts 调整 avatar.lg */}
           <StudentAvatar name={item.name} color={subs.length > 0 ? (subs[0].color || SubjectColorPalette[0]) : SubjectColorPalette[0]} size={iconSize.avatar.lg} />
@@ -299,7 +324,7 @@ const StudentScreen: React.FC = () => {
             <Ionicons name="trash-outline" size={iconSize.md} color={Colors.danger} />
           </TouchableOpacity>
         </View>
-      </View>
+      </RNAnimated.View>
     );
   };
 
@@ -337,7 +362,7 @@ const StudentScreen: React.FC = () => {
               <Text style={[{ flex: 1 }, sub.subject ? { color: Colors.title, fontSize: fontSize.body, fontWeight: FontWeight.medium } : { color: Colors.caption, fontSize: fontSize.body }]}>
                 {sub.subject || '选择科目'}
               </Text>
-              <Animated.View style={{ transform: [{ rotate: subArrowRot.interpolate({ inputRange: [0,1], outputRange: ["0deg", "180deg"] }) }] }}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
+              <Animated.View style={subArrowRotStyle}><Ionicons name="chevron-down" size={iconSize.sm} color={Colors.caption} /></Animated.View>
             </TouchableOpacity>
             <TextInput
               style={[styles.input, styles.rateInput]}

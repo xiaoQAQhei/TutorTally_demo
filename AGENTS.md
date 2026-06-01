@@ -32,12 +32,11 @@ React Native (Expo) 应用，用于管理家教课程账单。
   - 文件: [涉及的文件列表]
 ```
 
-4. **如果本轮添加了新功能/新组件/新概念**，同步更新 `logs/glossary.md`（参考其现有格式追加对应条目）
-5. 子 agent 只写日志文件，不改代码
+4. 子 agent 只写日志，不改代码
 
 启动子 agent 的 prompt 模板：
 ```
-写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 Read 工具读前 5 行确认格式。用 Write 工具将本轮人话总结（格式见项目 CLAUDE.md）插入文件开头，后面拼接原有全部内容。如果本轮添加了新功能/新组件/新概念，还需要更新 logs/glossary.md（参考现有格式追加对应条目）。禁止用 sed、python -c 等命令行方式修改文件——Windows 下会导致 UTF-8 中文双重编码损坏。只写日志文件。
+写改动日志到 logs/CHANGELOG.md。先 git log -1 --stat 和 git diff HEAD~1 --stat 获取本轮改动。用 sed 在文件开头插入人话总结（格式见项目 AGENTS.md），不要读整个文件——只读前 5 行确认格式存在即可。只写日志文件。
 ```
 
 ### 用户表示收工（睡觉/下班/结束工作）时：写入进度文件
@@ -54,7 +53,7 @@ React Native (Expo) 应用，用于管理家教课程账单。
 格式保持与 `PROGRESS.md` 现有结构一致（`- [x]` / `- [ ]`）。
 
 ### 新项目结构文档规范
-每次接手或创建新项目时，必须先了解项目结构并在 CLAUDE.md 中写明：
+每次接手或创建新项目时，必须先了解项目结构并在 AGENTS.md 中写明：
 - 目录结构说明：每个目录/子目录的职责
 - 代码归属规则：什么代码该放在哪个文件（如：动画→hooks文件、样式→useMemo、类型→models、数据库操作→database等）
 - 关键约定：命名规范、导入路径规则、状态管理模式等
@@ -90,22 +89,3 @@ Stop hook 已停用（`settings.local.json` 中移除）。不再自动 commit �
 - JSX 视觉区块前 → `{/* ── 说明 ── */}`
 - 复杂逻辑行后 → `// 说明`
 - 新增或改动的代码任何位置都必须同步加注释，不改注释等于没改完
-
-### Android 本地构建（不用 EAS 云构建）
-打包 APK 时使用本地 Gradle 构建，**不要用 `eas build`**（太慢，云端排队）。
-
-**构建命令：**
-```bash
-# Debug APK（开发测试用）
-cd android && ./gradlew assembleDebug
-# 输出：android/app/build/outputs/apk/debug/app-debug.apk
-
-# Release APK（发布用，需要签名配置）
-cd android && ./gradlew assembleRelease
-# 输出：android/app/build/outputs/apk/release/app-release.apk
-```
-
-**注意事项：**
-- 构建前确保 `android/local.properties` 中 SDK 路径正确
-- Release 构建需要 `android/app/release.keystore` 和 `android/key.properties` 可用
-- Windows 上用 `gradlew.bat` 替代 `./gradlew`

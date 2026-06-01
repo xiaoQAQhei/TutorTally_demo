@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import { useToast } from '../contexts/ToastContext';
 import { useAction } from '../contexts/ActionContext';
-import { pickAndImportCsv } from '../utils/import';
 import { useResponsive } from '../utils/responsive';
 import ExportFlowModal from '../components/ExportFlowModal';
 import RecurringRulesScreen from './RecurringRulesScreen';
@@ -22,14 +21,6 @@ const SettingsScreen: React.FC = () => {
   const { confirmBeforeChange, toggleConfirmBeforeChange } = useAction();
   const { showToast } = useToast();
   const { maxContentWidth, spacing, fontSize } = useResponsive();
-
-  const handleImport = async () => {
-    try {
-      const result = await pickAndImportCsv();
-      showToast(`导入完成: ${result.imported} 条记录`, 'success');
-      if (result.errors.length > 0) showToast(`${result.errors.length} 条错误`, 'error');
-    } catch (e: any) { showToast(`导入失败: ${e.message}`, 'error'); }
-  };
 
   const handleSeedData = () => {
     Alert.alert('生成测试数据', '将插入 3 个学生、5 个科目、20 节课、5 条支付、2 条周期规则。确定吗？', [
@@ -47,7 +38,6 @@ const SettingsScreen: React.FC = () => {
 
   const menuItems = [
     { icon: 'download-outline', label: '导出数据', subtitle: 'Excel / PDF 多方式导出', onPress: () => setShowExportModal(true), color: Colors.paid },
-    { icon: 'upload-outline', label: '导入数据', subtitle: '从 Excel 文件恢复数据', onPress: handleImport, color: Colors.primary },
     { icon: 'flask-outline', label: '生成测试数据', subtitle: '插入 30 条演示数据', onPress: handleSeedData, color: '#AF52DE' },
     { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => setShowRecurringRules(true), color: '#FF9500' },
   ];

@@ -7,7 +7,8 @@
  * 待收款总额与今日预计收益统计卡片。
  */
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Animated, DimensionValue } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Animated as RNAnimated, DimensionValue } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Lesson, Student } from '../models';
@@ -51,8 +52,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [todayEarnings, setTodayEarnings] = useState(0);                  // 今日预计收益
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗状态
   const [morphingId, setMorphingId] = useState<number | null>(null);      // 正在执行滑动动画的课程 ID
-  const slideAnims = useRef<Map<number, Animated.Value>>(new Map());      // 「确认下课」滑出动画的位移值
-  const slideOpAnims = useRef<Map<number, Animated.Value>>(new Map());    // 「确认下课」滑出动画的透明度值
+  const slideAnims = useRef<Map<number, RNAnimated.Value>>(new Map());      // 「确认下课」滑出动画的位移值
+  const slideOpAnims = useRef<Map<number, RNAnimated.Value>>(new Map());    // 「确认下课」滑出动画的透明度值
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -116,8 +117,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const handleConfirmPayment = (id: number) => {
     const doConfirm = () => {
       if (!slideAnims.current.has(id)) {
-        slideAnims.current.set(id, new Animated.Value(0));
-        slideOpAnims.current.set(id, new Animated.Value(1));
+        slideAnims.current.set(id, new RNAnimated.Value(0));
+        slideOpAnims.current.set(id, new RNAnimated.Value(1));
       }
       const sx = slideAnims.current.get(id)!;
       const so = slideOpAnims.current.get(id)!;
@@ -125,9 +126,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       so.setValue(1);
       setMorphingId(id);
       setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(sx, { toValue: 400, duration: 350, useNativeDriver: false }),
-          Animated.timing(so, { toValue: 0, duration: 350, useNativeDriver: false }),
+        RNAnimated.parallel([
+          RNAnimated.timing(sx, { toValue: 400, duration: 350, useNativeDriver: true }),
+          RNAnimated.timing(so, { toValue: 0, duration: 350, useNativeDriver: true }),
         ]).start(async () => {
           sx.setValue(0);
           so.setValue(1);
@@ -148,6 +149,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const getStudent = (studentId: number) => students.find((s) => s.id === studentId);
   const { spacing, fontSize, isTablet, iconSize } = useResponsive();
   const { opacity, translateY } = useFadeIn();
+  const fadeInStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   // ── 样式（响应式，随 spacing/fontSize/iconSize 变化） ──
   const styles = useMemo(() => ({
@@ -227,8 +232,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (item.category === 'confirmable') {
       const isMorphing = morphingId === item.id;
       if (!slideAnims.current.has(item.id)) {
-        slideAnims.current.set(item.id, new Animated.Value(0));
-        slideOpAnims.current.set(item.id, new Animated.Value(1));
+        slideAnims.current.set(item.id, new RNAnimated.Value(0));
+        slideOpAnims.current.set(item.id, new RNAnimated.Value(1));
       }
       const sx = slideAnims.current.get(item.id)!;
       const so = slideOpAnims.current.get(item.id)!;
@@ -237,7 +242,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       const morphBadgeColor = isMorphing ? Colors.pending : Colors.danger;
       const morphBadgeLabel = isMorphing ? '待收款' : '确认下课';
       return (
-        <Animated.View style={[styles.recentItem, !isLast && styles.recentItemBorder, {
+        <RNAnimated.View style={[styles.recentItem, !isLast && styles.recentItemBorder, {
           opacity: isMorphing ? so : 1,
           transform: [{ translateX: sx }],
         }]}>
@@ -262,7 +267,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={[styles.confirmBadgeText, { color: morphBadgeColor }]}>{morphBadgeLabel}</Text>
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </RNAnimated.View>
       );
     }
 
@@ -306,7 +311,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }}>
+      <Animated.View style={[fadeInStyle, { flex: 1 }]}>
         {/* ── 顶部栏 ── */}
         <View style={styles.header}>
           <View>
@@ -414,6 +419,10 @@ const QuickActionButton: React.FC<{
 }> = ({ item, onPress }) => {
   const { scale: bounceScale, bounce } = useBounce(onPress);
   const { spacing, fontSize, iconSize } = useResponsive();
+  const bounceStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: bounceScale.value }],
+    alignItems: 'center',
+  }));
 
   const btnStyles = useMemo(() => ({
     quickAction: { backgroundColor: item.color + '12', paddingVertical: spacing.lg, flex: 1 as const, borderRadius: BorderRadius.card, alignItems: 'center' as const },
@@ -423,7 +432,7 @@ const QuickActionButton: React.FC<{
 
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={bounce} style={btnStyles.quickAction}>
-      <Animated.View style={{ transform: [{ scale: bounceScale }], alignItems: 'center' }}>
+      <Animated.View style={bounceStyle}>
         {/* ── 图标容器 ── */}
         <View style={btnStyles.quickActionIcon}>
           <Ionicons name={item.icon as any} size={iconSize.xl} color={item.color} />

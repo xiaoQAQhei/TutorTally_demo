@@ -1,6 +1,9 @@
 node_modules/
 .expo/
 dist/
+.idea/
+.playwright-mcp/
+.superpowers/
 *.jks
 *.p8
 *.p12
