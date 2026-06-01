@@ -2,7 +2,7 @@
  * ── 模块功能 ─────────────────────────────────────────────
  * SettingsScreen - 设置页面
  *
- * 数据管理：导出/导入、周期规则管理、偏好设置、测试数据。
+ * 数据管理：导出/导入、周期规则管理、偏好设置。
  */
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Modal, Alert } from 'react-native';
@@ -13,7 +13,6 @@ import { useAction } from '../contexts/ActionContext';
 import { useResponsive } from '../utils/responsive';
 import ExportFlowModal from '../components/ExportFlowModal';
 import RecurringRulesScreen from './RecurringRulesScreen';
-import { seedTestData } from '../database';
 
 const SettingsScreen: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
@@ -22,23 +21,8 @@ const SettingsScreen: React.FC = () => {
   const { showToast } = useToast();
   const { maxContentWidth, spacing, fontSize } = useResponsive();
 
-  const handleSeedData = () => {
-    Alert.alert('生成测试数据', '将插入 3 个学生、5 个科目、20 节课、5 条支付、2 条周期规则。确定吗？', [
-      { text: '取消', style: 'cancel' },
-      { text: '确定', onPress: async () => {
-        try {
-          await seedTestData();
-          showToast('测试数据已生成，请刷新页面', 'success');
-        } catch (e: any) {
-          showToast(`生成失败: ${e.message}`, 'error');
-        }
-      }},
-    ]);
-  };
-
   const menuItems = [
     { icon: 'download-outline', label: '导出数据', subtitle: 'Excel / PDF 多方式导出', onPress: () => setShowExportModal(true), color: Colors.paid },
-    { icon: 'flask-outline', label: '生成测试数据', subtitle: '插入 30 条演示数据', onPress: handleSeedData, color: '#AF52DE' },
     { icon: 'repeat-outline', label: '周期课程规则', subtitle: '管理自动排课规则', onPress: () => setShowRecurringRules(true), color: '#FF9500' },
   ];
 
