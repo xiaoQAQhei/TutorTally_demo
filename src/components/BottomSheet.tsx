@@ -15,6 +15,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight, BorderRadius, Shadows } from '../styles/theme';
 import { useResponsive, scale, verticalScale } from '../utils/responsive';
+import Toast from './Toast';
 
 /** BottomSheet 组件属性 */
 interface BottomSheetProps {
@@ -24,10 +25,14 @@ interface BottomSheetProps {
   children: React.ReactNode; // 面板内容
   heightFactor?: number;    // 面板高度占屏幕比例，默认 0.82
   scrollable?: boolean;     // 内容区域是否可滚动，默认 true
+  /** 表单内的 Toast 状态，渲染在 Modal 内部，确保 Android 上不被遮挡 */
+  toast?: { visible: boolean; message: string; type: 'success' | 'error' };
+  onToastDismiss?: () => void; // Toast 消失回调
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
   visible, onClose, title, children, heightFactor = 0.82, scrollable = true,
+  toast, onToastDismiss,
 }) => {
   const { height: screenH } = useWindowDimensions();
   const { isTablet, maxContentWidth, spacing, fontSize, iconSize } = useResponsive();
@@ -233,6 +238,16 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           )}
           </Animated.View>
         </Animated.View>
+
+        {/* ── Toast 渲染在 Modal 内部，Android 上不被 BottomSheet 遮挡 ── */}
+        {toast && (
+          <Toast
+            visible={toast.visible}
+            message={toast.message}
+            type={toast.type}
+            onDismiss={onToastDismiss ?? (() => {})}
+          />
+        )}
       </View>
     </Modal>
   );

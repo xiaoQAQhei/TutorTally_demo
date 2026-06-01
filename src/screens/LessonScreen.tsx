@@ -72,6 +72,11 @@ const LessonScreen: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const { showToast } = useToast();
+  // ── 表单内 Toast 状态（渲染在 BottomSheet Modal 内部，Android 上不被遮挡） ──
+  const [formToast, setFormToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const showFormToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setFormToast({ visible: true, message, type });
+  };
 
   // ═══════════════ 跨页面交互 ═══════════════
   const { pendingAction, clearAction, pendingFilter, clearFilter, highlightLessonId, clearHighlight, confirmBeforeChange } = useAction();
@@ -396,7 +401,7 @@ const LessonScreen: React.FC = () => {
     if (!timeSlot) missing.push('时段');
     if (!duration) missing.push('课时');
     if (!lessonRate) missing.push('课时费');
-    if (missing.length > 0) { showToast(`请填写：${missing.join('、')}`, 'error'); return; }
+    if (missing.length > 0) { showFormToast(`请填写：${missing.join('、')}`, 'error'); return; }
     const amount = calculateAmount();
     const parts = timeSlot.split('-');
     if (parts.length === 2) {
@@ -406,7 +411,7 @@ const LessonScreen: React.FC = () => {
       const rounded = roundDuration(slotDuration);
       if (rounded > 0 && Math.abs(rounded - parseFloat(duration)) > 0.01) {
         setDuration(rounded.toString());
-        showToast(`课时已根据时段自动调整为 ${fmtDuration(rounded)}`, 'success');
+        showFormToast(`课时已根据时段自动调整为 ${fmtDuration(rounded)}`, 'success');
         return;
       }
     }
@@ -418,7 +423,7 @@ const LessonScreen: React.FC = () => {
     setModalVisible(false); setEditingLesson(null); setSelectedSubjectId(null);
     setDate(''); setTimeSlot(''); setDuration('2'); setLessonRate(''); setNotes('');
     loadLessons();
-    showToast(editingLesson ? '课程已更新' : '课程已添加', 'success');
+    showFormToast(editingLesson ? '课程已更新' : '课程已添加', 'success');
   };
 
   // ═══════════════ 状态流转：右滑 + 坍缩动画链 ═══════════════
@@ -923,7 +928,13 @@ const LessonScreen: React.FC = () => {
         );
       })()}
 
-      <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingLesson(null); setSelectedSubjectId(null); setCurrentSubjects([]); setLessonRate(''); }} title={editingLesson ? '编辑课程' : '添加课程'}>
+      <BottomSheet
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setEditingLesson(null); setSelectedSubjectId(null); setCurrentSubjects([]); setLessonRate(''); setFormToast({ visible: false, message: '', type: 'success' }); }}
+        title={editingLesson ? '编辑课程' : '添加课程'}
+        toast={formToast}
+        onToastDismiss={() => setFormToast(prev => ({ ...prev, visible: false }))}
+      >
         <View style={styles.formCardWrapper}>
           <Text style={[styles.formLabel, { marginTop: 0 }]}>选择学生 / 科目</Text>
           <View style={styles.formRow}>

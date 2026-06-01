@@ -38,7 +38,7 @@ scheduled ──(取消)──────────→ cancelled
 
 | 组件 | 文件 | 用途 |
 |------|------|------|
-| **BottomSheet** | `src/components/BottomSheet.tsx` | 底部弹出面板：可拖拽、档位吸附、平板自适应 |
+| **BottomSheet** | `src/components/BottomSheet.tsx` | 底部弹出面板：可拖拽、档位吸附、平板自适应、表单内 Toast 支持（toast prop，渲染在 Modal 内部避免 Android 遮挡） |
 | **CalendarPicker** | `src/components/CalendarPicker.tsx` | 日历日期选择器 |
 | **TimeRangePicker** | `src/components/TimeRangePicker.tsx` | 时间段滚轮选择器（开始/结束 时+分） |
 | **DropdownSelect** | `src/components/DropdownSelect.tsx` | 下拉选择器（学生/科目选择） |

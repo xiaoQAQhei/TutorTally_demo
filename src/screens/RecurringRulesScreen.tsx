@@ -57,6 +57,11 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
   const startArrowRot = useSharedValue(0);
   const endArrowRot = useSharedValue(0);
   const { showToast } = useToast();
+  // ── 表单内 Toast 状态（渲染在 BottomSheet Modal 内部，Android 上不被遮挡） ──
+  const [formToast, setFormToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const showFormToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setFormToast({ visible: true, message, type });
+  };
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -132,7 +137,7 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
 
   const handleSave = async () => {
     if (!selectedStudentId || selectedWeekdays.length === 0 || !timeSlot || !startDate) {
-      showToast('请填写必填项', 'error'); return;
+      showFormToast('请填写必填项', 'error'); return;
     }
     const ruleData = {
       studentId: selectedStudentId, studentSubjectId: selectedSubjectId || undefined,
@@ -148,7 +153,7 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
       await addRecurringRule(ruleData as any);
     }
     setModalVisible(false); resetForm(); loadData();
-    showToast(editingRule ? '规则已更新' : '规则已添加', 'success');
+    showFormToast(editingRule ? '规则已更新' : '规则已添加', 'success');
   };
 
   const resetForm = () => {
@@ -244,7 +249,13 @@ const RecurringRulesScreen: React.FC<Props> = ({ onClose }) => {
         ListEmptyComponent={<EmptyState icon="repeat-outline" title="没有周期规则" subtitle="创建规则自动排课" buttonLabel="创建规则" onButtonPress={() => { resetForm(); setModalVisible(true); }} />}
       />
       <GradientFAB icon="add" onPress={() => { resetForm(); setModalVisible(true); }} color={Colors.pending} />
-      <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); resetForm(); }} title={editingRule ? '编辑周期规则' : '创建周期规则'}>
+      <BottomSheet
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); resetForm(); setFormToast({ visible: false, message: '', type: 'success' }); }}
+        title={editingRule ? '编辑周期规则' : '创建周期规则'}
+        toast={formToast}
+        onToastDismiss={() => setFormToast(prev => ({ ...prev, visible: false }))}
+      >
         <Text style={styles.formLabel}>学生</Text>
         <View style={styles.chipRow}>
           {students.map(s => (

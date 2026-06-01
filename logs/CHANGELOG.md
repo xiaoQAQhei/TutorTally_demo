@@ -1,3 +1,10 @@
+## [2026-06-02 00:47] 修复 Android 表单 Toast 被 BottomSheet 遮挡问题
+- BottomSheet 组件新增 `toast` 和 `onToastDismiss` prop，支持在 Modal 内部渲染 Toast（解决 Android 上全局 Toast 被 BottomSheet 遮挡的问题）
+- LessonScreen / RecurringRulesScreen / StudentScreen 三个表单页面新增 `formToast` 状态和 `showFormToast` 辅助函数，表单提交相关 Toast 改为在 BottomSheet Modal 内部渲染，不再使用全局 `showToast`
+- ToastContext 注释更新，明确全局 Toast 用于非表单场景（如设置页）
+- README.md 文档全面重写 + PROGRESS.md 更新
+  - 文件: src/components/BottomSheet.tsx, src/contexts/ToastContext.tsx, src/screens/LessonScreen.tsx, src/screens/RecurringRulesScreen.tsx, src/screens/StudentScreen.tsx, README.md, PROGRESS.md
+
 ## [2026-06-02 00:41] README 文档全面更新 + 日志规范补充
 - README.md 全面重写：项目描述新增「数据导出」功能说明，移除 iOS 相关内容，新增本地打包 APK 构建命令说明
 - README.md 项目结构树更新：补充 components/contexts/styles/utils 目录及子文件说明，新增 gesture-handler/gifted-charts/xlsx-js-style 依赖记录

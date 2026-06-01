@@ -1,6 +1,7 @@
 // ── Toast 全局 Context ──
 /**
- * 全局 Toast 上下文，将 Toast 渲染在根层级，避免被 Modal/BottomSheet 遮挡。
+ * 全局 Toast 上下文，将 Toast 渲染在根层级。
+ * 表单内的 Toast 由 BottomSheet 的 toast prop 单独处理，确保 Android 上不被遮挡。
  * 用法：useToast().showToast('消息', 'success')
  */
 
@@ -32,7 +33,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast 渲染在 Provider 末尾，处于根层级，永远叠在 Modal 之上 */}
+      {/* Toast 渲染在 Provider 末尾，用于非表单场景（如设置页） */}
       <Toast
         visible={toast.visible}
         message={toast.message}

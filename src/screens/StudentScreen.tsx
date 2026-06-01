@@ -123,6 +123,11 @@ const StudentScreen: React.FC = () => {
   const [address, setAddress] = useState('');                                         // 表单：地址
   const [editSubjects, setEditSubjects] = useState<{ id?: number; subject: string; hourlyRate: string; color: string }[]>([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]); // 表单：科目列表
   const { showToast } = useToast();
+  // ── 表单内 Toast 状态（渲染在 BottomSheet Modal 内部，Android 上不被遮挡） ──
+  const [formToast, setFormToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({ visible: false, message: '', type: 'success' });
+  const showFormToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setFormToast({ visible: true, message, type });
+  };
   const [pickingSubject, setPickingSubject] = useState<number | null>(null);
   const subArrowRot = useSharedValue(0);                                                                     // 科目选择器箭头旋转
   const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void } | null>(null); // 确认弹窗
@@ -178,7 +183,7 @@ const StudentScreen: React.FC = () => {
         if (!s.hourlyRate) missing.push(`科目${i + 1}课时费`);
       });
     }
-    if (missing.length > 0) { showToast(`请填写：${missing.join('、')}`, 'error'); return; }
+    if (missing.length > 0) { showFormToast(`请填写：${missing.join('、')}`, 'error'); return; }
     if (editingStudent) {
       await updateStudent({ ...editingStudent, name, phone, address, updatedAt: new Date().toISOString() } as any);
       for (const es of editSubjects) {
@@ -203,7 +208,7 @@ const StudentScreen: React.FC = () => {
     setName(''); setPhone(''); setAddress('');
     setEditSubjects([{ subject: '', hourlyRate: '', color: SubjectColorPalette[0] }]);
     loadStudents();
-    showToast(editingStudent ? '学生信息已更新' : '学生已添加', 'success');
+    showFormToast(editingStudent ? '学生信息已更新' : '学生已添加', 'success');
   };
 
   /**
@@ -348,7 +353,13 @@ const StudentScreen: React.FC = () => {
 
       <GradientFAB icon="add" onPress={openAddModal} color={Colors.paid} />
 
-      <BottomSheet visible={modalVisible} onClose={() => { setModalVisible(false); setEditingStudent(null); }} title={editingStudent ? '编辑学生' : '添加学生'}>
+      <BottomSheet
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setEditingStudent(null); setFormToast({ visible: false, message: '', type: 'success' }); }}
+        title={editingStudent ? '编辑学生' : '添加学生'}
+        toast={formToast}
+        onToastDismiss={() => setFormToast(prev => ({ ...prev, visible: false }))}
+      >
         <Text style={styles.formLabel}>学生姓名</Text>
         <TextInput style={styles.input} placeholder="输入姓名" value={name} onChangeText={setName} placeholderTextColor={Colors.caption} />
 
